@@ -28,10 +28,10 @@ them in this order, since later steps depend on earlier ones.
    Vercel's Preview and Production env var scopes respectively. Local dev
    (`.env.local`, `supabase start`) is still open — see below.
 
-2. **GitHub secrets.** In `F4milia/trib4l` → Settings → Secrets and variables →
-   Actions, nothing is needed yet for the current CI job (it doesn't touch
-   Supabase). Session 1 will add a staging `SUPABASE_ACCESS_TOKEN` and
-   `SUPABASE_DB_URL` once migrations exist, to lint/dry-run them in CI.
+2. ~~**GitHub secrets.**~~ Turned out not to be needed — see "CI migrations
+   gate" below. The migrations job tests against a throwaway local Postgres
+   in the CI runner itself, not `trib4l-staging`, so no Supabase secrets
+   live in GitHub at all right now.
 
 3. ~~**Vercel project.**~~ Done — `F4milia/trib4l` imported, env vars set per
    environment, deploy confirmed working end to end (page loads, Sentry
@@ -69,21 +69,24 @@ them in this order, since later steps depend on earlier ones.
    Sessions 13 and 11 respectively. Note the decision from open question 1
    in the plan (which company this is) before naming the Stripe account.
 
-## Manual steps — CI migrations gate
+## CI migrations gate — done
 
-Deferred until Session 1 produces real migrations: `supabase/migrations/`
-is currently empty (just a `.gitkeep`). Wiring a migrations-lint CI job
-against zero migrations would either no-op silently or fail on missing
-secrets — neither proves anything. Add this job in Session 1 alongside the
-first migration.
+Added in Session 1, once real migrations existed: the `migrations` job in
+`.github/workflows/ci.yml` runs `supabase start` + `supabase db reset` on a
+throwaway local Postgres in CI, proving `supabase/migrations/*.sql` and
+`supabase/seed.sql` apply cleanly from scratch on every PR. Deliberately not
+pointed at `trib4l-staging` — a CI job with real staging DB credentials is
+unnecessary blast radius when a fresh local Postgres proves the same thing.
 
-## Manual steps — realistic staging data
+## Realistic multi-tenant staging data — see Session 1
 
-Also deferred to Session 1: seeding three orgs with overlapping members and
-populated cohorts needs the `organizations` / `memberships` / `cohorts`
-tables, which don't exist until Session 1's schema lands. Write the seed
-script in Session 1, run it against `trib4l-staging` as part of that
-session's "done" checklist.
+`supabase/seed.sql` now seeds three orgs, an overlapping member (Alice: a
+member of Caregiver Circle, a mentor in Founder Collective), and two
+`platform_staff` rows. Applied locally via `supabase db reset`; not yet run
+against the hosted `trib4l-staging` project — do that by linking the project
+(`supabase link`) and running `supabase db push` once you're ready to see it
+in the hosted Studio too. See `docs/session-1-checklist.md` for what's been
+verified so far.
 
 ## Manual steps — backup/restore drill
 

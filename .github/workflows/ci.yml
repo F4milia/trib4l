@@ -21,3 +21,18 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Applies every migration plus seed.sql to a throwaway local Postgres
+      # from scratch. Proves the schema builds cleanly on a fresh database,
+      # not just on whatever state a dev's local instance happens to be in.
+      - run: supabase start
+      - run: supabase db reset
