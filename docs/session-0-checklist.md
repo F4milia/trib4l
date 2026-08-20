@@ -14,7 +14,7 @@ Tracks progress against the Session 0 acceptance criteria in
 - [x] `.github/workflows/ci.yml` runs all four on every PR and on push to `main`.
 - [x] `supabase/config.toml` initialized for local Supabase dev (`supabase start`).
 - [x] `.env.example` lists every env var the app will need through Session 4, grouped by provider.
-- [x] `@sentry/nextjs` added as a dependency (config wiring is a manual step below — it needs a real DSN).
+- [x] Sentry wizard run (`npx @sentry/wizard@latest -i nextjs`) — client/server/edge config, `instrumentation.ts`, `global-error.tsx`, and `next.config.ts` source-map wrapping all generated and committed. `SENTRY_AUTH_TOKEN` set in Vercel (Production + Preview, build-time only, not exposed to browser).
 
 ## Manual steps — accounts and projects
 
@@ -39,21 +39,27 @@ them in this order, since later steps depend on earlier ones.
    env vars from `trib4l-staging`, and Production's from `trib4l-production`.
    Leave Stripe/Mux/Resend vars blank until their sessions (4, 11, 13).
 
-4. **Sentry.** Create an org, then either one project with three environments
-   (`local`/`staging`/`production` tagged via `SENTRY_ENVIRONMENT`) or three
-   projects — one project with environment tags is simpler to start with and
-   is what the wizard sets up by default. Then run, locally:
+4. ~~**Sentry.**~~ Done — wizard ran against the `brandlamb` org / `javascript-nextjs`
+   project (SaaS, not self-hosted). It hardcoded the DSN directly into
+   `instrumentation-client.ts`, `sentry.server.config.ts`, and
+   `sentry.edge.config.ts` (not a secret, fine to commit), and the org/project
+   slugs into `next.config.ts`. The one actual secret, `SENTRY_AUTH_TOKEN`
+   (used only at build time to upload source maps), lives in
+   `.env.sentry-build-plugin` locally (gitignored) and in Vercel's Production
+   + Preview env vars (build-time only, not exposed to the browser).
 
-   ```
-   npx @sentry/wizard@latest -i nextjs
-   ```
+   It also added a manual test fixture: `app/sentry-example-page` (a button
+   that throws a client error and hits a deliberately-broken API route) and
+   `app/global-error.tsx` (catches uncaught errors app-wide and reports them).
+   Left in place for now — visiting `/sentry-example-page` on the staging
+   deploy and clicking the button is exactly how to satisfy Session 0's "an
+   exception in staging appears in Sentry" requirement below. Remove the
+   example page once that's confirmed; keep `global-error.tsx`, `instrumentation.ts`,
+   and the three `sentry.*.config.ts` files permanently.
 
-   The wizard logs you into Sentry, detects the already-installed
-   `@sentry/nextjs` dependency, and writes the client/server/edge config and
-   `next.config.ts` wrapping for the exact SDK version installed — hand-writing
-   these ahead of the wizard risks drifting from what the current major
-   version actually expects. Commit what it generates. Add the resulting DSN
-   to `.env.local` and to both Vercel env scopes.
+   One default worth revisiting once there's real traffic, not now:
+   `tracesSampleRate: 1` sends 100% of transactions — fine at zero volume,
+   expensive once the app has actual users.
 
 5. **Stripe and Mux test modes.** Create both accounts now so the org exists
    under whatever legal entity you'll use, but there's nothing to wire until
