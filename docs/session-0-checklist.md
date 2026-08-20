@@ -15,29 +15,27 @@ Tracks progress against the Session 0 acceptance criteria in
 - [x] `supabase/config.toml` initialized for local Supabase dev (`supabase start`).
 - [x] `.env.example` lists every env var the app will need through Session 4, grouped by provider.
 - [x] Sentry wizard run (`npx @sentry/wizard@latest -i nextjs`) — client/server/edge config, `instrumentation.ts`, `global-error.tsx`, and `next.config.ts` source-map wrapping all generated and committed. `SENTRY_AUTH_TOKEN` set in Vercel (Production + Preview, build-time only, not exposed to browser).
+- [x] **Exception in staging confirmed in Sentry.** Threw the wizard's test errors from a deployed instance; both `SentryExampleFrontendError` and `SentryExampleAPIError` showed up in the `brandlamb` org's `javascript-nextjs` project with readable (non-minified) stack traces pointing at real source lines — confirms both error capture and source-map upload work. Test fixture (`app/sentry-example-page`, `app/api/sentry-example-api`) removed afterward.
+- [x] Vercel project created, deployed, and confirmed working (page loads at the deployed URL).
 
 ## Manual steps — accounts and projects
 
 These need a human in a browser; I can't create third-party accounts. Do
 them in this order, since later steps depend on earlier ones.
 
-1. **Supabase — three projects.** Create `trib4l-local` (or use `supabase start` for a
-   fully local Postgres via Docker — no project needed for local), `trib4l-staging`,
-   and `trib4l-production` as **separate** Supabase projects. Never point staging
-   and production at the same project — the plan's environment-separation rule
-   exists specifically so a bad migration or a bad `DELETE` in staging can't touch
-   real data. Copy each project's URL/anon key/service role key into the matching
-   `.env.local` (local), and into Vercel's Preview and Production env var scopes
-   (staging/production) once the Vercel project exists (step 3).
+1. ~~**Supabase — three projects.**~~ Done — `trib4l-staging` and `trib4l-production`
+   created as separate projects, their URL/anon key/service role key wired into
+   Vercel's Preview and Production env var scopes respectively. Local dev
+   (`.env.local`, `supabase start`) is still open — see below.
 
 2. **GitHub secrets.** In `F4milia/trib4l` → Settings → Secrets and variables →
    Actions, nothing is needed yet for the current CI job (it doesn't touch
    Supabase). Session 1 will add a staging `SUPABASE_ACCESS_TOKEN` and
    `SUPABASE_DB_URL` once migrations exist, to lint/dry-run them in CI.
 
-3. **Vercel project.** Import `F4milia/trib4l`. Set the Preview environment's
-   env vars from `trib4l-staging`, and Production's from `trib4l-production`.
-   Leave Stripe/Mux/Resend vars blank until their sessions (4, 11, 13).
+3. ~~**Vercel project.**~~ Done — `F4milia/trib4l` imported, env vars set per
+   environment, deploy confirmed working end to end (page loads, Sentry
+   errors captured).
 
 4. ~~**Sentry.**~~ Done — wizard ran against the `brandlamb` org / `javascript-nextjs`
    project (SaaS, not self-hosted). It hardcoded the DSN directly into
@@ -61,7 +59,12 @@ them in this order, since later steps depend on earlier ones.
    `tracesSampleRate: 1` sends 100% of transactions — fine at zero volume,
    expensive once the app has actual users.
 
-5. **Stripe and Mux test modes.** Create both accounts now so the org exists
+5. **Local dev env.** Still open. Copy `.env.example` to `.env.local` and
+   either run `supabase start` (needs Docker, spins up a fully local Postgres
+   — no hosted project needed) or point it at `trib4l-staging`'s keys if
+   Docker isn't set up yet.
+
+6. **Stripe and Mux test modes.** Create both accounts now so the org exists
    under whatever legal entity you'll use, but there's nothing to wire until
    Sessions 13 and 11 respectively. Note the decision from open question 1
    in the plan (which company this is) before naming the Stripe account.
