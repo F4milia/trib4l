@@ -83,6 +83,12 @@ person guaranteed untouched by another file's side effects, rather than
 relying on a seeded user's role staying whatever the seed script set it
 to.
 
+## Pushed to hosted Supabase
+
+Both new migrations pushed to `trib4l-staging` and `trib4l-production`
+(schema only, no seed changes this session). CLI left linked to staging
+afterward, same safety practice as prior sessions.
+
 ## Not done in Session 5 — explicitly out of scope here
 
 - **Anything that actually uses cohort-scoping for content.** There's no
@@ -90,5 +96,3 @@ to.
   content plus their own cohort's" first has something to apply to. This
   session only builds the underlying table + RLS layer Session 6 will
   index and query against.
-- **Pushing this schema to `trib4l-staging`/`trib4l-production`.** Still
-  local-only as of writing this file.
