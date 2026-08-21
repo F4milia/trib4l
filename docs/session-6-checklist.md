@@ -77,6 +77,12 @@ session either — same bar as prior sessions applied here.
   directly), confirmed a plain member sees no Remove control and can
   still post normally.
 
+## Pushed to hosted Supabase
+
+Both new migrations pushed to `trib4l-staging` and `trib4l-production`.
+CLI left linked to staging afterward, same safety practice as prior
+sessions.
+
 ## Not done in Session 6 — explicitly out of scope here
 
 - **Post detail pages / pagination.** Everything renders inline on one
