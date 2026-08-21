@@ -10,7 +10,9 @@ Stripe Connect for commerce, Mux for video, Sentry for errors.
 - Session status: [`docs/session-0-checklist.md`](./docs/session-0-checklist.md),
   [`docs/session-1-checklist.md`](./docs/session-1-checklist.md),
   [`docs/session-2-checklist.md`](./docs/session-2-checklist.md),
-  [`docs/session-3-checklist.md`](./docs/session-3-checklist.md)
+  [`docs/session-3-checklist.md`](./docs/session-3-checklist.md),
+  [`docs/session-4-checklist.md`](./docs/session-4-checklist.md) (skipped
+  per direct instruction — see that file)
 - Data retention policy: [`docs/data-retention-policy.md`](./docs/data-retention-policy.md)
 
 Renamed Trib4l → **F4milia** as of Session 3: package name, seed data, and
