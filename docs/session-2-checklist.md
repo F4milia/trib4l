@@ -101,6 +101,21 @@ reset step.
 - **Cohort-scoped RLS.** Cohorts don't exist until Session 5; today's
   policies are org-scoped only. Session 5 needs to layer cohort visibility
   under the org scoping these policies already provide, not replace it.
-- **Pushing this schema to `trib4l-staging`/`trib4l-production`.** Still
-  local-only, same as Session 1 left it. `supabase link` + `supabase db
-  push` when ready.
+
+## Pushed to hosted Supabase
+
+Schema (all 6 migrations) plus seed data pushed to `trib4l-staging`;
+schema only (deliberately no seed) pushed to `trib4l-production`. One real
+bug found in the process: `crypt()`/`gen_salt()` in `seed.sql` resolved
+locally via `search_path` but not through the connection `supabase db push
+--include-seed` uses remotely, even though `pgcrypto` lives in the same
+`extensions` schema in both places — fixed by schema-qualifying both calls
+(`extensions.crypt(...)`, `extensions.gen_salt(...)`) so it no longer
+depends on search_path at all.
+
+Verified rather than assumed: ran the full 11-test isolation suite directly
+against the hosted `trib4l-staging` project (not just local) — all pass.
+Confirmed `trib4l-production` has zero rows in `organizations` (no leaked
+test data) and RLS enabled on its tables. CLI left linked to
+`trib4l-staging` afterward, not production, so a future plain `supabase db
+push` doesn't accidentally target production without an explicit re-link.

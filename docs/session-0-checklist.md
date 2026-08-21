@@ -90,8 +90,10 @@ verified so far.
 
 ## Manual steps — backup/restore drill
 
-Do this once `trib4l-staging` holds real data (after Session 1, before
-Session 2 sign-off) — restoring an empty database proves nothing.
+`trib4l-staging` now holds real seeded data (Session 2 pushed the schema
+and `seed.sql` there) — this drill is unblocked and ready to run whenever
+you have time; it still needs a human clicking through the dashboard, not
+something I can do from here.
 
 1. In the Supabase dashboard for `trib4l-staging`: Database → Backups.
    Confirm Point-in-Time-Recovery (PITR) is enabled if the plan tier
