@@ -41,7 +41,12 @@ export default async function Home() {
           </Button>
         </form>
       </div>
-      <p className="text-ink-soft">Signed in as {user.email}.</p>
+      <p className="text-ink-soft">
+        Signed in as {user.email}.{" "}
+        <Link href="/settings/blocked" className="text-primary underline">
+          Blocked people
+        </Link>
+      </p>
 
       {invitations.length > 0 ? (
         <Card>

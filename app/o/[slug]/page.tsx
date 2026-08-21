@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createPost, createComment, toggleLike, moderatePost, moderateComment } from "@/app/actions/posts";
+import { blockUser } from "@/app/actions/safety";
 import { Button, Card, ErrorText, PageHeading, Select } from "@/components/ui";
 
 export default async function OrgHomePage({
@@ -7,11 +9,14 @@ export default async function OrgHomePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string }>;
 }) {
   const { slug } = await params;
-  const { error } = await searchParams;
+  const { error, notice } = await searchParams;
   const { supabase, user } = await requireUser();
+
+  const { data: myBlocks } = await supabase.from("blocks").select("blocked_profile_id");
+  const blockedIds = new Set((myBlocks ?? []).map((b) => b.blocked_profile_id));
 
   const orgs = await getUserOrgs(supabase, user.id);
   const currentOrg = orgs.find((o) => o.slug === slug);
@@ -37,16 +42,21 @@ export default async function OrgHomePage({
     if (myCohortRow?.cohorts) postableCohorts = [myCohortRow.cohorts];
   }
 
-  const { data: posts } = await supabase
+  const { data: allPosts } = await supabase
     .from("posts")
     .select("id, body, created_at, cohort_id, author_profile_id, profiles(display_name), cohorts(name)")
     .eq("org_id", orgId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  const postIds = (posts ?? []).map((p) => p.id);
+  // Blocking is a personal viewing preference, not a tenant-isolation
+  // concern -- filtered here at the app layer rather than in RLS, which
+  // stays focused on "is this row visible at all" (org/cohort scoping).
+  const posts = (allPosts ?? []).filter((p) => !blockedIds.has(p.author_profile_id));
 
-  const { data: comments } = postIds.length
+  const postIds = posts.map((p) => p.id);
+
+  const { data: allComments } = postIds.length
     ? await supabase
         .from("comments")
         .select("id, post_id, body, created_at, author_profile_id, profiles(display_name)")
@@ -54,6 +64,7 @@ export default async function OrgHomePage({
         .is("deleted_at", null)
         .order("created_at")
     : { data: [] };
+  const comments = (allComments ?? []).filter((c) => !blockedIds.has(c.author_profile_id));
 
   const { data: reactions } = postIds.length
     ? await supabase.from("reactions").select("post_id, profile_id").in("post_id", postIds)
@@ -73,8 +84,14 @@ export default async function OrgHomePage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <PageHeading>{org?.name}</PageHeading>
+      <div className="flex items-center justify-between">
+        <PageHeading>{org?.name}</PageHeading>
+        <Link href={`/o/${slug}/search`} className="text-sm text-primary underline">
+          Search
+        </Link>
+      </div>
       {error ? <ErrorText>{error}</ErrorText> : null}
+      {notice ? <p className="rounded-md bg-primary-soft px-3 py-2 text-sm text-primary-dark">{notice}</p> : null}
 
       <Card>
         <form action={createPost} className="space-y-3">
@@ -102,10 +119,10 @@ export default async function OrgHomePage({
       </Card>
 
       <div className="space-y-4">
-        {(posts ?? []).length === 0 ? (
+        {posts.length === 0 ? (
           <p className="text-ink-soft">Nothing here yet.</p>
         ) : (
-          (posts ?? []).map((post) => (
+          posts.map((post) => (
             <Card key={post.id}>
               <div className="flex items-center justify-between text-sm text-ink-soft">
                 <span>
@@ -133,6 +150,21 @@ export default async function OrgHomePage({
                     </Button>
                   </form>
                 )}
+                <Link
+                  href={`/o/${slug}/report?type=post&id=${post.id}`}
+                  className="text-xs text-ink-soft underline"
+                >
+                  Report
+                </Link>
+                {post.author_profile_id !== user.id && (
+                  <form action={blockUser}>
+                    <input type="hidden" name="blocked_profile_id" value={post.author_profile_id} />
+                    <input type="hidden" name="org_slug" value={slug} />
+                    <button type="submit" className="text-xs text-ink-soft underline">
+                      Block {post.profiles?.display_name}
+                    </button>
+                  </form>
+                )}
               </div>
 
               <div className="mt-4 space-y-2 border-t border-line pt-3">
@@ -141,15 +173,20 @@ export default async function OrgHomePage({
                     <p>
                       <span className="font-medium">{c.profiles?.display_name}</span>: {c.body}
                     </p>
-                    {isStaff && (
-                      <form action={moderateComment}>
-                        <input type="hidden" name="comment_id" value={c.id} />
-                        <input type="hidden" name="org_slug" value={slug} />
-                        <button type="submit" className="text-danger text-xs whitespace-nowrap">
-                          remove
-                        </button>
-                      </form>
-                    )}
+                    <div className="flex shrink-0 gap-2">
+                      <Link href={`/o/${slug}/report?type=comment&id=${c.id}`} className="text-xs text-ink-soft underline">
+                        report
+                      </Link>
+                      {isStaff && (
+                        <form action={moderateComment}>
+                          <input type="hidden" name="comment_id" value={c.id} />
+                          <input type="hidden" name="org_slug" value={slug} />
+                          <button type="submit" className="text-danger text-xs whitespace-nowrap">
+                            remove
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <form action={createComment} className="flex items-center gap-2 pt-2">

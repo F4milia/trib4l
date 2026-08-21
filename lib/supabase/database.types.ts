@@ -82,6 +82,42 @@ export type Database = {
           },
         ]
       }
+      blocks: {
+        Row: {
+          blocked_profile_id: string
+          blocker_profile_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_profile_id: string
+          blocker_profile_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_profile_id?: string
+          blocker_profile_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocks_blocked_profile_id_fkey"
+            columns: ["blocked_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocks_blocker_profile_id_fkey"
+            columns: ["blocker_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cohort_members: {
         Row: {
           cohort_id: string
@@ -176,6 +212,7 @@ export type Database = {
           id: string
           org_id: string
           post_id: string
+          search_vector: unknown
           updated_at: string
         }
         Insert: {
@@ -187,6 +224,7 @@ export type Database = {
           id?: string
           org_id: string
           post_id: string
+          search_vector?: unknown
           updated_at?: string
         }
         Update: {
@@ -198,6 +236,7 @@ export type Database = {
           id?: string
           org_id?: string
           post_id?: string
+          search_vector?: unknown
           updated_at?: string
         }
         Relationships: [
@@ -484,6 +523,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           org_id: string
+          search_vector: unknown
           updated_at: string
         }
         Insert: {
@@ -494,6 +534,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           org_id: string
+          search_vector?: unknown
           updated_at?: string
         }
         Update: {
@@ -504,6 +545,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           org_id?: string
+          search_vector?: unknown
           updated_at?: string
         }
         Relationships: [
@@ -629,6 +671,67 @@ export type Database = {
           },
         ]
       }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          reason: string
+          reporter_profile_id: string
+          resolved_at: string | null
+          resolved_by_profile_id: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["report_target_type"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          reason: string
+          reporter_profile_id: string
+          resolved_at?: string | null
+          resolved_by_profile_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["report_target_type"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          reason?: string
+          reporter_profile_id?: string
+          resolved_at?: string | null
+          resolved_by_profile_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          target_id?: string
+          target_type?: Database["public"]["Enums"]["report_target_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_profile_id_fkey"
+            columns: ["reporter_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_resolved_by_profile_id_fkey"
+            columns: ["resolved_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_events: {
         Row: {
           created_at: string
@@ -729,6 +832,7 @@ export type Database = {
           id: string
           org_id: string
           post_id: string
+          search_vector: unknown
           updated_at: string
         }
         SetofOptions: {
@@ -748,6 +852,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           org_id: string
+          search_vector: unknown
           updated_at: string
         }
         SetofOptions: {
@@ -762,6 +867,8 @@ export type Database = {
     Enums: {
       invitation_status: "pending" | "accepted" | "revoked"
       membership_role: "member" | "mentor" | "organizer" | "org_owner"
+      report_status: "open" | "escalated" | "resolved"
+      report_target_type: "post" | "comment" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -894,6 +1001,8 @@ export const Constants = {
     Enums: {
       invitation_status: ["pending", "accepted", "revoked"],
       membership_role: ["member", "mentor", "organizer", "org_owner"],
+      report_status: ["open", "escalated", "resolved"],
+      report_target_type: ["post", "comment", "member"],
     },
   },
 } as const
