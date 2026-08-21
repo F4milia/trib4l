@@ -466,6 +466,77 @@ export type Database = {
           },
         ]
       }
+      mentor_pairings: {
+        Row: {
+          activated_at: string | null
+          completed_at: string | null
+          created_at: string
+          declined_at: string | null
+          id: string
+          mentee_profile_id: string | null
+          mentor_profile_id: string | null
+          org_id: string
+          proposed_by_profile_id: string | null
+          status: Database["public"]["Enums"]["mentor_pairing_status"]
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          declined_at?: string | null
+          id?: string
+          mentee_profile_id?: string | null
+          mentor_profile_id?: string | null
+          org_id: string
+          proposed_by_profile_id?: string | null
+          status?: Database["public"]["Enums"]["mentor_pairing_status"]
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          declined_at?: string | null
+          id?: string
+          mentee_profile_id?: string | null
+          mentor_profile_id?: string | null
+          org_id?: string
+          proposed_by_profile_id?: string | null
+          status?: Database["public"]["Enums"]["mentor_pairing_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_pairings_mentee_profile_id_fkey"
+            columns: ["mentee_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_pairings_mentor_profile_id_fkey"
+            columns: ["mentor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_pairings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_pairings_proposed_by_profile_id_fkey"
+            columns: ["proposed_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_profiles: {
         Row: {
           avatar_url: string | null
@@ -1000,6 +1071,24 @@ export type Database = {
         Returns: boolean
       }
       current_user_email: { Args: never; Returns: string }
+      designate_mentor: {
+        Args: { target_org_id: string; target_profile_id: string }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          profile_id: string
+          role: Database["public"]["Enums"]["membership_role"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "memberships"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_org_role: {
         Args: {
           allowed_roles: Database["public"]["Enums"]["membership_role"][]
@@ -1085,6 +1174,7 @@ export type Database = {
     Enums: {
       invitation_status: "pending" | "accepted" | "revoked"
       membership_role: "member" | "mentor" | "organizer" | "org_owner"
+      mentor_pairing_status: "proposed" | "active" | "completed" | "declined"
       report_status: "open" | "escalated" | "resolved"
       report_target_type: "post" | "comment" | "member"
     }
@@ -1219,6 +1309,7 @@ export const Constants = {
     Enums: {
       invitation_status: ["pending", "accepted", "revoked"],
       membership_role: ["member", "mentor", "organizer", "org_owner"],
+      mentor_pairing_status: ["proposed", "active", "completed", "declined"],
       report_status: ["open", "escalated", "resolved"],
       report_target_type: ["post", "comment", "member"],
     },
