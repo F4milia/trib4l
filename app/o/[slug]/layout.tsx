@@ -42,6 +42,9 @@ export default async function OrgLayout({
               <Link href={`/o/${slug}/settings/cohorts`} className={navLinkClass}>
                 Cohorts
               </Link>
+              <Link href={`/o/${slug}/settings/stages`} className={navLinkClass}>
+                Stages
+              </Link>
               <Link href={`/o/${slug}/settings/reports`} className={navLinkClass}>
                 Reports
               </Link>

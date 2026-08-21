@@ -20,6 +20,7 @@ export async function createPost(formData: FormData) {
   const orgId = String(formData.get("org_id") ?? "");
   const orgSlug = String(formData.get("org_slug") ?? "");
   const cohortId = String(formData.get("cohort_id") ?? "") || null;
+  const requiredStageId = String(formData.get("required_stage_id") ?? "") || null;
   const body = String(formData.get("body") ?? "").trim();
 
   if (!body) {
@@ -33,6 +34,7 @@ export async function createPost(formData: FormData) {
   const { error } = await supabase.from("posts").insert({
     org_id: orgId,
     cohort_id: cohortId,
+    required_stage_id: requiredStageId,
     author_profile_id: userData.user!.id,
     body,
   });

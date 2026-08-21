@@ -42,9 +42,17 @@ export default async function OrgHomePage({
     if (myCohortRow?.cohorts) postableCohorts = [myCohortRow.cohorts];
   }
 
+  // Only staff create stages (Session 8), so only staff get to gate a post
+  // behind one -- a regular member has no stages to choose from here.
+  let orgStages: { id: string; name: string }[] = [];
+  if (isStaff) {
+    const { data } = await supabase.from("stages").select("id, name").eq("org_id", orgId).order("sort_order");
+    orgStages = data ?? [];
+  }
+
   const { data: allPosts } = await supabase
     .from("posts")
-    .select("id, body, created_at, cohort_id, author_profile_id, profiles(display_name), cohorts(name)")
+    .select("id, body, created_at, cohort_id, author_profile_id, profiles(display_name), cohorts(name), stages(name)")
     .eq("org_id", orgId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -104,15 +112,27 @@ export default async function OrgHomePage({
             placeholder="Share something with the community..."
             className="w-full rounded-md border border-line bg-white px-3 py-2 text-ink placeholder:text-ink-soft focus:border-primary focus:outline-none"
           />
-          <div className="flex items-center justify-between">
-            <Select name="cohort_id" defaultValue="" className="max-w-56">
-              <option value="">Org-wide</option>
-              {postableCohorts.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex gap-3">
+              <Select name="cohort_id" defaultValue="" className="max-w-56">
+                <option value="">Org-wide</option>
+                {postableCohorts.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+              {isStaff && orgStages.length > 0 && (
+                <Select name="required_stage_id" defaultValue="" className="max-w-56">
+                  <option value="">No stage gate</option>
+                  {orgStages.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      Requires: {s.name}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </div>
             <Button type="submit">Post</Button>
           </div>
         </form>
@@ -128,6 +148,7 @@ export default async function OrgHomePage({
                 <span>
                   {post.profiles?.display_name}
                   {post.cohorts ? ` · ${post.cohorts.name}` : ""}
+                  {post.stages ? ` · 🔒 ${post.stages.name}` : ""}
                 </span>
                 <span>{new Date(post.created_at).toLocaleString()}</span>
               </div>

@@ -15,7 +15,8 @@ Stripe Connect for commerce, Mux for video, Sentry for errors.
   per direct instruction — see that file),
   [`docs/session-5-checklist.md`](./docs/session-5-checklist.md),
   [`docs/session-6-checklist.md`](./docs/session-6-checklist.md),
-  [`docs/session-7-checklist.md`](./docs/session-7-checklist.md)
+  [`docs/session-7-checklist.md`](./docs/session-7-checklist.md),
+  [`docs/session-8-checklist.md`](./docs/session-8-checklist.md)
 - Data retention policy: [`docs/data-retention-policy.md`](./docs/data-retention-policy.md)
 - Design system: [`docs/design-system.md`](./docs/design-system.md)
 

@@ -212,6 +212,7 @@ export type Database = {
           id: string
           org_id: string
           post_id: string
+          required_stage_id: string | null
           search_vector: unknown
           updated_at: string
         }
@@ -224,6 +225,7 @@ export type Database = {
           id?: string
           org_id: string
           post_id: string
+          required_stage_id?: string | null
           search_vector?: unknown
           updated_at?: string
         }
@@ -236,6 +238,7 @@ export type Database = {
           id?: string
           org_id?: string
           post_id?: string
+          required_stage_id?: string | null
           search_vector?: unknown
           updated_at?: string
         }
@@ -266,6 +269,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_required_stage_id_fkey"
+            columns: ["required_stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
             referencedColumns: ["id"]
           },
         ]
@@ -358,6 +368,55 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_stages: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          profile_id: string
+          stage_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id: string
+          profile_id: string
+          stage_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id?: string
+          profile_id?: string
+          stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_stages_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_stages_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_stages_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
             referencedColumns: ["id"]
           },
         ]
@@ -523,6 +582,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           org_id: string
+          required_stage_id: string | null
           search_vector: unknown
           updated_at: string
         }
@@ -534,6 +594,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           org_id: string
+          required_stage_id?: string | null
           search_vector?: unknown
           updated_at?: string
         }
@@ -545,6 +606,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           org_id?: string
+          required_stage_id?: string | null
           search_vector?: unknown
           updated_at?: string
         }
@@ -568,6 +630,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_required_stage_id_fkey"
+            columns: ["required_stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
             referencedColumns: ["id"]
           },
         ]
@@ -612,6 +681,7 @@ export type Database = {
           post_id: string | null
           profile_id: string
           reaction_type: string
+          required_stage_id: string | null
         }
         Insert: {
           cohort_id?: string | null
@@ -622,6 +692,7 @@ export type Database = {
           post_id?: string | null
           profile_id: string
           reaction_type?: string
+          required_stage_id?: string | null
         }
         Update: {
           cohort_id?: string | null
@@ -632,6 +703,7 @@ export type Database = {
           post_id?: string | null
           profile_id?: string
           reaction_type?: string
+          required_stage_id?: string | null
         }
         Relationships: [
           {
@@ -667,6 +739,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reactions_required_stage_id_fkey"
+            columns: ["required_stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
             referencedColumns: ["id"]
           },
         ]
@@ -728,6 +807,110 @@ export type Database = {
             columns: ["resolved_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stage_transitions: {
+        Row: {
+          created_at: string
+          from_stage_id: string | null
+          id: string
+          org_id: string
+          profile_id: string
+          to_stage_id: string
+          transitioned_by_profile_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          from_stage_id?: string | null
+          id?: string
+          org_id: string
+          profile_id: string
+          to_stage_id: string
+          transitioned_by_profile_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          from_stage_id?: string | null
+          id?: string
+          org_id?: string
+          profile_id?: string
+          to_stage_id?: string
+          transitioned_by_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stage_transitions_from_stage_id_fkey"
+            columns: ["from_stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stage_transitions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stage_transitions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stage_transitions_to_stage_id_fkey"
+            columns: ["to_stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stage_transitions_transitioned_by_profile_id_fkey"
+            columns: ["transitioned_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stages: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          name: string
+          org_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          org_id: string
+          sort_order: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stages_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -804,6 +987,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      can_see_gated_content: {
+        Args: {
+          check_cohort_id: string
+          check_org_id: string
+          check_required_stage_id: string
+        }
+        Returns: boolean
+      }
       can_see_org_cohort_content: {
         Args: { check_cohort_id: string; check_org_id: string }
         Returns: boolean
@@ -814,6 +1005,10 @@ export type Database = {
           allowed_roles: Database["public"]["Enums"]["membership_role"][]
           check_org_id: string
         }
+        Returns: boolean
+      }
+      is_at_or_past_stage: {
+        Args: { check_org_id: string; check_required_stage_id: string }
         Returns: boolean
       }
       is_in_cohort: { Args: { check_cohort_id: string }; Returns: boolean }
@@ -832,6 +1027,7 @@ export type Database = {
           id: string
           org_id: string
           post_id: string
+          required_stage_id: string | null
           search_vector: unknown
           updated_at: string
         }
@@ -852,6 +1048,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           org_id: string
+          required_stage_id: string | null
           search_vector: unknown
           updated_at: string
         }
@@ -863,6 +1060,27 @@ export type Database = {
         }
       }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
+      transition_member_stage: {
+        Args: {
+          target_org_id: string
+          target_profile_id: string
+          target_stage_id: string
+        }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          profile_id: string
+          stage_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "member_stages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       invitation_status: "pending" | "accepted" | "revoked"
