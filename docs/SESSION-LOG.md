@@ -175,3 +175,153 @@
 
 **Session ended:** August 21, 2026, 05:42 UTC  
 **All work pushed to GitHub:** https://github.com/F4milia/trib4l
+
+---
+
+## Session 8 (completion) + Session 9: Content Gating Fix and Mentorship
+
+**Date:** August 21, 2026 (UTC)
+**Model:** Claude Sonnet 5
+**Status:** Complete and pushed to GitHub and to hosted Supabase (staging + production)
+
+---
+
+## What was completed
+
+### Session 8 (in progress at session start): a real RLS bug found and fixed
+
+Session 8 itself (stages, progression, and content gating) had already been
+built earlier; this session picked up mid-debugging on a failing isolation
+test.
+
+1. **Root cause found:** `posts_select` (and the equivalent
+   `comments_select`/`reactions_select`) ANDed
+   `is_at_or_past_stage(org_id, required_stage_id)` directly onto Session
+   6's `can_see_org_cohort_content(org_id, cohort_id)`. That helper's staff
+   bypass (`organizer`/`org_owner`/`platform_admin` see everything) only
+   covered cohort scoping — the raw `AND` re-imposed the stage gate on
+   staff too. Concretely: an organizer with no personal stage got a
+   `42501` RLS error inserting *their own* gated post, because Postgres
+   checks `INSERT ... RETURNING` against the table's `SELECT` policy.
+   Diagnosed by evaluating each disjunct of the policy independently via
+   RPC (`has_org_role` true, `is_at_or_past_stage` false) and reasoning
+   through Postgres's `RETURNING` behavior, not by guessing.
+2. **Fix:** replaced the two-helper `AND` pattern with one combined
+   function, `can_see_gated_content(org_id, cohort_id, required_stage_id)`,
+   applying the staff bypass once, across cohort and stage together, used
+   by all six affected policies.
+3. Re-ran the full isolation suite (38 tests, all passing), ran the
+   escalation ritual (loosened `posts_select`, confirmed the specific test
+   failed loudly with the real visible row printed, restored), then built
+   and manually verified the Session 8 UI end-to-end with real accounts
+   through the dev server: a stages management page, a stage-gate selector
+   on the post form, and a live confirmation that a plain member below the
+   gate can't see a post, gains access after being moved to the required
+   stage, and the organizer author sees it throughout despite having no
+   stage themselves.
+4. A methodology snag along the way (not a real bug): a manual check
+   against seeded Alice appeared to show the gate failing, because an
+   earlier full isolation-suite run had durably promoted her role in the
+   same shared local database. Resolved by resetting to clean seed data
+   before redoing the manual pass.
+5. Wrote `docs/session-8-checklist.md`, pushed both new migrations to
+   `trib4l-staging` and `trib4l-production`, committed and pushed.
+
+### Session 9: Mentorship — designation, pairing, and lifecycle
+
+1. **`designate_mentor(target_org_id, target_profile_id)`** — the
+   plan's explicit "member → mentor transition," not a bare role edit.
+   Writes an `audit_log` entry in the same transaction as the role change.
+   Restricted to promoting a plain `'member'`; gated to `org_owner`
+   specifically, reusing a Session 2 policy (`memberships_update`) rather
+   than granting anything new — `'mentor'` had existed as a
+   `membership_role` since the original schema but had never been checked
+   by any policy before this.
+2. **`mentor_pairings`** table — `proposed → active → completed`, plus a
+   `declined` exit from `proposed`. A partial unique index enforces at
+   most one live (`proposed` or `active`) pairing per mentee per org;
+   nothing constrains the mentor side. Profile references are nullable
+   with `on delete set null` (not cascade), matching the data retention
+   policy's requirement that pairing history survive either party's
+   deletion request.
+3. **Lifecycle rules live in a trigger, not an RPC** — a deliberate
+   departure from Sessions 5/8's assign/transition RPC pattern. A status
+   change is a single `UPDATE`, so a plain `.update({ status })` suffices
+   once `check_mentor_pairing_transition` (a `BEFORE UPDATE` trigger)
+   enforces a caller-specific state machine that a single RLS boolean
+   expression can't express cleanly: only the mentor can accept
+   (`proposed → active`); the mentor, mentee, or staff can decline or
+   complete; anything else is rejected outright. RLS's own
+   `mentor_pairings_update` policy is deliberately only a coarse
+   "you're a party or you're staff" gate.
+4. 7 new isolation tests (`tests/isolation/mentorship.test.ts`), taking
+   the suite to 45 total. One test's first draft assumed a blocked update
+   would come back as a silent empty result (matching Session 8's gating
+   tests); running it revealed the real behavior instead — the mentee and
+   staff both pass RLS's coarse gate, so the trigger's explicit exception
+   is what blocks them, a real error rather than a silent exclusion. Fixed
+   the assertions to match reality once observed.
+5. Escalation ritual run and confirmed: a loosened trigger made the
+   right two tests fail loudly with the real (missing) errors shown;
+   restoring brought all 45 back.
+6. UI: a staff settings page (`/o/[slug]/settings/mentorship` — designate
+   a mentor, propose a pairing, staff-level decline/complete controls) and
+   a member-facing page (`/o/[slug]/mentorship` — your own pairings, with
+   whichever actions your role and the pairing's status actually permit).
+   One shared server action handles every transition on both pages; the
+   trigger, not the action, decides who's allowed to do what.
+7. Manually verified the full lifecycle end-to-end with real accounts
+   through the dev server: invited two fresh members via the real invite
+   flow, designated one as a mentor through the real form (confirmed the
+   `audit_log` row directly), proposed a pairing, had the mentor accept it
+   from her own page, had the mentee mark it complete from his, and
+   confirmed an uninvolved third member's own mentorship page stayed
+   empty throughout.
+8. Wrote `docs/session-9-checklist.md`, pushed both new migrations to
+   `trib4l-staging` and `trib4l-production`, committed and pushed.
+
+**Done criteria met:** both sessions' schema + RLS + triggers verified
+against a real local Postgres via the isolation suite (45/45 passing),
+the escalation-test ritual re-confirmed for each session's new policies,
+UI built and manually driven through the real dev server rather than
+merely typechecked, and both sessions' migrations live on staging and
+production.
+
+---
+
+## Commits pushed this session
+
+| Commit | Message |
+|---|---|
+| 2e1a61a | Session 8: stages, transitions, and content gating |
+| 191f8b4 | Session 9: mentorship -- designation, pairing, and lifecycle |
+
+---
+
+## Notes for future reference
+
+- **RLS bugs can hide behind a helper function's own bypass logic** — a
+  policy that ANDs a new check onto an existing helper doesn't inherit
+  that helper's staff bypass unless the bypass is re-applied at the same
+  level. The Session 8 bug is the concrete example: fix by consolidating
+  into one function that applies the bypass once, rather than layering
+  checks with a raw `AND`.
+- **`INSERT ... RETURNING` is checked against the table's `SELECT`
+  policy, not just its `INSERT` policy** — this is what turned a
+  select-policy bug into an insert-time error and made it initially look
+  like the `INSERT` policy itself was wrong.
+- **A state machine with a different allowed caller per edge belongs in a
+  trigger, not an RPC or a single RLS expression** — Session 9's mentor
+  pairing lifecycle is the concrete example; Sessions 5/8's RPCs existed
+  for atomicity across multiple writes, which doesn't apply to a
+  single-statement status change.
+- **Shared local isolation-test database state keeps causing manual
+  verification confusion** — recurring across Sessions 6, 7, 8, and 9 now.
+  Always run `supabase db reset` (not just `test:isolation`, which resets
+  once but then leaves test-mutated state behind) immediately before any
+  manual UI walkthrough that uses seeded accounts.
+
+---
+
+**Session ended:** August 21, 2026, 22:00 UTC
+**All work pushed to GitHub:** https://github.com/F4milia/trib4l
