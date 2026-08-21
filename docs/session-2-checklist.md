@@ -28,10 +28,12 @@ Tracks progress against the Session 2 acceptance criteria in
   membership *and* `aal2` (`auth.jwt()->>'aal' = 'aal2'`) — a platform_staff
   account signed in with just a password (aal1) does not get the bypass.
   Enabled `[auth.mfa.totp]` in `supabase/config.toml` (off by default in a
-  fresh `supabase init`). **Flagged for hosted environments:** the config
-  file's own comment says MFA is a Supabase Pro-plan feature — confirm
-  `trib4l-staging`/`trib4l-production`'s plan actually supports it before
-  relying on this outside local dev.
+  fresh `supabase init`). **Checked against the hosted project:** the
+  config file's own comment warns MFA is a Supabase Pro-plan feature, but
+  `trib4l-staging`'s dashboard (Authentication → Multi-Factor) shows TOTP
+  already "Enabled" with no upgrade prompt — confirmed directly in the UI,
+  not assumed. Worth a quick same check on `trib4l-production` for
+  consistency, but no blocker expected.
 - [x] **Audit logging for `platform_admin` reads is app-level, not
   DB-level** — this was a deliberate choice, confirmed with you rather than
   assumed: Postgres RLS has no hook to log a SELECT as it happens, so
@@ -100,9 +102,8 @@ reset step.
 - **Cohort-scoped RLS.** Cohorts don't exist until Session 5; today's
   policies are org-scoped only. Session 5 needs to layer cohort visibility
   under the org scoping these policies already provide, not replace it.
-- **Confirming the hosted Supabase plan supports MFA.** Local dev doesn't
-  care about plan tiers; `trib4l-staging`/`trib4l-production` do. Check
-  before Session 3 onboarding work assumes platform_staff 2FA works there.
+- **Confirming `trib4l-production`'s plan supports MFA** the same way
+  `trib4l-staging` was checked (see above) — likely fine, not yet verified.
 - **Pushing this schema to `trib4l-staging`/`trib4l-production`.** Still
   local-only, same as Session 1 left it. `supabase link` + `supabase db
   push` when ready.
