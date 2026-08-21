@@ -10,29 +10,35 @@ insert into organizations (id, slug, name) values
 -- auth.users rows, seeded directly (local/staging only — this bypasses the
 -- normal signup flow on purpose). Every row here gets a profiles row for
 -- free via the handle_new_user trigger from the previous migration.
+-- email_change/email_change_token_*/phone_change* default to NULL, but
+-- GoTrue's Go driver can't scan a NULL into the string fields it expects --
+-- signInWithPassword fails with "Database error querying schema" until
+-- these are explicitly empty strings, not just confirmation/recovery_token.
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-  confirmation_token, recovery_token
+  confirmation_token, recovery_token, email_change, email_change_token_new,
+  email_change_token_current, phone_change, phone_change_token,
+  reauthentication_token
 ) values
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a1',
    'authenticated', 'authenticated', 'alice@trib4l.test', crypt('password123', gen_salt('bf')),
-   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Alice"}', now(), now(), '', ''),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Alice"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a2',
    'authenticated', 'authenticated', 'bob@trib4l.test', crypt('password123', gen_salt('bf')),
-   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Bob"}', now(), now(), '', ''),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Bob"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a3',
    'authenticated', 'authenticated', 'carol@trib4l.test', crypt('password123', gen_salt('bf')),
-   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Carol"}', now(), now(), '', ''),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Carol"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a4',
    'authenticated', 'authenticated', 'dave@trib4l.test', crypt('password123', gen_salt('bf')),
-   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Dave"}', now(), now(), '', ''),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Dave"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a5',
    'authenticated', 'authenticated', 'erin@trib4l.test', crypt('password123', gen_salt('bf')),
-   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Erin"}', now(), now(), '', ''),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Erin"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a6',
    'authenticated', 'authenticated', 'frank@trib4l.test', crypt('password123', gen_salt('bf')),
-   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Frank"}', now(), now(), '', '');
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Frank"}', now(), now(), '', '', '', '', '', '', '', '');
 
 -- Alice is the overlapping user: a member of Caregiver Circle and a mentor
 -- in Founder Collective, with a different display name in each — proves

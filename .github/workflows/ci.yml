@@ -36,3 +36,25 @@ jobs:
       # not just on whatever state a dev's local instance happens to be in.
       - run: supabase start
       - run: supabase db reset
+
+  isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # `npm run test:isolation` itself runs `supabase db reset` before the
+      # tests -- see package.json. It signs in as the seeded users and
+      # exercises RLS for real: cross-org reads, role-escalation attempts,
+      # and the platform_admin MFA-gated bypass. This is the isolation
+      # suite the plan calls "the deliverable" for this session.
+      # (Uses `npx` rather than supabase/setup-cli here so it resolves the
+      # exact devDependency version npm ci just installed, not "latest".)
+      - run: npx supabase start
+      - run: npm run test:isolation

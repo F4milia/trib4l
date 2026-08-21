@@ -299,9 +299,13 @@ auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
+# Enabled because Invariant 3 requires 2FA on every platform_staff account.
+# Note the file's own comment above: MFA is a Supabase Pro-plan feature on
+# hosted projects -- confirm trib4l-staging/production are on a plan that
+# supports it before relying on this in those environments.
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]

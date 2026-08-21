@@ -6,7 +6,8 @@ Stripe Connect for commerce, Mux for video, Sentry for errors.
 - Build plan: [`docs/trib4l-build-from-zero.md`](./docs/trib4l-build-from-zero.md)
 - Revenue model & mentor compensation: [`docs/revenue-model-and-mentor-compensation.md`](./docs/revenue-model-and-mentor-compensation.md)
 - Session status: [`docs/session-0-checklist.md`](./docs/session-0-checklist.md),
-  [`docs/session-1-checklist.md`](./docs/session-1-checklist.md)
+  [`docs/session-1-checklist.md`](./docs/session-1-checklist.md),
+  [`docs/session-2-checklist.md`](./docs/session-2-checklist.md)
 - Data retention policy: [`docs/data-retention-policy.md`](./docs/data-retention-policy.md)
 
 Note: the site is being renamed Trib4l → **F4milia**. Not yet applied to
@@ -29,4 +30,6 @@ npm run dev
 - `npm run build` — production build
 - `npm run lint` — ESLint
 - `npm run typecheck` — `tsc --noEmit`
-- `npm test` — Vitest
+- `npm test` — Vitest (fast, mocked, no DB needed)
+- `npm run test:isolation` — RLS isolation suite against a real local
+  Supabase instance (resets the local DB first; needs Docker running)

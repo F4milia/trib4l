@@ -8,6 +8,10 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
+    // Isolation tests need a live local Supabase instance (Docker) and run
+    // under their own config/CI job -- keep them out of the fast default
+    // suite so `npm test` never requires Docker.
+    exclude: ["**/node_modules/**", "tests/isolation/**"],
   },
   resolve: {
     alias: {
