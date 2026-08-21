@@ -166,6 +166,71 @@ export type Database = {
           },
         ]
       }
+      comments: {
+        Row: {
+          author_profile_id: string
+          body: string
+          cohort_id: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_profile_id: string
+          body: string
+          cohort_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id: string
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_profile_id?: string
+          body?: string
+          cohort_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id?: string
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idempotency_keys: {
         Row: {
           completed_at: string | null
@@ -410,6 +475,61 @@ export type Database = {
           },
         ]
       }
+      posts: {
+        Row: {
+          author_profile_id: string
+          body: string
+          cohort_id: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_profile_id: string
+          body: string
+          cohort_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_profile_id?: string
+          body?: string
+          cohort_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -439,6 +559,75 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reactions: {
+        Row: {
+          cohort_id: string | null
+          comment_id: string | null
+          created_at: string
+          id: string
+          org_id: string
+          post_id: string | null
+          profile_id: string
+          reaction_type: string
+        }
+        Insert: {
+          cohort_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          org_id: string
+          post_id?: string | null
+          profile_id: string
+          reaction_type?: string
+        }
+        Update: {
+          cohort_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          org_id?: string
+          post_id?: string | null
+          profile_id?: string
+          reaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reactions_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reactions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reactions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       webhook_events: {
         Row: {
@@ -512,6 +701,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      can_see_org_cohort_content: {
+        Args: { check_cohort_id: string; check_org_id: string }
+        Returns: boolean
+      }
       current_user_email: { Args: never; Returns: string }
       has_org_role: {
         Args: {
@@ -525,6 +718,45 @@ export type Database = {
       is_platform_admin: { Args: never; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }
       is_valid_iana_timezone: { Args: { tz: string }; Returns: boolean }
+      moderate_comment: {
+        Args: { reason?: string; target_comment_id: string }
+        Returns: {
+          author_profile_id: string
+          body: string
+          cohort_id: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          post_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "comments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      moderate_post: {
+        Args: { reason?: string; target_post_id: string }
+        Returns: {
+          author_profile_id: string
+          body: string
+          cohort_id: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
     }
     Enums: {
