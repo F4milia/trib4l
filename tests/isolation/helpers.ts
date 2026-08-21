@@ -36,6 +36,21 @@ export async function signInAs(user: { email: string; password: string }): Promi
 }
 
 /**
+ * Signs up a brand-new account with no memberships at all. Useful for
+ * tests that need a person guaranteed not to have been touched by another
+ * test file's side effects -- seeded users' roles can be mutated by
+ * whichever test runs first in a given suite execution (e.g. an
+ * invitations test that promotes Alice to organizer), since all isolation
+ * test files share one database within a single `db reset`.
+ */
+export async function signUpNewUser(email: string): Promise<SupabaseClient<Database>> {
+  const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { error } = await client.auth.signUp({ email, password: "password123" });
+  if (error) throw new Error(`signUp failed for ${email}: ${error.message}`);
+  return client;
+}
+
+/**
  * Enrolls TOTP MFA on an already-signed-in client and verifies it,
  * elevating the session from aal1 to aal2 -- exactly the step a real
  * platform_admin login would require, done here via the API so it's

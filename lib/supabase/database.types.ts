@@ -82,6 +82,90 @@ export type Database = {
           },
         ]
       }
+      cohort_members: {
+        Row: {
+          cohort_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          profile_id: string
+        }
+        Insert: {
+          cohort_id: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id: string
+          profile_id: string
+        }
+        Update: {
+          cohort_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_members_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cohorts: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          name: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohorts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idempotency_keys: {
         Row: {
           completed_at: string | null
@@ -407,6 +491,27 @@ export type Database = {
         }
       }
       am_i_platform_admin: { Args: never; Returns: boolean }
+      assign_member_to_cohort: {
+        Args: {
+          target_cohort_id: string
+          target_org_id: string
+          target_profile_id: string
+        }
+        Returns: {
+          cohort_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          profile_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cohort_members"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_user_email: { Args: never; Returns: string }
       has_org_role: {
         Args: {
@@ -415,6 +520,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_in_cohort: { Args: { check_cohort_id: string }; Returns: boolean }
       is_org_member: { Args: { check_org_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }

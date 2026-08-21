@@ -1,18 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createClient } from "@supabase/supabase-js";
-import { ORG_IDS, SEEDED_USERS, signInAs } from "./helpers";
-
-const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://127.0.0.1:54321";
-const SUPABASE_ANON_KEY =
-  process.env.SUPABASE_ANON_KEY ??
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
-
-async function signUpNewUser(email: string) {
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { error } = await client.auth.signUp({ email, password: "password123" });
-  if (error) throw new Error(`signUp failed for ${email}: ${error.message}`);
-  return client;
-}
+import { ORG_IDS, SEEDED_USERS, signInAs, signUpNewUser } from "./helpers";
 
 describe("invitations", () => {
   it("a non-staff member cannot create an invitation for their org", async () => {

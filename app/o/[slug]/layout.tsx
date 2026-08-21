@@ -34,6 +34,8 @@ export default async function OrgLayout({
           <>
             {" | "}
             <Link href={`/o/${slug}/settings/members`}>Members</Link>
+            {" | "}
+            <Link href={`/o/${slug}/settings/cohorts`}>Cohorts</Link>
           </>
         )}
         {" | "}
