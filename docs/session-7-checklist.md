@@ -82,6 +82,12 @@ bar as prior sessions applied here.
     matching blocking's global design) — confirmed unblocking makes the
     person's posts reappear.
 
+## Pushed to hosted Supabase
+
+All three new migrations pushed to `trib4l-staging` and
+`trib4l-production`. CLI left linked to staging afterward, same safety
+practice as prior sessions.
+
 ## Not done in Session 7 — explicitly out of scope here
 
 - **Blocking a person doesn't hide their reactions or prevent them from
