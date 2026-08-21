@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { PageHeading } from "@/components/ui";
 
 export default async function OrgHomePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -10,9 +11,9 @@ export default async function OrgHomePage({ params }: { params: Promise<{ slug: 
     .single();
 
   return (
-    <main>
-      <h1>{org?.name}</h1>
-      <p>Welcome. Community features land in later sessions.</p>
+    <main className="mx-auto max-w-4xl px-4 py-10 space-y-2">
+      <PageHeading>{org?.name}</PageHeading>
+      <p className="text-ink-soft">Welcome. Community features land in later sessions.</p>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createCohort, assignToCohort } from "@/app/actions/cohorts";
+import { Button, Card, ErrorText, Input, Label, PageHeading, Select } from "@/components/ui";
 
 export default async function CohortsSettingsPage({
   params,
@@ -41,64 +42,66 @@ export default async function CohortsSettingsPage({
   const cohortNameById = new Map((cohorts ?? []).map((c) => [c.id, c.name]));
 
   return (
-    <main>
-      <h1>Cohorts</h1>
-      {error ? <p role="alert">{error}</p> : null}
+    <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
+      <PageHeading>Cohorts</PageHeading>
+      {error ? <ErrorText>{error}</ErrorText> : null}
 
-      <section>
-        <h2>Existing cohorts</h2>
+      <Card>
+        <h2 className="mb-3 text-xl">Existing cohorts</h2>
         {cohorts?.length ? (
-          <ul>
+          <ul className="divide-y divide-line">
             {cohorts.map((c) => (
-              <li key={c.id}>{c.name}</li>
+              <li key={c.id} className="py-2">
+                {c.name}
+              </li>
             ))}
           </ul>
         ) : (
-          <p>None yet.</p>
+          <p className="text-ink-soft">None yet.</p>
         )}
-      </section>
+      </Card>
 
-      <section>
-        <h2>Create a cohort</h2>
-        <form action={createCohort}>
+      <Card>
+        <h2 className="mb-3 text-xl">Create a cohort</h2>
+        <form action={createCohort} className="flex items-end gap-3">
           <input type="hidden" name="org_id" value={currentOrg.org_id} />
           <input type="hidden" name="org_slug" value={slug} />
-          <label>
-            Name
-            <input type="text" name="name" required />
-          </label>
-          <button type="submit">Create</button>
+          <div className="flex-1">
+            <Label htmlFor="cohort-name">Name</Label>
+            <Input type="text" name="name" id="cohort-name" required />
+          </div>
+          <Button type="submit">Create</Button>
         </form>
-      </section>
+      </Card>
 
-      <section>
-        <h2>Assign members</h2>
+      <Card>
+        <h2 className="mb-3 text-xl">Assign members</h2>
         {!cohorts?.length ? (
-          <p>Create a cohort first.</p>
+          <p className="text-ink-soft">Create a cohort first.</p>
         ) : (
-          <table>
+          <table className="w-full text-left text-sm">
             <thead>
-              <tr>
-                <th>Member</th>
-                <th>Current cohort</th>
-                <th>Move to</th>
+              <tr className="border-b border-line text-ink-soft">
+                <th className="py-2 font-medium">Member</th>
+                <th className="py-2 font-medium">Current cohort</th>
+                <th className="py-2 font-medium">Move to</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-line">
               {members?.map((m) => (
                 <tr key={m.profile_id}>
-                  <td>{m.profiles?.display_name}</td>
-                  <td>
+                  <td className="py-2">{m.profiles?.display_name}</td>
+                  <td className="py-2 text-ink-soft">
                     {cohortByProfile.has(m.profile_id)
                       ? cohortNameById.get(cohortByProfile.get(m.profile_id)!) ?? "—"
                       : "—"}
                   </td>
-                  <td>
-                    <form action={assignToCohort}>
+                  <td className="py-2">
+                    <form action={assignToCohort} className="flex items-center gap-2">
                       <input type="hidden" name="org_id" value={currentOrg.org_id} />
                       <input type="hidden" name="org_slug" value={slug} />
                       <input type="hidden" name="profile_id" value={m.profile_id} />
-                      <select name="cohort_id" defaultValue="">
+                      <Select name="cohort_id" defaultValue="" className="max-w-40">
                         <option value="" disabled>
                           Choose a cohort
                         </option>
@@ -107,8 +110,8 @@ export default async function CohortsSettingsPage({
                             {c.name}
                           </option>
                         ))}
-                      </select>
-                      <button type="submit">Assign</button>
+                      </Select>
+                      <Button type="submit">Assign</Button>
                     </form>
                   </td>
                 </tr>
@@ -116,7 +119,7 @@ export default async function CohortsSettingsPage({
             </tbody>
           </table>
         )}
-      </section>
+      </Card>
     </main>
   );
 }

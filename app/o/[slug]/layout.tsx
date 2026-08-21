@@ -24,24 +24,31 @@ export default async function OrgLayout({
     redirect("/");
   }
 
+  const navLinkClass = "text-white/80 hover:text-white text-sm";
+
   return (
-    <div>
-      <nav>
-        <OrgSwitcher current={slug} orgs={orgs.map((o) => ({ slug: o.slug, name: o.name }))} />
-        {" | "}
-        <Link href={`/o/${slug}`}>Home</Link>
-        {(currentOrg.role === "organizer" || currentOrg.role === "org_owner") && (
-          <>
-            {" | "}
-            <Link href={`/o/${slug}/settings/members`}>Members</Link>
-            {" | "}
-            <Link href={`/o/${slug}/settings/cohorts`}>Cohorts</Link>
-          </>
-        )}
-        {" | "}
-        <Link href="/">All communities</Link>
+    <div className="min-h-screen">
+      <nav className="bg-primary-dark px-4 py-3">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-4">
+          <OrgSwitcher current={slug} orgs={orgs.map((o) => ({ slug: o.slug, name: o.name }))} />
+          <Link href={`/o/${slug}`} className={navLinkClass}>
+            Home
+          </Link>
+          {(currentOrg.role === "organizer" || currentOrg.role === "org_owner") && (
+            <>
+              <Link href={`/o/${slug}/settings/members`} className={navLinkClass}>
+                Members
+              </Link>
+              <Link href={`/o/${slug}/settings/cohorts`} className={navLinkClass}>
+                Cohorts
+              </Link>
+            </>
+          )}
+          <Link href="/" className={`${navLinkClass} ml-auto`}>
+            All communities
+          </Link>
+        </div>
       </nav>
-      <hr />
       {children}
     </div>
   );

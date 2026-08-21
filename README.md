@@ -15,6 +15,7 @@ Stripe Connect for commerce, Mux for video, Sentry for errors.
   per direct instruction — see that file),
   [`docs/session-5-checklist.md`](./docs/session-5-checklist.md)
 - Data retention policy: [`docs/data-retention-policy.md`](./docs/data-retention-policy.md)
+- Design system: [`docs/design-system.md`](./docs/design-system.md)
 
 Renamed Trib4l → **F4milia** as of Session 3: package name, seed data, and
 all UI copy use F4milia now. The GitHub repo, Vercel project, and Supabase

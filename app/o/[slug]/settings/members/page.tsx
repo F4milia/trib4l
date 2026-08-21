@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createInvitation, revokeInvitation } from "@/app/actions/invitations";
+import { Button, Card, ErrorText, Input, Label, PageHeading, Select } from "@/components/ui";
 
 export default async function MembersSettingsPage({
   params,
@@ -33,62 +34,67 @@ export default async function MembersSettingsPage({
     .order("created_at");
 
   return (
-    <main>
-      <h1>Members</h1>
-      {error ? <p role="alert">{error}</p> : null}
+    <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
+      <PageHeading>Members</PageHeading>
+      {error ? <ErrorText>{error}</ErrorText> : null}
 
-      <section>
-        <h2>Current members</h2>
-        <ul>
+      <Card>
+        <h2 className="mb-3 text-xl">Current members</h2>
+        <ul className="divide-y divide-line">
           {members?.map((m, i) => (
-            <li key={i}>
-              {m.profiles?.display_name} — {m.role}
+            <li key={i} className="flex items-center justify-between py-2">
+              <span>{m.profiles?.display_name}</span>
+              <span className="text-sm text-ink-soft">{m.role}</span>
             </li>
           ))}
         </ul>
-      </section>
+      </Card>
 
-      <section>
-        <h2>Pending invitations</h2>
+      <Card>
+        <h2 className="mb-3 text-xl">Pending invitations</h2>
         {invitations?.length ? (
-          <ul>
+          <ul className="divide-y divide-line">
             {invitations.map((inv) => (
-              <li key={inv.id}>
-                {inv.email} — invited as {inv.role}{" "}
-                <form action={revokeInvitation} style={{ display: "inline" }}>
+              <li key={inv.id} className="flex items-center justify-between py-2">
+                <span>
+                  {inv.email} — invited as {inv.role}
+                </span>
+                <form action={revokeInvitation}>
                   <input type="hidden" name="invitation_id" value={inv.id} />
                   <input type="hidden" name="org_slug" value={slug} />
-                  <button type="submit">Revoke</button>
+                  <Button type="submit" variant="danger">
+                    Revoke
+                  </Button>
                 </form>
               </li>
             ))}
           </ul>
         ) : (
-          <p>None.</p>
+          <p className="text-ink-soft">None.</p>
         )}
-      </section>
+      </Card>
 
-      <section>
-        <h2>Invite someone</h2>
-        <form action={createInvitation}>
+      <Card>
+        <h2 className="mb-3 text-xl">Invite someone</h2>
+        <form action={createInvitation} className="space-y-4">
           <input type="hidden" name="org_id" value={currentOrg.org_id} />
           <input type="hidden" name="org_slug" value={slug} />
-          <label>
-            Email
-            <input type="email" name="email" required />
-          </label>
-          <label>
-            Role
-            <select name="role" defaultValue="member">
+          <div>
+            <Label htmlFor="invite-email">Email</Label>
+            <Input type="email" name="email" id="invite-email" required />
+          </div>
+          <div>
+            <Label htmlFor="invite-role">Role</Label>
+            <Select name="role" id="invite-role" defaultValue="member">
               <option value="member">Member</option>
               <option value="mentor">Mentor</option>
               <option value="organizer">Organizer</option>
               {currentOrg.role === "org_owner" && <option value="org_owner">Org owner</option>}
-            </select>
-          </label>
-          <button type="submit">Send invitation</button>
+            </Select>
+          </div>
+          <Button type="submit">Send invitation</Button>
         </form>
-      </section>
+      </Card>
     </main>
   );
 }
