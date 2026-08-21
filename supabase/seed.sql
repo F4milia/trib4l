@@ -22,22 +22,22 @@ insert into auth.users (
   reauthentication_token
 ) values
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a1',
-   'authenticated', 'authenticated', 'alice@trib4l.test', crypt('password123', gen_salt('bf')),
+   'authenticated', 'authenticated', 'alice@trib4l.test', extensions.crypt('password123', extensions.gen_salt('bf')),
    now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Alice"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a2',
-   'authenticated', 'authenticated', 'bob@trib4l.test', crypt('password123', gen_salt('bf')),
+   'authenticated', 'authenticated', 'bob@trib4l.test', extensions.crypt('password123', extensions.gen_salt('bf')),
    now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Bob"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a3',
-   'authenticated', 'authenticated', 'carol@trib4l.test', crypt('password123', gen_salt('bf')),
+   'authenticated', 'authenticated', 'carol@trib4l.test', extensions.crypt('password123', extensions.gen_salt('bf')),
    now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Carol"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a4',
-   'authenticated', 'authenticated', 'dave@trib4l.test', crypt('password123', gen_salt('bf')),
+   'authenticated', 'authenticated', 'dave@trib4l.test', extensions.crypt('password123', extensions.gen_salt('bf')),
    now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Dave"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a5',
-   'authenticated', 'authenticated', 'erin@trib4l.test', crypt('password123', gen_salt('bf')),
+   'authenticated', 'authenticated', 'erin@trib4l.test', extensions.crypt('password123', extensions.gen_salt('bf')),
    now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Erin"}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a6',
-   'authenticated', 'authenticated', 'frank@trib4l.test', crypt('password123', gen_salt('bf')),
+   'authenticated', 'authenticated', 'frank@trib4l.test', extensions.crypt('password123', extensions.gen_salt('bf')),
    now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Frank"}', now(), now(), '', '', '', '', '', '', '', '');
 
 -- Alice is the overlapping user: a member of Caregiver Circle and a mentor
