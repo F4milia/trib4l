@@ -120,6 +120,60 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by_profile_id: string
+          org_id: string
+          role: Database["public"]["Enums"]["membership_role"]
+          status: Database["public"]["Enums"]["invitation_status"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by_profile_id: string
+          org_id: string
+          role?: Database["public"]["Enums"]["membership_role"]
+          status?: Database["public"]["Enums"]["invitation_status"]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by_profile_id?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["membership_role"]
+          status?: Database["public"]["Enums"]["invitation_status"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_invited_by_profile_id_fkey"
+            columns: ["invited_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memberships: {
         Row: {
           created_at: string
@@ -334,9 +388,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: {
+        Args: { invitation_token: string }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          profile_id: string
+          role: Database["public"]["Enums"]["membership_role"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "memberships"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      am_i_platform_admin: { Args: never; Returns: boolean }
+      current_user_email: { Args: never; Returns: string }
+      has_org_role: {
+        Args: {
+          allowed_roles: Database["public"]["Enums"]["membership_role"][]
+          check_org_id: string
+        }
+        Returns: boolean
+      }
+      is_org_member: { Args: { check_org_id: string }; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
+      is_platform_staff: { Args: never; Returns: boolean }
       is_valid_iana_timezone: { Args: { tz: string }; Returns: boolean }
+      shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
     }
     Enums: {
+      invitation_status: "pending" | "accepted" | "revoked"
       membership_role: "member" | "mentor" | "organizer" | "org_owner"
     }
     CompositeTypes: {
@@ -468,6 +554,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      invitation_status: ["pending", "accepted", "revoked"],
       membership_role: ["member", "mentor", "organizer", "org_owner"],
     },
   },

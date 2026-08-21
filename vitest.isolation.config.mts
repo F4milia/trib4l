@@ -11,5 +11,10 @@ export default defineConfig({
     include: ["tests/isolation/**/*.test.ts"],
     testTimeout: 30000,
     hookTimeout: 30000,
+    // These tests hit one shared live Supabase instance (real auth rate
+    // limits, real rows). Running test files in parallel causes cross-file
+    // interference that looks like flakiness but is really just concurrent
+    // load on a shared external resource -- force sequential execution.
+    fileParallelism: false,
   },
 });

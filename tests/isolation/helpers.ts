@@ -14,12 +14,12 @@ const SUPABASE_ANON_KEY =
 // sync fast -- keep them next to each other conceptually even though they
 // live in different files.
 export const SEEDED_USERS = {
-  alice: { email: "alice@trib4l.test", password: "password123" }, // member: caregiver-circle, mentor: founder-collective
-  bob: { email: "bob@trib4l.test", password: "password123" }, // organizer: caregiver-circle
-  carol: { email: "carol@trib4l.test", password: "password123" }, // org_owner: founder-collective
-  dave: { email: "dave@trib4l.test", password: "password123" }, // member: wellness-guild
-  erin: { email: "erin@trib4l.test", password: "password123" }, // platform_staff
-  frank: { email: "frank@trib4l.test", password: "password123" }, // platform_staff
+  alice: { email: "alice@f4milia.test", password: "password123" }, // member: caregiver-circle, mentor: founder-collective
+  bob: { email: "bob@f4milia.test", password: "password123" }, // organizer: caregiver-circle
+  carol: { email: "carol@f4milia.test", password: "password123" }, // org_owner: founder-collective
+  dave: { email: "dave@f4milia.test", password: "password123" }, // member: wellness-guild
+  erin: { email: "erin@f4milia.test", password: "password123" }, // platform_staff
+  frank: { email: "frank@f4milia.test", password: "password123" }, // platform_staff
 } as const;
 
 export const ORG_IDS = {
