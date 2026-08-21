@@ -34,6 +34,30 @@ email exists:
 None of these are blocked from being built — they'd just ship without a
 real notification/email step until this session is revisited.
 
+## Follow-on: signup confirmation had to be disabled too
+
+Skipping email delivery didn't just mean invitations lack a notification —
+it meant nobody could ever confirm their email, and `trib4l-staging`/
+`trib4l-production` both require confirmation before login by default.
+Real consequence hit: signed up, got "Email not confirmed" on login, no way
+to receive or click a confirmation link.
+
+Fix applied (August 22, 2026): **Confirm email** toggled off in both
+projects' dashboards (Authentication → Sign In / Providers → User Signups),
+matching local dev's `enable_confirmations = false`. Considered and
+rejected `supabase config push` for this — it would push the *entire*
+local `config.toml`, including `site_url = "http://127.0.0.1:3000"`, onto
+the hosted project and break real auth redirects; the dashboard toggle
+changes only this one setting. Verified working three ways: direct
+Supabase Auth API signup (session returned immediately,
+`email_confirmed_at` set automatically), a separate follow-up login with
+the same credentials, and the full flow through the deployed app.
+
+**Revisit before a real public launch** — email confirmation is a normal
+anti-abuse measure (stops typo'd/fake addresses at signup); it's off right
+now only because there's no real user base yet and no working sender to
+confirm through.
+
 ## To resume later
 
 1. Add `f4milia.brandlamb.com` in Resend, get DNS records, add them at
