@@ -372,6 +372,293 @@ export type Database = {
           },
         ]
       }
+      meetup_attendance: {
+        Row: {
+          cohort_id: string | null
+          created_at: string
+          id: string
+          marked_by_profile_id: string | null
+          meetup_id: string
+          org_id: string
+          profile_id: string
+        }
+        Insert: {
+          cohort_id?: string | null
+          created_at?: string
+          id?: string
+          marked_by_profile_id?: string | null
+          meetup_id: string
+          org_id: string
+          profile_id: string
+        }
+        Update: {
+          cohort_id?: string | null
+          created_at?: string
+          id?: string
+          marked_by_profile_id?: string | null
+          meetup_id?: string
+          org_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetup_attendance_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_attendance_marked_by_profile_id_fkey"
+            columns: ["marked_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_attendance_meetup_id_fkey"
+            columns: ["meetup_id"]
+            isOneToOne: false
+            referencedRelation: "meetups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_attendance_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_attendance_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetup_rsvps: {
+        Row: {
+          cohort_id: string | null
+          created_at: string
+          id: string
+          meetup_id: string
+          org_id: string
+          profile_id: string
+          status: Database["public"]["Enums"]["meetup_rsvp_status"]
+          updated_at: string
+        }
+        Insert: {
+          cohort_id?: string | null
+          created_at?: string
+          id?: string
+          meetup_id: string
+          org_id: string
+          profile_id: string
+          status: Database["public"]["Enums"]["meetup_rsvp_status"]
+          updated_at?: string
+        }
+        Update: {
+          cohort_id?: string | null
+          created_at?: string
+          id?: string
+          meetup_id?: string
+          org_id?: string
+          profile_id?: string
+          status?: Database["public"]["Enums"]["meetup_rsvp_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetup_rsvps_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_rsvps_meetup_id_fkey"
+            columns: ["meetup_id"]
+            isOneToOne: false
+            referencedRelation: "meetups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_rsvps_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_rsvps_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetup_series: {
+        Row: {
+          cohort_id: string | null
+          created_at: string
+          created_by_profile_id: string | null
+          deleted_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          interval_weeks: number
+          local_time: string
+          meeting_provider: string
+          meeting_url: string | null
+          next_occurrence_date: string
+          org_id: string
+          timezone: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cohort_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          interval_weeks?: number
+          local_time: string
+          meeting_provider: string
+          meeting_url?: string | null
+          next_occurrence_date: string
+          org_id: string
+          timezone: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cohort_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          interval_weeks?: number
+          local_time?: string
+          meeting_provider?: string
+          meeting_url?: string | null
+          next_occurrence_date?: string
+          org_id?: string
+          timezone?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetup_series_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_series_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_series_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetups: {
+        Row: {
+          cohort_id: string | null
+          created_at: string
+          created_by_profile_id: string | null
+          deleted_at: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          meeting_provider: string
+          meeting_url: string | null
+          org_id: string
+          series_id: string | null
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cohort_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          meeting_provider: string
+          meeting_url?: string | null
+          org_id: string
+          series_id?: string | null
+          starts_at: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cohort_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          meeting_provider?: string
+          meeting_url?: string | null
+          org_id?: string
+          series_id?: string | null
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetups_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetups_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetups_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetups_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "meetup_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_stages: {
         Row: {
           created_at: string
@@ -1089,6 +1376,31 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      generate_meetup_occurrences: {
+        Args: { occurrence_count?: number; target_series_id: string }
+        Returns: {
+          cohort_id: string | null
+          created_at: string
+          created_by_profile_id: string | null
+          deleted_at: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          meeting_provider: string
+          meeting_url: string | null
+          org_id: string
+          series_id: string | null
+          starts_at: string
+          title: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "meetups"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_org_role: {
         Args: {
           allowed_roles: Database["public"]["Enums"]["membership_role"][]
@@ -1105,6 +1417,10 @@ export type Database = {
       is_platform_admin: { Args: never; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }
       is_valid_iana_timezone: { Args: { tz: string }; Returns: boolean }
+      local_datetime_to_utc: {
+        Args: { local_date: string; local_time: string; tz: string }
+        Returns: string
+      }
       moderate_comment: {
         Args: { reason?: string; target_comment_id: string }
         Returns: {
@@ -1173,6 +1489,7 @@ export type Database = {
     }
     Enums: {
       invitation_status: "pending" | "accepted" | "revoked"
+      meetup_rsvp_status: "going" | "maybe" | "not_going"
       membership_role: "member" | "mentor" | "organizer" | "org_owner"
       mentor_pairing_status: "proposed" | "active" | "completed" | "declined"
       report_status: "open" | "escalated" | "resolved"
@@ -1308,6 +1625,7 @@ export const Constants = {
   public: {
     Enums: {
       invitation_status: ["pending", "accepted", "revoked"],
+      meetup_rsvp_status: ["going", "maybe", "not_going"],
       membership_role: ["member", "mentor", "organizer", "org_owner"],
       mentor_pairing_status: ["proposed", "active", "completed", "declined"],
       report_status: ["open", "escalated", "resolved"],
