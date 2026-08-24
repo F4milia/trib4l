@@ -372,6 +372,142 @@ export type Database = {
           },
         ]
       }
+      live_stream_credentials: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string | null
+          id: string
+          live_stream_id: string
+          org_id: string
+          stream_key: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id?: string | null
+          id?: string
+          live_stream_id: string
+          org_id: string
+          stream_key: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string | null
+          id?: string
+          live_stream_id?: string
+          org_id?: string
+          stream_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_stream_credentials_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_stream_credentials_live_stream_id_fkey"
+            columns: ["live_stream_id"]
+            isOneToOne: true
+            referencedRelation: "live_streams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_stream_credentials_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_streams: {
+        Row: {
+          cohort_id: string | null
+          created_at: string
+          created_by_profile_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          mux_live_stream_id: string | null
+          org_id: string
+          playback_id: string | null
+          required_stage_id: string | null
+          status: string
+          title: string
+          updated_at: string
+          video_asset_id: string | null
+        }
+        Insert: {
+          cohort_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          mux_live_stream_id?: string | null
+          org_id: string
+          playback_id?: string | null
+          required_stage_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          video_asset_id?: string | null
+        }
+        Update: {
+          cohort_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          mux_live_stream_id?: string | null
+          org_id?: string
+          playback_id?: string | null
+          required_stage_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          video_asset_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_streams_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_streams_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_streams_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_streams_required_stage_id_fkey"
+            columns: ["required_stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_streams_video_asset_id_fkey"
+            columns: ["video_asset_id"]
+            isOneToOne: false
+            referencedRelation: "video_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meetup_attendance: {
         Row: {
           cohort_id: string | null
@@ -1296,6 +1432,7 @@ export type Database = {
           org_id: string
           playback_id: string | null
           policy: string
+          required_stage_id: string | null
           status: string
           updated_at: string
           uploader_profile_id: string | null
@@ -1312,6 +1449,7 @@ export type Database = {
           org_id: string
           playback_id?: string | null
           policy?: string
+          required_stage_id?: string | null
           status?: string
           updated_at?: string
           uploader_profile_id?: string | null
@@ -1328,6 +1466,7 @@ export type Database = {
           org_id?: string
           playback_id?: string | null
           policy?: string
+          required_stage_id?: string | null
           status?: string
           updated_at?: string
           uploader_profile_id?: string | null
@@ -1345,6 +1484,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_assets_required_stage_id_fkey"
+            columns: ["required_stage_id"]
+            isOneToOne: false
+            referencedRelation: "stages"
             referencedColumns: ["id"]
           },
           {
@@ -1445,6 +1591,8 @@ export type Database = {
           check_cohort_id: string
           check_moderation_state: string
           check_org_id: string
+          check_required_stage_id: string
+          check_uploader_profile_id: string
         }
         Returns: boolean
       }
@@ -1570,6 +1718,7 @@ export type Database = {
           org_id: string
           playback_id: string | null
           policy: string
+          required_stage_id: string | null
           status: string
           updated_at: string
           uploader_profile_id: string | null

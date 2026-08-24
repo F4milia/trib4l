@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/session";
 import { getPlaybackAuth } from "@/app/actions/video";
 import { Card, ErrorText, PageHeading } from "@/components/ui";
-import { VideoPlayer } from "./video-player";
+import { VideoPlayer } from "@/components/video-player";
 
 export default async function WatchVideoPage({
   params,

@@ -27,3 +27,10 @@ export function getMux(): Mux {
 // webhook handler, once Mux reports the real value.
 export const MAX_VIDEO_DURATION_SECONDS = 600; // 10 minutes
 export const MAX_VIDEO_FILE_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB, client-side check only
+
+// Live streams (Session 12) are organizer-run events, not short
+// member-uploaded clips -- neither hard cap above applies to them; an
+// hour-long support-group session is exactly the normal case, not an
+// abuse case.
+export const RTMP_INGEST_URL = "rtmp://global-live.mux.com:5222/app";
+export const LIVE_STREAM_RECONNECT_WINDOW_SECONDS = 60;
