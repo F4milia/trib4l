@@ -22,7 +22,7 @@ Content stays, the identifying link to the person is severed. Applies to:
   either cascade-delete records that must survive (see category 3) or leave
   orphaned rows.
 - **`org_profiles`** — same treatment, per org.
-- Future: **posts, comments** (Session 6) — anonymize the author, keep the
+- **posts, comments** (Session 6) — anonymize the author, keep the
   content, since a thread with "[deleted user]: ..." is a normal, expected
   pattern and the surrounding conversation still has value to the cohort.
 
@@ -38,9 +38,36 @@ Content stays, the identifying link to the person is severed. Applies to:
 - **`memberships`** — soft-deleted (`deleted_at` set) rather than hard-deleted
   when someone leaves an org, so `audit_log` entries and (later) attendance
   and stage-progression history referencing that membership stay meaningful.
-- Future: **mentor pairing history** (Session 9) — a completed pairing
-  belongs to the mentorship program's track record, not just to the two
-  people in it. It survives either party's deletion request, same as orders.
+- **mentor pairing history** (Session 9) — a completed pairing belongs to
+  the mentorship program's track record, not just to the two people in
+  it. It survives either party's deletion request, same as orders.
+
+### 4. Storage-cost-driven retention (Session 11)
+
+The plan calls this out specifically: "member uploads make storage grow
+monotonically" — a video, unlike a text post, has a real, ongoing per-GB
+storage cost in Mux, so this category exists to keep that cost bounded
+independent of anyone's deletion request.
+
+- **`video_assets`** attached to a live post follow that post's own
+  retention (category 1: anonymize the uploader, keep the content).
+- A **rejected** video (`moderation_state = 'rejected'`, whether
+  auto-rejected for exceeding the duration cap or rejected by a staff
+  moderation decision) has its underlying Mux asset deleted immediately,
+  reclaiming storage as soon as it's known the video will never be
+  playable through this app again. Implemented in both places a
+  rejection can happen: the webhook handler's `video.asset.ready` branch
+  (over-cap case) and `moderateVideoAsset` (staff decision).
+- **Decided now, not yet automated**: a `video_assets` row that reaches
+  `ready`/`approved` but is never attached to any post is genuinely
+  orphaned — nothing else in this app links to it. The policy is that
+  such a video becomes eligible for deletion 30 days after it was marked
+  ready if it still has no attaching post. No automated job enforces this
+  yet (matching Session 10's explicit precedent: every state change in
+  these early sessions is a deliberate staff or system action, not a
+  background cron), but the number is decided and documented here so a
+  future session implementing the cleanup job has a real policy to
+  implement rather than having to invent one under storage-cost pressure.
 
 ### Never soft-deleted (there's nothing to delete)
 

@@ -12,6 +12,7 @@
     "test:isolation": "supabase db reset && vitest run --config vitest.isolation.config.mts"
   },
   "dependencies": {
+    "@mux/mux-node": "^15.0.0",
     "@sentry/nextjs": "^10.70.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",

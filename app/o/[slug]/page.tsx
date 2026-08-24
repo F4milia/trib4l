@@ -50,9 +50,27 @@ export default async function OrgHomePage({
     orgStages = data ?? [];
   }
 
+  // Any member's own ready, approved video not yet attached to a post --
+  // both conditions matter: an in-progress upload isn't attachable yet,
+  // and a video already used by another post can't be reused (one video
+  // per post, enforced by a unique index).
+  const { data: myReadyVideos } = await supabase
+    .from("video_assets")
+    .select("id, duration_seconds")
+    .eq("uploader_profile_id", user.id)
+    .eq("status", "ready")
+    .eq("moderation_state", "approved")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  const { data: attachedVideoRows } = await supabase.from("posts").select("video_asset_id").eq("author_profile_id", user.id);
+  const attachedVideoIds = new Set((attachedVideoRows ?? []).map((r) => r.video_asset_id).filter(Boolean));
+  const attachableVideos = (myReadyVideos ?? []).filter((v) => !attachedVideoIds.has(v.id));
+
   const { data: allPosts } = await supabase
     .from("posts")
-    .select("id, body, created_at, cohort_id, author_profile_id, profiles(display_name), cohorts(name), stages(name)")
+    .select(
+      "id, body, created_at, cohort_id, author_profile_id, video_asset_id, profiles(display_name), cohorts(name), stages(name)",
+    )
     .eq("org_id", orgId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -132,8 +150,23 @@ export default async function OrgHomePage({
                   ))}
                 </Select>
               )}
+              {attachableVideos.length > 0 && (
+                <Select name="video_asset_id" defaultValue="" className="max-w-56">
+                  <option value="">No video</option>
+                  {attachableVideos.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      Video ({v.duration_seconds ? `${Math.round(v.duration_seconds)}s` : "?"})
+                    </option>
+                  ))}
+                </Select>
+              )}
             </div>
-            <Button type="submit">Post</Button>
+            <div className="flex items-center gap-3">
+              <Link href={`/o/${slug}/videos/upload`} className="text-sm text-primary underline">
+                Upload a video
+              </Link>
+              <Button type="submit">Post</Button>
+            </div>
           </div>
         </form>
       </Card>
@@ -153,6 +186,11 @@ export default async function OrgHomePage({
                 <span>{new Date(post.created_at).toLocaleString()}</span>
               </div>
               <p className="mt-2 whitespace-pre-wrap">{post.body}</p>
+              {post.video_asset_id && (
+                <Link href={`/o/${slug}/videos/${post.video_asset_id}`} className="mt-2 inline-block text-sm text-primary underline">
+                  Watch video
+                </Link>
+              )}
 
               <div className="mt-3 flex items-center gap-3">
                 <form action={toggleLike}>

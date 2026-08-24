@@ -943,6 +943,7 @@ export type Database = {
           required_stage_id: string | null
           search_vector: unknown
           updated_at: string
+          video_asset_id: string | null
         }
         Insert: {
           author_profile_id: string
@@ -955,6 +956,7 @@ export type Database = {
           required_stage_id?: string | null
           search_vector?: unknown
           updated_at?: string
+          video_asset_id?: string | null
         }
         Update: {
           author_profile_id?: string
@@ -967,6 +969,7 @@ export type Database = {
           required_stage_id?: string | null
           search_vector?: unknown
           updated_at?: string
+          video_asset_id?: string | null
         }
         Relationships: [
           {
@@ -995,6 +998,13 @@ export type Database = {
             columns: ["required_stage_id"]
             isOneToOne: false
             referencedRelation: "stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_video_asset_id_fkey"
+            columns: ["video_asset_id"]
+            isOneToOne: false
+            referencedRelation: "video_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -1273,6 +1283,79 @@ export type Database = {
           },
         ]
       }
+      video_assets: {
+        Row: {
+          cohort_id: string | null
+          created_at: string
+          deleted_at: string | null
+          duration_seconds: number | null
+          id: string
+          moderation_state: string
+          mux_asset_id: string | null
+          mux_upload_id: string | null
+          org_id: string
+          playback_id: string | null
+          policy: string
+          status: string
+          updated_at: string
+          uploader_profile_id: string | null
+        }
+        Insert: {
+          cohort_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          moderation_state?: string
+          mux_asset_id?: string | null
+          mux_upload_id?: string | null
+          org_id: string
+          playback_id?: string | null
+          policy?: string
+          status?: string
+          updated_at?: string
+          uploader_profile_id?: string | null
+        }
+        Update: {
+          cohort_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          moderation_state?: string
+          mux_asset_id?: string | null
+          mux_upload_id?: string | null
+          org_id?: string
+          playback_id?: string | null
+          policy?: string
+          status?: string
+          updated_at?: string
+          uploader_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_assets_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_assets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_assets_uploader_profile_id_fkey"
+            columns: ["uploader_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_events: {
         Row: {
           created_at: string
@@ -1355,6 +1438,14 @@ export type Database = {
       }
       can_see_org_cohort_content: {
         Args: { check_cohort_id: string; check_org_id: string }
+        Returns: boolean
+      }
+      can_see_video_asset: {
+        Args: {
+          check_cohort_id: string
+          check_moderation_state: string
+          check_org_id: string
+        }
         Returns: boolean
       }
       current_user_email: { Args: never; Returns: string }
@@ -1456,10 +1547,36 @@ export type Database = {
           required_stage_id: string | null
           search_vector: unknown
           updated_at: string
+          video_asset_id: string | null
         }
         SetofOptions: {
           from: "*"
           to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      moderate_video_asset: {
+        Args: { reason?: string; target_video_asset_id: string }
+        Returns: {
+          cohort_id: string | null
+          created_at: string
+          deleted_at: string | null
+          duration_seconds: number | null
+          id: string
+          moderation_state: string
+          mux_asset_id: string | null
+          mux_upload_id: string | null
+          org_id: string
+          playback_id: string | null
+          policy: string
+          status: string
+          updated_at: string
+          uploader_profile_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "video_assets"
           isOneToOne: true
           isSetofReturn: false
         }

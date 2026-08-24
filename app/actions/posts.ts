@@ -21,6 +21,7 @@ export async function createPost(formData: FormData) {
   const orgSlug = String(formData.get("org_slug") ?? "");
   const cohortId = String(formData.get("cohort_id") ?? "") || null;
   const requiredStageId = String(formData.get("required_stage_id") ?? "") || null;
+  const videoAssetId = String(formData.get("video_asset_id") ?? "") || null;
   const body = String(formData.get("body") ?? "").trim();
 
   if (!body) {
@@ -35,6 +36,7 @@ export async function createPost(formData: FormData) {
     org_id: orgId,
     cohort_id: cohortId,
     required_stage_id: requiredStageId,
+    video_asset_id: videoAssetId,
     author_profile_id: userData.user!.id,
     body,
   });

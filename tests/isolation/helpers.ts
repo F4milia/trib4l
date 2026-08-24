@@ -9,6 +9,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://127.0.0.1:54321";
 const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
 // Matches supabase/seed.sql. If the seed data changes, these fall out of
 // sync fast -- keep them next to each other conceptually even though they
@@ -27,6 +30,17 @@ export const ORG_IDS = {
   founderCollective: "00000000-0000-0000-0000-00000000000b",
   wellnessGuild: "00000000-0000-0000-0000-00000000000c",
 } as const;
+
+/**
+ * Bypasses RLS entirely, same as the real Mux webhook route
+ * (createServiceClient in lib/supabase/service.ts). Used only to
+ * simulate the state a real webhook would have produced (status,
+ * playback_id, moderation_state) -- tests should never reach for this to
+ * shortcut around RLS they mean to be testing.
+ */
+export function createServiceRoleClient(): SupabaseClient<Database> {
+  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+}
 
 export async function signInAs(user: { email: string; password: string }): Promise<SupabaseClient<Database>> {
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
