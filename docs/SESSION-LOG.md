@@ -429,3 +429,136 @@ and the migrations live on staging and production.
 
 **Session ended:** August 24, 2026, 13:27 UTC
 **All work pushed to GitHub:** https://github.com/F4milia/trib4l
+
+---
+
+## Session 11: Video Foundation and Member Uploads
+
+**Date:** August 24, 2026 (UTC)
+**Model:** Claude Sonnet 5
+**Status:** Complete and pushed to GitHub and to hosted Supabase (staging + production). The Mux account itself does not exist yet -- schema/RLS/authorization are fully verified locally; the live Mux API calls are built but not yet exercised (see below).
+
+---
+
+## What was completed
+
+1. **Every Mux API surface used was verified against `@mux/mux-node`'s
+   own installed type definitions before writing any code** -- the
+   Direct Upload request/response shape, the webhook signature header
+   format, every relevant webhook event type and its exact payload
+   fields, and the JWT-signing helper's signature. This was a deliberate
+   choice given this is the first session with a real third-party API
+   dependency: verify the actual contract, don't build against a
+   remembered shape.
+2. **`video_assets`**, `posts.video_asset_id`, and the full RLS/trigger
+   layer -- a Mux Direct Upload modeled from creation through
+   webhook-driven processing to an optional attachment on a post.
+   `status` (Mux's own processing state) is kept distinct from
+   `moderation_state` (the human decision), and `policy`/`status` are
+   `CHECK`-constrained (a genuinely fixed, Mux-defined set of values,
+   unlike meetups' deliberately free-text `meeting_provider`).
+3. **Moderation policy decided explicitly, not assumed**: the build plan
+   flags member video moderation as an open, consequential question
+   ("pre-approval or post-report? changes your exposure"). Asked
+   directly -- answer: post-report, matching every other content type
+   already in this app.
+4. **Two real gaps an isolation test caught before anything shipped**:
+   (1) the first version of the visibility function didn't let an
+   uploader see their own not-yet-approved video, which would have
+   broken the "My videos" page's ability to show upload/processing
+   status for anything pending; (2) the insert policy let a member
+   pre-declare their own upload `ready`/`approved` with a fabricated
+   `playback_id`, skipping Mux and moderation entirely. Both fixed --
+   the second by extending the same privileged-columns guard trigger
+   (Session 9's `mentor_pairings` pattern) to INSERT, not just UPDATE.
+5. **The first `service_role` Supabase client this codebase has
+   needed** (`lib/supabase/service.ts`) -- every prior session's writes
+   went through a user's own RLS-scoped session or a `SECURITY DEFINER`
+   function; the Mux webhook is the first genuinely anonymous request
+   with no user session to scope to at all.
+6. 7 new isolation tests, taking the suite to 58 total, all run using a
+   service-role test client that simulates exactly what the real Mux
+   webhook handler would write, so the schema/RLS layer is fully proven
+   without needing a live Mux account. Includes the literal "done means"
+   bar from the plan: a member in one org cannot see or query by another
+   org's video, including by its `playback_id` directly. Escalation
+   ritual run and confirmed: a loosened select policy made that test (and
+   the pending-visibility test) fail loudly with the actual leaked data
+   printed; restoring brought all 58 back.
+7. **The Mux client is constructed lazily**, not as a module-level
+   singleton -- confirmed directly from the SDK's source that its
+   constructor throws immediately with no credentials configured, which
+   would otherwise crash the whole app's build and dev server on import,
+   not just the video feature, for as long as no real Mux account
+   exists. Confirmed `npm run build` succeeds with every `MUX_*` env var
+   empty, and that actually attempting to start an upload fails
+   gracefully (a clean error redirect, no crash, no orphaned database
+   row) rather than breaking anything.
+8. Hard caps (10-minute duration, enforced post-hoc once Mux reports the
+   real value, with immediate Mux-side deletion to reclaim storage; 500
+   MB file size, client-side only -- Mux's API has no server-side
+   max-file-size parameter, confirmed rather than assumed) and rate
+   limiting (5 uploads/hour/uploader, checked before ever calling Mux).
+9. Extended `docs/data-retention-policy.md` with a new category for
+   storage-cost-driven retention, and fixed two stale "Future: Session N"
+   annotations left over from Session 1 for sessions that have since
+   actually happened.
+10. UI: an upload flow (the first client-side JS this app has needed,
+    since a browser can't PUT a file to an external signed URL through a
+    plain form), a "My videos" list, a watch page, a video selector on
+    the existing post form, and a staff moderation page. Manually
+    verified on the real dev server -- and hit the same
+    shared-local-DB-state symptom flagged in Sessions 8, 9, and 10's
+    checklists yet again, caught and reset the same way as every time
+    before.
+11. Wrote `docs/session-11-checklist.md`, drawing an explicit line
+    between what's verified (schema/RLS/authorization) and what's built
+    but blocked on a real Mux account (upload creation, webhook receipt,
+    signed playback). Pushed both new migrations to `trib4l-staging` and
+    `trib4l-production`, committed and pushed.
+
+**Done criteria met, with one explicit carve-out**: the plan's literal
+"done means" bar (cross-org playback isolation, proven by a test) is met
+and verified. Live Mux integration is not yet verified end-to-end, because
+no Mux account exists yet -- this is a disclosed, deliberate gap, not an
+oversight, and closing it needs nothing more than credentials once the
+user creates the account.
+
+---
+
+## Commits pushed this session
+
+| Commit | Message |
+|---|---|
+| 240e5d2 | Session 11: video foundation and member uploads via Mux |
+
+---
+
+## Notes for future reference
+
+- **When integrating a fast-moving third-party API, read the installed
+  SDK's actual type definitions before writing code against it** -- doc
+  pages can be incomplete or stale; `.d.ts` files installed by `npm
+  install` are the real, current contract. This is what caught that
+  Mux's Direct Upload API has no server-side max-file-size parameter,
+  among several other details, before any code was written against a
+  guessed shape.
+- **A module-level side-effecting client construction
+  (`new ThirdPartySdk()` at import time) can crash an entire app on
+  import if that SDK validates credentials eagerly and the credentials
+  don't exist yet** -- lazy construction behind a getter avoids this
+  without any behavior change once real credentials are added.
+- **The shared local isolation-test database gotcha is now a five-session
+  streak (6 through 11)** -- still always reset immediately before manual
+  verification, never rely on `test:isolation` alone for that.
+- **RLS policy design keeps surfacing the same category of bug across
+  sessions**: a helper's staff/owner bypass doesn't automatically extend
+  to a *different* legitimate self-access case (Session 8: staff seeing
+  their own gated post; Session 11: an uploader seeing their own pending
+  video). Each specific case has to be reasoned through and added
+  explicitly -- there's no shortcut that covers all of them at once.
+
+---
+
+**Session ended:** August 24, 2026, 14:25 UTC
+**All work pushed to GitHub:** https://github.com/F4milia/trib4l
