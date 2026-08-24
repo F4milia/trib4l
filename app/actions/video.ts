@@ -66,14 +66,20 @@ export async function createVideoUpload(formData: FormData) {
 }
 
 /**
- * A signed playback URL for a specific video, or null if it isn't ready
- * or the caller can't see it. The RLS-scoped SELECT this runs against is
- * the actual security boundary -- a member in one org holding another
- * org's playback_id can't get a token for it, because their own session
- * can't find that row at all (this is the property Session 11's "done
- * means" bar is about).
+ * A signed playback id + token pair for a specific video, or null if it
+ * isn't ready or the caller can't see it. The RLS-scoped SELECT this
+ * runs against is the actual security boundary -- a member in one org
+ * holding another org's playback_id can't get a token for it, because
+ * their own session can't find that row at all (this is the property
+ * Session 11's "done means" bar is about).
+ *
+ * Returns the pieces <MuxPlayer> needs (`playbackId` + `tokens.playback`),
+ * not a raw stream.mux.com URL: a plain <video src="...m3u8"> only plays
+ * HLS natively in Safari -- every other browser needs either
+ * <mux-player>/hls.js or nothing plays at all, which is exactly the "it
+ * loads but never plays" symptom this was built around.
  */
-export async function getPlaybackUrl(videoAssetId: string): Promise<string | null> {
+export async function getPlaybackAuth(videoAssetId: string): Promise<{ playbackId: string; token: string } | null> {
   const supabase = await createClient();
   const { data: asset } = await supabase
     .from("video_assets")
@@ -85,7 +91,7 @@ export async function getPlaybackUrl(videoAssetId: string): Promise<string | nul
   if (!asset?.playback_id) return null;
 
   const token = await getMux().jwt.signPlaybackId(asset.playback_id, { expiration: "1h" });
-  return `https://stream.mux.com/${asset.playback_id}.m3u8?token=${token}`;
+  return { playbackId: asset.playback_id, token };
 }
 
 export async function moderateVideoAsset(formData: FormData) {
