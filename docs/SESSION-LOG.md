@@ -325,3 +325,107 @@ production.
 
 **Session ended:** August 21, 2026, 22:00 UTC
 **All work pushed to GitHub:** https://github.com/F4milia/trib4l
+
+---
+
+## Session 10: Meetups
+
+**Date:** August 24, 2026 (UTC)
+**Model:** Claude Sonnet 5
+**Status:** Complete and pushed to GitHub and to hosted Supabase (staging + production)
+
+---
+
+## What was completed
+
+1. **`meetup_series` and `meetups` as two deliberately separate tables**
+   — a series is the recurrence template (cadence, timezone, meeting
+   info); a row in `meetups` is one concrete, bookable occurrence.
+   RSVPs and attendance attach to a specific occurrence, which needs a
+   stable id a computed-on-the-fly recurrence rule wouldn't have, so
+   occurrences are generated as real rows via an explicit RPC
+   (`generate_meetup_occurrences`), not derived from a view.
+2. **DST-safe recurrence, verified twice, not just designed correctly on
+   paper.** A series stores a local calendar date, a local time, and an
+   IANA timezone; each occurrence reinterprets that same wall-clock time
+   fresh, on its own date, via Postgres's own timezone database
+   (`local_datetime_to_utc`), rather than adding a fixed UTC interval.
+   Checked directly against the actual 2026-03-08 US spring-forward: a
+   raw SQL check first, then an isolation test driving the real
+   generation RPC end-to-end, both confirming 6pm Eastern stays 6pm
+   Eastern across the transition (23:00 UTC before, 22:00 UTC after).
+3. **`meeting_provider` kept as plain `text`**, deliberately not an enum
+   or a `CHECK`-constrained list, matching the plan's explicit
+   requirement that adding a future provider (e.g. `'livekit'`) be a
+   swap, not a migration.
+4. **Attendance as its own manually-marked table**, independent of RSVP
+   and of `meeting_provider` — exactly the plan's "first-class record ...
+   survives regardless of where the call happens," with zero dependency
+   on any video-platform integration (none exists yet; that's Session
+   11+).
+5. 6 new isolation tests (`tests/isolation/meetups.test.ts`), taking the
+   suite to 51 total. Escalation ritual run and confirmed: a loosened
+   `meetups_select` policy made the cohort-scoping test fail loudly with
+   the real visible row printed; restoring brought all 51 back.
+6. **The same shared-local-DB manual-verification gotcha from Sessions 8
+   and 9 recurred, and was caught the same way**: checking Alice's access
+   right after a full isolation-suite run showed her incorrectly passing
+   a staff-only check, because an earlier test file in that run had
+   durably promoted her role. Confirmed via a direct query before
+   concluding it wasn't a real bug, then reset to clean seed data and
+   redid the check properly.
+7. UI: a staff settings page (`/o/[slug]/settings/meetups` — create a
+   one-off meetup or a recurring series, generate occurrences, see RSVP
+   counts, mark/unmark attendance) and a member-facing page
+   (`/o/[slug]/meetups` — upcoming meetups with an RSVP control), both
+   linked from the org nav. Manually verified end-to-end on a clean
+   database: created a one-off meetup and a weekly series as the
+   organizer, generated four real occurrences and confirmed their stored
+   UTC timestamps directly, confirmed a plain member is fully blocked
+   from the settings page (a real `307`, zero settings content in the
+   response body), RSVPed as that plain member through the real form,
+   and confirmed the count updated on the staff page.
+8. Wrote `docs/session-10-checklist.md` (including an explicit "not done"
+   note: meetup times render via `toLocaleString()`, which uses the
+   rendering server's own timezone rather than the viewer's or
+   organizer's — a display wrinkle, not a data bug, but worth fixing
+   before real users rely on it). Pushed both new migrations to
+   `trib4l-staging` and `trib4l-production`, committed and pushed.
+
+**Done criteria met:** schema + RLS + the recurrence-generation function
+verified against a real local Postgres via the isolation suite (51/51
+passing), the escalation-test ritual re-confirmed for the new policies,
+the DST-correctness property checked against a real calendar date rather
+than assumed, UI built and manually driven through the real dev server,
+and the migrations live on staging and production.
+
+---
+
+## Commits pushed this session
+
+| Commit | Message |
+|---|---|
+| 2591d77 | Session 10: meetups -- events, RSVP, attendance, DST-safe recurrence |
+
+---
+
+## Notes for future reference
+
+- **Recurrence across DST needs local-time reinterpretation per
+  occurrence, not a fixed UTC interval** — store the local date/time/zone
+  and convert fresh each time via the database's own timezone data
+  (`AT TIME ZONE` in Postgres), the same category of fix as Session 8's
+  RLS bug: correctness that only shows up when you check a real edge case
+  (a real DST date here; a staff member with no stage there) instead of
+  the common path.
+- **The shared local isolation-test database is now a recurring,
+  named gotcha across four sessions running (6, 7, 8, 9, 10)** — always
+  run a bare `supabase db reset` immediately before any manual UI
+  verification that uses seeded accounts, never rely on
+  `npm run test:isolation` alone (it resets once, then leaves
+  test-mutated state behind for whatever runs next).
+
+---
+
+**Session ended:** August 24, 2026, 13:27 UTC
+**All work pushed to GitHub:** https://github.com/F4milia/trib4l
