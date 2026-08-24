@@ -206,17 +206,23 @@ the schema and RLS don't depend on Mux credentials to exist in the
 database, only the application code calling out to Mux does. CLI left
 linked to staging afterward, same safety practice as prior sessions.
 
+## The full real-browser path, end to end
+
+The live verification earlier in this document created a Mux asset
+directly from a URL (`assets.create`) rather than driving
+`/o/[slug]/videos/upload`'s actual client-side file-PUT widget, since no
+test video file/recording tool was available in this session's
+environment — so the literal "pick a file in the browser, watch it
+upload, then watch it play" path was built and code-reviewed but not
+click-tested by anyone here. The user then did exactly that
+independently: uploaded a real file through the real upload page,
+confirmed it saved to Mux, and (after the HLS playback fix above) watched
+it actually play on the watch page. That's the last gap this document
+had open — the whole pipeline is now confirmed working by a real person
+in a real browser, not just by this session's own scripted checks.
+
 ## Not done in Session 11 — explicitly out of scope here
 
-- **The full upload UI was not exercised with a real file picked in a
-  real browser** — the live verification above created a Mux asset
-  directly from a URL (`assets.create`) rather than driving
-  `/o/[slug]/videos/upload`'s actual client-side file-PUT widget, since
-  no test video file/recording tool was available in this environment.
-  The upload-creation API call, the webhook pipeline, and signed
-  playback are all verified for real; the literal "pick a file in the
-  browser and watch the progress UI" path is built and code-reviewed but
-  not click-tested.
 - **The 30-day orphaned-video cleanup job** — the policy is decided and
   documented; no cron or scheduled function implements it yet.
 - **Un-rejecting a video** (reverting `moderation_state` from `rejected`
