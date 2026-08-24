@@ -436,7 +436,7 @@ and the migrations live on staging and production.
 
 **Date:** August 24, 2026 (UTC)
 **Model:** Claude Sonnet 5
-**Status:** Complete and pushed to GitHub and to hosted Supabase (staging + production). The Mux account itself does not exist yet -- schema/RLS/authorization are fully verified locally; the live Mux API calls are built but not yet exercised (see below).
+**Status:** Complete and pushed to GitHub and to hosted Supabase (staging + production). The user created a Mux account within this same session and provided real credentials, which were wired into Vercel and verified end-to-end against the live API -- see item 12 below.
 
 ---
 
@@ -516,13 +516,33 @@ and the migrations live on staging and production.
     but blocked on a real Mux account (upload creation, webhook receipt,
     signed playback). Pushed both new migrations to `trib4l-staging` and
     `trib4l-production`, committed and pushed.
+12. **The user created a Mux account and provided real credentials
+    within this same session** -- wired all five (`MUX_TOKEN_ID`,
+    `MUX_TOKEN_SECRET`, `MUX_SIGNING_KEY`, `MUX_PRIVATE_KEY`,
+    `MUX_WEBHOOK_SECRET`) into `.env.local` and Vercel (Production and
+    Preview), redeployed production, and ran a real end-to-end
+    verification against the live API rather than stopping at "the keys
+    are configured": created a real Direct Upload; created a real Mux
+    asset from Mux's own official demo video and watched its real
+    `video.asset.ready` webhook arrive at the actual deployed route,
+    verify its signature for real, and correctly update a real
+    `video_assets` row (status, moderation_state, playback_id, and
+    duration all matched); generated a real signed playback JWT and
+    confirmed it actually authorizes playback (`200` with a valid HLS
+    manifest), while confirming the negative case too (no token `403`,
+    garbage token `400`) so the signed policy is provably doing
+    something, not just present. All test data was deleted immediately
+    after. Registering the webhook endpoint itself needed the user in
+    the Mux dashboard directly -- Mux has no API for creating webhook
+    endpoints, by design, confirmed by checking the SDK for one rather
+    than assuming it existed.
 
-**Done criteria met, with one explicit carve-out**: the plan's literal
-"done means" bar (cross-org playback isolation, proven by a test) is met
-and verified. Live Mux integration is not yet verified end-to-end, because
-no Mux account exists yet -- this is a disclosed, deliberate gap, not an
-oversight, and closing it needs nothing more than credentials once the
-user creates the account.
+**Done criteria met, with no carve-out**: the plan's literal "done means"
+bar (cross-org playback isolation, proven by a test) was met and verified
+locally first, before any Mux account existed. The live Mux integration
+itself -- upload creation, real webhook delivery/verification/processing,
+and signed playback enforcement -- was then also verified end-to-end
+against the account the user created, within the same session.
 
 ---
 

@@ -10,14 +10,14 @@ hard caps on duration and file size, and a retention policy set here, not
 after the first invoice." *Done means:* "a member in Org A cannot play an
 Org B asset while holding the playback ID, and a test proves it."
 
-This is the first session with a genuine third-party dependency (Mux) that
-needs real account credentials to fully exercise. Per direct decision, the
-user will create a Mux account and provide the keys; until then, the
-schema/RLS/authorization layer — which is what the "done means" bar is
-actually about — is fully built and verified, while the live API calls
-(starting an upload, receiving a webhook, generating a real playback
-token) are built but not yet exercised against a real Mux account. See
-"Not done" below for the precise line between the two.
+This is the first session with a genuine third-party dependency (Mux).
+Schema/RLS/authorization — what the "done means" bar is actually about —
+was built and fully verified locally first, before any Mux account
+existed. The user then created a Mux account and provided real
+credentials within the same session, which let the live integration
+itself get verified end-to-end too (see "Verified live against the real
+Mux account" below) — not just built and typechecked against the SDK's
+types.
 
 ## A decision made explicitly before building
 
@@ -141,6 +141,45 @@ Session 6's `moderate_post`.
   account exists. Confirmed directly: `npm run build` succeeds with every
   `MUX_*` env var empty.
 
+## Verified live against the real Mux account
+
+Once the user created a Mux account and provided credentials
+(`MUX_TOKEN_ID`/`MUX_TOKEN_SECRET`, a signing key, and — after registering
+`https://trib4l.vercel.app/api/webhooks/mux` in the Mux dashboard, the one
+step with no API equivalent, dashboard-only by design — a webhook signing
+secret), all five were wired into Vercel (Production and Preview) and
+production was redeployed to pick them up. Then, using the production
+service-role key against `Trib4l-production`'s Supabase project directly
+(infrastructure verification, not user-facing data — cleaned up
+immediately after):
+
+- [x] **A real Direct Upload** created via `mux.video.uploads.create` —
+  confirmed a real upload id and PUT url came back.
+- [x] **A real asset processed end-to-end through the actual deployed
+  webhook route**: created a real Mux asset (using Mux's own official
+  demo video as input, `test: true`, `passthrough` pointing at a real
+  `video_assets` row) and watched Mux's real `video.asset.ready` webhook
+  arrive at `https://trib4l.vercel.app/api/webhooks/mux`, get its
+  signature verified for real, and correctly update the row: `status`
+  went from `preparing` to `ready`, `moderation_state` to `approved`
+  (correctly, since the actual duration was well under the 10-minute
+  cap), a real `playback_id` was set, and `duration_seconds` matched the
+  asset's actual length (10.14s) — end-to-end in about 3 seconds.
+- [x] **A real signed playback JWT that actually authorizes playback**:
+  `mux.jwt.signPlaybackId` against the real playback_id returned a token
+  that, appended to `https://stream.mux.com/<id>.m3u8?token=<jwt>`, gave
+  back a real, valid HLS manifest with a `200`. Checked the negative case
+  too, not just the happy path: the same URL with no token gets `403`,
+  and with a garbage token gets `400` — confirming the `signed` policy is
+  actually enforcing something, not merely present but decorative.
+- [x] All test rows (`video_assets`, `webhook_events`) and the Mux test
+  asset were deleted immediately after — nothing from this verification
+  pass was left behind in production.
+
+This closes the gap the rest of this document originally flagged as
+"blocked on real credentials" — the live Mux integration is now verified,
+not just built against the SDK's types.
+
 ## Pushed to hosted Supabase
 
 Both new migrations pushed to `trib4l-staging` and `trib4l-production` —
@@ -148,19 +187,17 @@ the schema and RLS don't depend on Mux credentials to exist in the
 database, only the application code calling out to Mux does. CLI left
 linked to staging afterward, same safety practice as prior sessions.
 
-## Not done in Session 11 — explicitly blocked on real Mux credentials
+## Not done in Session 11 — explicitly out of scope here
 
-- **Actually starting an upload against the real Mux API**
-  (`client.video.uploads.create`), **receiving and verifying a real Mux
-  webhook**, and **generating a real signed playback JWT**
-  (`client.jwt.signPlaybackId`) are all built and typechecked against
-  the SDK's real types, but have not been exercised against a live Mux
-  account — there isn't one yet. Once credentials exist: `MUX_TOKEN_ID`/
-  `MUX_TOKEN_SECRET` from a new API access token, `MUX_SIGNING_KEY`/
-  `MUX_PRIVATE_KEY` from a new signing key pair, and `MUX_WEBHOOK_SECRET`
-  last, since it's issued only after registering
-  `https://<staging-domain>/api/webhooks/mux` as a webhook endpoint in
-  the Mux dashboard.
+- **The full upload UI was not exercised with a real file picked in a
+  real browser** — the live verification above created a Mux asset
+  directly from a URL (`assets.create`) rather than driving
+  `/o/[slug]/videos/upload`'s actual client-side file-PUT widget, since
+  no test video file/recording tool was available in this environment.
+  The upload-creation API call, the webhook pipeline, and signed
+  playback are all verified for real; the literal "pick a file in the
+  browser and watch the progress UI" path is built and code-reviewed but
+  not click-tested.
 - **The 30-day orphaned-video cleanup job** — the policy is decided and
   documented; no cron or scheduled function implements it yet.
 - **Un-rejecting a video** (reverting `moderation_state` from `rejected`
