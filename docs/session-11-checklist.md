@@ -180,6 +180,25 @@ This closes the gap the rest of this document originally flagged as
 "blocked on real credentials" — the live Mux integration is now verified,
 not just built against the SDK's types.
 
+### A real gap the curl-only verification above didn't catch
+
+The `curl`-against-`stream.mux.com` check above proved the signed JWT and
+manifest are valid, but a `curl` request isn't a browser rendering a
+`<video>` element — and the user's own real test through the actual UI
+surfaced exactly what that verification missed: the watch page loaded but
+never played. Root cause: a plain `<video src="....m3u8">` only plays HLS
+natively in Safari (and old IE Edge) — every other browser needs a real
+player on top (`@mux/mux-player-react`, which uses `hls.js` under the
+hood) or nothing plays at all. Fixed by switching the watch page to
+`<MuxPlayer playbackId={...} tokens={{ playback: token }} />` (confirmed
+against the package's actual installed type definitions, same discipline
+as verifying `@mux/mux-node` itself), and renaming
+`getPlaybackUrl` → `getPlaybackAuth` to return the `{playbackId, token}`
+pair the player needs instead of a raw `stream.mux.com` URL. A real
+`curl` check proves a URL is reachable; it doesn't prove a browser can
+actually render what's behind it — worth remembering next time "verified
+live" gets written down.
+
 ## Pushed to hosted Supabase
 
 Both new migrations pushed to `trib4l-staging` and `trib4l-production` —

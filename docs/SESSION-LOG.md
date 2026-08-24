@@ -544,6 +544,23 @@ itself -- upload creation, real webhook delivery/verification/processing,
 and signed playback enforcement -- was then also verified end-to-end
 against the account the user created, within the same session.
 
+13. **The user then tested the real upload flow through the actual
+    website UI and found the one thing item 12's `curl`-based
+    verification couldn't have caught**: upload worked, the video saved
+    to Mux, but the watch page loaded and never actually played.
+    Root cause: a plain `<video src="....m3u8">` only plays HLS natively
+    in Safari -- every other browser needs a real HLS-capable player, or
+    nothing plays regardless of how valid the underlying manifest and
+    signed token are (both of which item 12 had already proven were
+    fine). Fixed by switching the watch page to `@mux/mux-player-react`
+    (confirmed against its actual installed type definitions), which
+    uses `hls.js` under the hood -- the second piece of client-side JS
+    this app has needed, after the upload file-picker. `curl` proving a
+    URL is reachable is not the same claim as a browser proving it can
+    render what's behind it; the checklist and this log were both
+    updated to say so plainly rather than leave the earlier "verified
+    live" claim standing uncorrected.
+
 ---
 
 ## Commits pushed this session
@@ -551,6 +568,8 @@ against the account the user created, within the same session.
 | Commit | Message |
 |---|---|
 | 240e5d2 | Session 11: video foundation and member uploads via Mux |
+| 97794f1 | Verify Session 11's live Mux integration end-to-end |
+| d62e33e | Fix video playback: a plain \<video src="....m3u8"\> only plays HLS natively in Safari |
 
 ---
 
@@ -577,6 +596,15 @@ against the account the user created, within the same session.
   their own gated post; Session 11: an uploader seeing their own pending
   video). Each specific case has to be reasoned through and added
   explicitly -- there's no shortcut that covers all of them at once.
+- **Proving a URL is reachable (`curl`, a valid HTTP response) is not the
+  same claim as proving a browser can actually render what's behind
+  it.** The signed-playback verification in this session's item 12
+  genuinely proved the JWT and manifest were valid; it did not, and
+  could not, prove a `<video>` element could play HLS in a non-Safari
+  browser, because `curl` doesn't render anything. The user's own manual
+  test through the real UI is what actually caught this. Say what a
+  verification step did and didn't prove, rather than letting "verified
+  live" imply more than it does.
 
 ---
 
