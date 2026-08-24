@@ -610,3 +610,143 @@ against the account the user created, within the same session.
 
 **Session ended:** August 24, 2026, 14:25 UTC
 **All work pushed to GitHub:** https://github.com/F4milia/trib4l
+
+---
+
+## Session 12: Live Events and VOD Library
+
+**Date:** August 24, 2026 (UTC)
+**Model:** Claude Sonnet 5
+**Status:** Complete and pushed to GitHub and to hosted Supabase (staging + production). Live streaming itself cannot be exercised against the real Mux account -- see item 6 below; this is a Mux plan limitation, not something left unbuilt.
+
+---
+
+## What was completed
+
+1. **The plan's "entitlement resolution shares one code path with
+   Session 11" instruction, made concrete**: `video_assets` gained a
+   `required_stage_id` column and its `can_see_video_asset` function was
+   extended to call `is_at_or_past_stage` (Session 8) directly; the new
+   `live_streams` table reuses `can_see_gated_content` (also Session 8)
+   completely unchanged for its own select policy. An archived live
+   stream becomes a plain `video_assets` row, so watching a past
+   broadcast and a member-uploaded clip go through the exact same
+   entitlement check and the exact same player component, not two
+   parallel implementations.
+2. Every Mux Live Streaming API detail (`liveStreams.create`'s params,
+   the response shape, and -- the key discovery --
+   `WebhookAsset.live_stream_id`, which links an auto-archived
+   recording back to its stream) verified against the installed SDK's
+   type definitions first, continuing Session 11's practice.
+   `video.asset.live_stream_completed` was chosen as the archival
+   trigger over `video.asset.ready`, since the latter can fire
+   mid-broadcast for near-live viewing and isn't the "recording is
+   finalized" signal.
+3. **A real security gap, more severe than Session 11's analogous
+   one, reasoned through and closed before it shipped**: without a
+   privileged-columns guard on `live_streams`, an organizer could
+   insert a stream in their own org whose `playback_id` was copied from
+   somewhere else entirely -- RLS scopes rows by org, not the
+   truthfulness of a row's own column values, so every eligible member
+   would receive a validly signed token for content that org never
+   owned. Worse than Session 11's version because there's no
+   moderation_state layer softening it here. Closed the same way:
+   Mux-verified columns can only be set through the service-role path.
+4. **A second, unrelated gap surfaced by an isolation test actually
+   failing**: the new table's validating triggers query
+   `stages`/`cohorts`, and `service_role` bypasses RLS but *not*
+   ordinary Postgres `GRANT` privileges -- a separate layer neither
+   table had ever been granted to `service_role`, since both tables
+   predate Session 11 introducing that role to this codebase at all.
+   The failure was the actual Postgres error, "permission denied for
+   table stages," not a guess.
+5. **A third gap, found by reasoning about consistency rather than a
+   failing test**: `video_assets.required_stage_id` had no org-matching
+   validation trigger, unlike every other stage-gated column in this
+   app. Added one to match the existing pattern.
+6. **A real Mux product constraint discovered, not a bug**: creating a
+   live stream against the real Mux account from Session 11 returned
+   "Live streams are unavailable on the free plan." Confirmed this is
+   genuinely Mux's own limitation (called the API directly, read the
+   response) rather than assuming it away, and verified the app's own
+   error handling surfaces that exact message gracefully -- clean
+   redirect, no crash, no orphaned Mux resource. Upgrading the plan is a
+   billing decision only the user can make; the on-demand upload/
+   playback path from Session 11 is on a different Mux product and
+   entirely unaffected.
+7. 6 new isolation tests, taking the suite to 64 total, including the
+   cross-org "done means" bar extended to live streams and a direct
+   proof of the "shares one code path" claim -- the same stage that
+   blocks a live stream also blocks its archived VOD, checked against
+   the same `is_at_or_past_stage` call on both. Escalation ritual run
+   and confirmed: a loosened select policy made the isolation and
+   cohort/stage tests fail loudly with the real leaked rows printed;
+   restoring brought all 64 back.
+8. UI: a staff settings page, a member-facing library page, and one
+   watch page that resolves to whichever is actually available (live if
+   currently broadcasting, the archived recording once it isn't) rather
+   than two separate pages. The video player component was promoted out
+   of Session 11's video-specific route folder into a shared location
+   and given a `live` prop, since both watch pages now genuinely share
+   it. Manually verified end-to-end on a freshly reset database --
+   caught and reset past leftover isolation-test state yet again before
+   concluding anything, a pattern now unbroken across seven sessions.
+   Since a real broadcast couldn't be exercised (item 6), the full
+   active → idle → archived lifecycle and both watch-page branches were
+   verified by writing the same row states a real webhook sequence
+   would produce directly, the same technique Session 11 used before a
+   real webhook existed to test against.
+9. Wrote `docs/session-12-checklist.md`. Pushed all three new
+   migrations to `trib4l-staging` and `trib4l-production`, redeployed
+   production, committed and pushed.
+
+**Done criteria met, with one disclosed, external gap**: the plan's own
+entitlement-sharing requirement was met and directly proven by a test,
+not just asserted. Actually broadcasting through a real encoder and
+receiving a real `video.live_stream.active` webhook remains unverified,
+but that gap is Mux's plan limitation, not this app's -- everything this
+app controls (schema, RLS, the webhook handler's logic for every live
+event type, the UI) is built and, short of the literal RTMP feed, verified.
+
+---
+
+## Commits pushed this session
+
+| Commit | Message |
+|---|---|
+| 81d7f3d | Session 12: live events and VOD library |
+
+---
+
+## Notes for future reference
+
+- **`service_role` bypasses Row Level Security but not ordinary Postgres
+  `GRANT` privileges -- they're separate layers.** Any table a
+  service-role-driven trigger or query touches, even indirectly (here:
+  a validating trigger reading `stages`/`cohorts` while inserting into
+  `live_streams`), needs its own explicit grant to `service_role`, and
+  that's easy to miss for tables that predate `service_role` existing
+  in the codebase at all, since nothing about their own definition ever
+  needed to mention it.
+- **A "does this leak across orgs" review needs to ask about a row's
+  own column *values*, not just which rows RLS lets a role see.**
+  Session 11 and 12 both found the identical bug shape on two different
+  tables: RLS correctly scoped *which rows* a user could touch, but
+  nothing stopped a legitimately-scoped insert from carrying a
+  *value* (a `playback_id`) that didn't actually belong to that row's
+  own org. The fix pattern is now established (a privileged-columns
+  guard trigger that only service_role can bypass) -- worth checking
+  for on every future table that stores a third-party-verified
+  identifier a client could otherwise fabricate.
+- **When a real third-party API call fails for a genuine account/plan
+  reason (not a bug), verify that specifically** -- calling
+  `liveStreams.create` directly and reading Mux's own "unavailable on
+  the free plan" response turned an assumption into a confirmed,
+  disclosed constraint, and separately confirmed the app's own error
+  handling deals with that real failure gracefully rather than assuming
+  it would.
+
+---
+
+**Session ended:** August 24, 2026, 16:37 UTC
+**All work pushed to GitHub:** https://github.com/F4milia/trib4l
