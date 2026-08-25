@@ -280,6 +280,50 @@ export type Database = {
           },
         ]
       }
+      connected_accounts: {
+        Row: {
+          charges_enabled: boolean
+          created_at: string
+          disabled_reason: string | null
+          id: string
+          org_id: string
+          payouts_enabled: boolean
+          requirements_due: string[]
+          stripe_account_id: string
+          updated_at: string
+        }
+        Insert: {
+          charges_enabled?: boolean
+          created_at?: string
+          disabled_reason?: string | null
+          id?: string
+          org_id: string
+          payouts_enabled?: boolean
+          requirements_due?: string[]
+          stripe_account_id: string
+          updated_at?: string
+        }
+        Update: {
+          charges_enabled?: boolean
+          created_at?: string
+          disabled_reason?: string | null
+          id?: string
+          org_id?: string
+          payouts_enabled?: boolean
+          requirements_due?: string[]
+          stripe_account_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connected_accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idempotency_keys: {
         Row: {
           completed_at: string | null

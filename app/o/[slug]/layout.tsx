@@ -80,6 +80,11 @@ export default async function OrgLayout({
               </Link>
             </>
           )}
+          {currentOrg.role === "org_owner" && (
+            <Link href={`/o/${slug}/settings/commerce`} className={navLinkClass}>
+              Commerce
+            </Link>
+          )}
           <Link href="/" className={`${navLinkClass} ml-auto`}>
             All communities
           </Link>
