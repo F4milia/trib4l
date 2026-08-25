@@ -15,15 +15,40 @@ export default async function OrgHomePage({
   const { error, notice } = await searchParams;
   const { supabase, user } = await requireUser();
 
+  const { data: org } = await supabase.from("organizations").select("id, name").eq("slug", slug).single();
+  const orgId = org!.id;
+
   const { data: myBlocks } = await supabase.from("blocks").select("blocked_profile_id");
   const blockedIds = new Set((myBlocks ?? []).map((b) => b.blocked_profile_id));
+
+  // member_blocks is this org's own, narrower block list, keyed by
+  // membership id rather than profile id -- posts/comments are authored
+  // by profile id, so a blocked membership has to be translated back to
+  // its profile id before it can join the same filter as the global list
+  // below. Folded into the same `blockedIds` set rather than a second
+  // one: from the feed's point of view, "blocked everywhere" and
+  // "blocked in this community" both just mean "don't show me this
+  // person," so there's no reason to filter twice.
+  const { data: ownMembership } = await supabase
+    .from("memberships")
+    .select("id")
+    .eq("org_id", orgId)
+    .eq("profile_id", user.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (ownMembership) {
+    const { data: myMemberBlocks } = await supabase
+      .from("member_blocks")
+      .select("blocked:memberships!member_blocks_blocked_membership_id_fkey(profile_id)")
+      .eq("blocker_membership_id", ownMembership.id);
+    for (const b of myMemberBlocks ?? []) {
+      if (b.blocked?.profile_id) blockedIds.add(b.blocked.profile_id);
+    }
+  }
 
   const orgs = await getUserOrgs(supabase, user.id);
   const currentOrg = orgs.find((o) => o.slug === slug);
   const isStaff = currentOrg?.role === "organizer" || currentOrg?.role === "org_owner";
-
-  const { data: org } = await supabase.from("organizations").select("id, name").eq("slug", slug).single();
-  const orgId = org!.id;
 
   // What can this person post into, besides org-wide? Staff get every
   // cohort (announcements); a regular member only their own, if any.
