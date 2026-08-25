@@ -38,12 +38,14 @@ Session 0–2 decisions. Changing any of them after Session 6 means rework, not 
 | Role | Where it lives | Scope |
 |---|---|---|
 | `member` | `memberships` | Per-org row; a user may hold many |
-| `mentor` | `memberships` | Per-org, plus assigned pairings |
-| `organizer` | `memberships` | Per-org, cohort management |
-| `org_owner` | `memberships` | Per-org, billing + settings |
+| `mentor` | `memberships` | Per-org; a guide role via the Session 9 pairing lifecycle (proposed → active → completed) |
+| `organizer` | `memberships` | Per-org; surfaces conflict and handles Family admin — cohort management, content moderation, member reports |
+| `org_owner` | `memberships` | Per-org, billing + settings, plus role changes (promotions/demotions) |
 | `platform_admin` | `platform_staff` | **All orgs. Not a membership.** |
 
 `platform_admin` has its own table because it exists *above* orgs. Putting it in `memberships` means every RLS policy special-cases it, and that is how tenant isolation breaks quietly. Defined Session 1, tested Session 2, never bolted on.
+
+**F4milia framing vs. current behavior — one gap.** "Organizer surfaces conflict and handles Family admin" is F4milia's intended meaning for the role, and it already holds for cohort management, moderation, and reports. It does *not* yet hold for `designate_mentor` (the member → mentor transition): that action runs under `memberships`' own role-change RLS, which has required `org_owner` specifically since Session 2 (Session 9 built the transition reusing that existing restriction, not a new one). An organizer cannot promote a member to mentor today. Confirmed working correctly end to end for an org_owner caller (isolation-tested); whether organizer should gain this ability is a product decision, not made here — this note exists so the description above doesn't overstate what's actually enforced.
 
 **Commerce: orgs are the merchant.** Stripe Connect **Standard** accounts, **direct charges**, `application_fee_amount`. The connected account is merchant of record: pays Stripe fees, owns disputes, owns its sales tax obligation, has its own dashboard. Trib4l takes a platform fee and stays clear of merchant liability, tax nexus, and chargeback exposure.
 
