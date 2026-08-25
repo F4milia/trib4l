@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertFamilyMemberCapNotExceeded, FamilyMemberCapExceeded } from "@/lib/family-cap";
 import type { Database } from "@/lib/supabase/database.types";
 
 type MembershipRole = Database["public"]["Enums"]["membership_role"];
@@ -19,6 +20,15 @@ export async function createInvitation(formData: FormData) {
 
   if (!email) {
     redirect(`/o/${orgSlug}/settings/members?error=${encodeURIComponent("An email address is required.")}`);
+  }
+
+  try {
+    await assertFamilyMemberCapNotExceeded(supabase, orgId, role);
+  } catch (err) {
+    if (err instanceof FamilyMemberCapExceeded) {
+      redirect(`/o/${orgSlug}/settings/members?error=${encodeURIComponent(err.message)}`);
+    }
+    throw err;
   }
 
   const { error } = await supabase.from("invitations").insert({
