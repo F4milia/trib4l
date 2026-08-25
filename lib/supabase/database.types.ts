@@ -795,6 +795,117 @@ export type Database = {
           },
         ]
       }
+      member_blocks: {
+        Row: {
+          blocked_membership_id: string
+          blocker_membership_id: string
+          created_at: string
+          id: string
+          org_id: string
+        }
+        Insert: {
+          blocked_membership_id: string
+          blocker_membership_id: string
+          created_at?: string
+          id?: string
+          org_id: string
+        }
+        Update: {
+          blocked_membership_id?: string
+          blocker_membership_id?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_blocks_blocked_membership_id_fkey"
+            columns: ["blocked_membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_blocks_blocker_membership_id_fkey"
+            columns: ["blocker_membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_blocks_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_reports: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          reason: string
+          reported_membership_id: string
+          reporter_membership_id: string
+          resolved_at: string | null
+          resolved_by_profile_id: string | null
+          status: Database["public"]["Enums"]["report_status"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          reason: string
+          reported_membership_id: string
+          reporter_membership_id: string
+          resolved_at?: string | null
+          resolved_by_profile_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          reason?: string
+          reported_membership_id?: string
+          reporter_membership_id?: string
+          resolved_at?: string | null
+          resolved_by_profile_id?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_reports_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reports_reported_membership_id_fkey"
+            columns: ["reported_membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reports_reporter_membership_id_fkey"
+            columns: ["reporter_membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_reports_resolved_by_profile_id_fkey"
+            columns: ["resolved_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_stages: {
         Row: {
           created_at: string
