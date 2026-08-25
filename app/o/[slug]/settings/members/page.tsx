@@ -35,7 +35,7 @@ export default async function MembersSettingsPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
-      <PageHeading>Members</PageHeading>
+      <PageHeading>Invitations</PageHeading>
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       <Card>
