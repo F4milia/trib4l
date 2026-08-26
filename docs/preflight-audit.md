@@ -184,7 +184,10 @@ committed, and reads as authoritative — it documents *why* the teal palette wa
 chosen (copied from a sibling BrandLamb property, per direct instruction). The
 next UI session obeys whichever it reads first.
 
-**Fix:** one of them needs an explicit "superseded by" header.
+**RESOLVED — August 27, 2026.** James decided all design work follows
+`f4milia-design-system.md`. `docs/design-system.md` now carries a SUPERSEDED
+header pointing at it, and is retained only as the record of what is currently
+shipped in `app/globals.css`. `CLAUDE.md` already pointed at the right doc.
 
 ## 4b — The port assumes a UI stack that is not installed
 
@@ -203,7 +206,13 @@ It also specifies `@config '../tailwind.config.js'`, while this repo uses
 Tailwind v4 CSS-first `@theme inline` with no config file — and
 `docs/design-system.md` records that as a deliberate choice.
 
-**Fix:** settle this before the first UI session, not during it.
+**Partially resolved.** The Tailwind-config half is settled by the design
+system's own port checklist, which reads "copy the five brand colors into
+`tailwind.config.js` (or `@theme` in v4)" — so the repo keeps its existing
+Tailwind v4 CSS-first `@theme inline` approach and no config file is added.
+Still open: whether to install the shadcn `base-nova` / Base UI / lucide-react
+stack the doc assumes, or port the tokens onto the existing hand-rolled
+`components/ui.tsx`. Settle before the first UI session, not during it.
 
 ## 4c — Terracotta primary fails WCAG AA, and no resolved value exists anywhere
 
@@ -306,7 +315,7 @@ document reconciliation, not architecture.
 |---|---|---|
 | 1 | **Commit** `CLAUDE.md` + the four docs + `greptile.json` + both workflows | B1 |
 | 2 | **Decide the primary token** — `#A04729` at 5.59:1, or another verified value | 4c |
-| 3 | **Mark one design system superseded**; settle `@theme inline` vs `tailwind.config.js` | 4a, 4b |
+| 3 | ~~Mark one design system superseded~~ **done**; `@theme inline` kept. Remaining: shadcn/Base UI stack decision | 4a, 4b |
 | 4 | **Fix the glob list** — real auth paths, `app/actions/**`, `app/api/webhooks/**`; drop the Stripe exclude | 1a, 1b |
 | 5 | **Install Greptile + CodeRabbit**, verify the config schema, create `clean`/`rework` labels | 1c, C2 |
 | 6 | **Make both CI jobs real** — `playwright.config.ts` + one smoke spec; `supabase db reset` + first pgTAP files | 2a, 2b, 2c |
