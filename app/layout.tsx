@@ -9,7 +9,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-canvas text-ink">{children}</body>
+      {/* Browser extensions (Grammarly, password managers) add attributes to
+          <body> before hydration; suppression is one level deep, so real
+          mismatches inside the tree still surface. */}
+      <body
+        className="min-h-full flex flex-col bg-canvas text-ink"
+        suppressHydrationWarning
+      >
+        {children}
+      </body>
     </html>
   );
 }
