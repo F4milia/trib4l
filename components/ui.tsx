@@ -6,6 +6,7 @@ import type {
   LabelHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
+  TextareaHTMLAttributes,
 } from "react";
 import { cn } from "@/lib/utils";
 
@@ -171,5 +172,85 @@ export function PageHeading({ children, eyebrow }: { children: ReactNode; eyebro
       ) : null}
       <h1 className="max-w-3xl font-serif text-5xl leading-[0.86] tracking-tighter sm:text-7xl">{children}</h1>
     </>
+  );
+}
+
+export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={cn(field, "min-h-28 h-auto py-2", className)} {...props} />;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Figures — §7.4-7.9                                                        */
+/* -------------------------------------------------------------------------- */
+
+/** §7.4. Border comes from currentColor, so set the text color and the frame follows. */
+export function Stamp({ children, className }: { children: ReactNode; className?: string }) {
+  return <span className={cn("stamp w-fit", className)}>{children}</span>;
+}
+
+/**
+ * §7.5. Squares, never circles. The fill rotates through the four accents;
+ * on hearth-ochre the label flips to ink, because ochre measures 1.74:1
+ * against parchment and cannot carry parchment text.
+ */
+const avatarFills = [
+  "bg-terracotta text-parchment",
+  "bg-hearth-ochre text-deep-slate",
+  "bg-baked-clay text-parchment",
+  "bg-deep-slate text-parchment",
+] as const;
+
+const avatarSizes = { sm: "size-8", md: "size-10", lg: "size-16" } as const;
+
+export function Avatar({
+  initials,
+  index = 0,
+  size = "md",
+  className,
+}: {
+  initials: string;
+  index?: number;
+  size?: keyof typeof avatarSizes;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "flex items-center justify-center border-2 border-deep-slate font-mono text-xs font-black",
+        avatarSizes[size],
+        avatarFills[index % avatarFills.length],
+        className,
+      )}
+    >
+      {initials}
+    </span>
+  );
+}
+
+/**
+ * §7.6. Always bordered, always square, always carries a label — which is why
+ * `label` is required rather than optional.
+ *
+ * §9 also requires color-independence: a pip must never be the only carrier of
+ * a status for sighted users either. Pair it with the text it qualifies.
+ */
+export function StatusPip({
+  label,
+  surface = "paper",
+  className,
+}: {
+  label: string;
+  surface?: "paper" | "ink";
+  className?: string;
+}) {
+  return (
+    <span
+      aria-label={label}
+      className={cn(
+        "border-2 border-deep-slate bg-terracotta",
+        surface === "ink" ? "size-2" : "size-3",
+        className,
+      )}
+    />
   );
 }
