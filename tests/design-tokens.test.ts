@@ -108,3 +108,61 @@ describe("theming", () => {
     expect(css).toContain("color-scheme: dark");
   });
 });
+
+/**
+ * §3.1 runs the system on three type voices, and the doc calls the
+ * serif/mono contrast load-bearing: "the design depends on it". The source
+ * repo shipped no webfonts, so these are bound here for the first time.
+ *
+ * next/font self-hosts at build time -- no runtime request to Google, which
+ * also keeps the font layer clear of invariant 4's concerns.
+ */
+describe("type voices (3.1)", () => {
+  const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
+
+  it("binds the voices through next/font rather than a stylesheet link", () => {
+    expect(layout).toContain('from "next/font/google"');
+    expect(layout).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
+  });
+
+  it.each(["Playfair_Display", "Inter", "JetBrains_Mono"])("loads %s", (family) => {
+    expect(layout).toContain(family);
+  });
+
+  /**
+   * The real failure mode for a two-file font binding: someone renames a
+   * variable on one side and the other silently falls through to its
+   * fallback stack, which still renders -- so nothing breaks loudly and the
+   * serif/mono contrast the design depends on is quietly gone.
+   */
+  it("has every next/font variable consumed by the token layer", () => {
+    const declared = [...layout.matchAll(/variable:\s*"(--font-[a-z0-9-]+)"/g)].map((m) => m[1]);
+    expect(declared).toHaveLength(3);
+    for (const variable of declared) {
+      expect(css).toContain(`var(${variable})`);
+    }
+  });
+
+  it("has every next/font variable applied to the document element", () => {
+    const consts = [...layout.matchAll(/const (\w+) = (?:Playfair_Display|Inter|JetBrains_Mono)\(/g)].map((m) => m[1]);
+    expect(consts).toHaveLength(3);
+    const html = layout.slice(layout.indexOf("<html"), layout.indexOf(">", layout.indexOf("<html")));
+    for (const name of consts) {
+      expect(html).toContain(`${name}.variable`);
+    }
+  });
+
+  it.each([
+    ["--font-serif", "serif"],
+    ["--font-sans", "sans-serif"],
+    ["--font-mono", "monospace"],
+  ])("keeps a real fallback stack behind %s", (token, generic) => {
+    expect(css).toMatch(new RegExp(`${token}:\\s*var\\(--font-[a-z0-9-]+\\),[^;]*${generic}`));
+  });
+
+  it("declares theme-color for both themes (9)", () => {
+    expect(layout).toContain("themeColor");
+    expect(layout).toMatch(/prefers-color-scheme:\s*light/);
+    expect(layout).toMatch(/prefers-color-scheme:\s*dark/);
+  });
+});

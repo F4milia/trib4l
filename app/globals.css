@@ -42,10 +42,11 @@
   --shadow-panel-warm: 5px 5px 0 #bc472e;
   --shadow-panel-hero: 8px 8px 0 rgba(188, 71, 46, 0.75);
 
-  /* --- Type voices (§3.1). Real families bind in PR A2 via next/font. --- */
-  --font-serif: Iowan Old Style, Palatino Linotype, Palatino, Georgia, Cambria, serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica Neue, Arial, sans-serif;
-  --font-mono: SF Mono, IBM Plex Mono, Menlo, Consolas, ui-monospace, monospace;
+  /* --- Type voices (§3.1). Families bound in app/layout.tsx via next/font;
+         the fallback stacks behind them cover the pre-swap paint. --- */
+  --font-serif: var(--font-playfair), Iowan Old Style, Palatino, Georgia, Cambria, serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica Neue, Arial, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), SF Mono, IBM Plex Mono, Menlo, Consolas, ui-monospace, monospace;
 }
 
 /* --- Semantic tokens — light (§2.2) --- */
