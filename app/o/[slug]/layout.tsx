@@ -49,10 +49,16 @@ export default async function OrgLayout({
           <Link href={`/o/${slug}/members`} className={navLinkClass}>
             Members
           </Link>
+          <Link href={`/o/${slug}/shop`} className={navLinkClass}>
+            Shop
+          </Link>
           {(currentOrg.role === "organizer" || currentOrg.role === "org_owner") && (
             <>
               <Link href={`/o/${slug}/settings/members`} className={navLinkClass}>
                 Invitations
+              </Link>
+              <Link href={`/o/${slug}/settings/products`} className={navLinkClass}>
+                Products
               </Link>
               <Link href={`/o/${slug}/settings/cohorts`} className={navLinkClass}>
                 Cohorts

@@ -55,10 +55,31 @@ export async function POST(request: Request) {
       if (error) throw error;
       break;
     }
+    case "checkout.session.completed": {
+      const session = event.data.object;
+      const orderId = session.client_reference_id;
+      if (!orderId) break;
+
+      const { error } = await supabase.from("orders").update({ status: "paid" }).eq("id", orderId);
+      if (error) throw error;
+      break;
+    }
+    case "checkout.session.expired": {
+      const session = event.data.object;
+      const orderId = session.client_reference_id;
+      if (!orderId) break;
+
+      // Only a still-pending order is actually expiring -- a session
+      // that expired after the customer already paid (a very late
+      // redelivery, or checkout.session.completed racing ahead of this
+      // event) must never get overwritten back to canceled.
+      const { error } = await supabase.from("orders").update({ status: "canceled" }).eq("id", orderId).eq("status", "pending");
+      if (error) throw error;
+      break;
+    }
     default:
-      // Every other Stripe event type is out of scope for Session 13 --
-      // acknowledged and ignored. Checkout/order events arrive starting
-      // Session 14.
+      // Every other Stripe event type is out of scope for this app --
+      // acknowledged and ignored.
       break;
   }
 

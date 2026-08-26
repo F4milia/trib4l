@@ -1115,6 +1115,102 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          unit_price_cents: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          quantity: number
+          unit_price_cents: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          unit_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          buyer_profile_id: string | null
+          created_at: string
+          currency: string
+          id: string
+          org_id: string
+          status: Database["public"]["Enums"]["order_status"]
+          stripe_checkout_session_id: string | null
+          total_cents: number
+          updated_at: string
+        }
+        Insert: {
+          buyer_profile_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          org_id: string
+          status?: Database["public"]["Enums"]["order_status"]
+          stripe_checkout_session_id?: string | null
+          total_cents: number
+          updated_at?: string
+        }
+        Update: {
+          buyer_profile_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          org_id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          stripe_checkout_session_id?: string | null
+          total_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_buyer_profile_id_fkey"
+            columns: ["buyer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_profiles: {
         Row: {
           avatar_url: string | null
@@ -1296,6 +1392,56 @@ export type Database = {
             columns: ["video_asset_id"]
             isOneToOne: false
             referencedRelation: "video_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          name: string
+          org_id: string
+          price_cents: number
+          type: Database["public"]["Enums"]["product_type"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          org_id: string
+          price_cents: number
+          type: Database["public"]["Enums"]["product_type"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          price_cents?: number
+          type?: Database["public"]["Enums"]["product_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1913,6 +2059,8 @@ export type Database = {
       meetup_rsvp_status: "going" | "maybe" | "not_going"
       membership_role: "member" | "mentor" | "organizer" | "org_owner"
       mentor_pairing_status: "proposed" | "active" | "completed" | "declined"
+      order_status: "pending" | "paid" | "canceled" | "refunded"
+      product_type: "digital" | "physical" | "ticket" | "cohort_seat"
       report_status: "open" | "escalated" | "resolved"
       report_target_type: "post" | "comment" | "member"
     }
@@ -2049,6 +2197,8 @@ export const Constants = {
       meetup_rsvp_status: ["going", "maybe", "not_going"],
       membership_role: ["member", "mentor", "organizer", "org_owner"],
       mentor_pairing_status: ["proposed", "active", "completed", "declined"],
+      order_status: ["pending", "paid", "canceled", "refunded"],
+      product_type: ["digital", "physical", "ticket", "cohort_seat"],
       report_status: ["open", "escalated", "resolved"],
       report_target_type: ["post", "comment", "member"],
     },
