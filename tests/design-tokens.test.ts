@@ -166,3 +166,69 @@ describe("type voices (3.1)", () => {
     expect(layout).toMatch(/prefers-color-scheme:\s*dark/);
   });
 });
+
+/**
+ * §6 calls these "the system's own primitives" and says to port them as-is:
+ * "These five classes carry the visual identity." Six here -- the doc flags
+ * .panel-paper as referenced in its source repo but never defined, and gives
+ * the definition to add.
+ */
+describe("house utilities (6)", () => {
+  const block = (name: string) => {
+    const start = css.indexOf(`.${name}`);
+    expect(start, `.${name} is not defined`).toBeGreaterThan(-1);
+    return css.slice(start, css.indexOf("}", start) + 1);
+  };
+
+  it.each(["panel-ink", "panel-dark", "panel-paper", "neon-repair", "stamp", "masonry"])(
+    "defines .%s",
+    (name) => {
+      expect(block(name).length).toBeGreaterThan(0);
+    },
+  );
+
+  it("draws .panel-ink from currentColor so it inverts with its container", () => {
+    expect(block("panel-ink")).toContain("currentcolor");
+  });
+
+  it("gives .panel-dark a parchment border and a terracotta shadow -- terracotta shadows go on ink", () => {
+    const b = block("panel-dark");
+    expect(b).toMatch(/border:\s*2px solid var\(--color-parchment\)/);
+    expect(b).toMatch(/box-shadow:[^;]*var\(--color-terracotta\)/);
+  });
+
+  it.each(["panel-ink", "panel-dark", "panel-paper"])("keeps .%s elevation hard -- no blur, no spread", (name) => {
+    const shadow = block(name).match(/box-shadow:\s*([^;]+)/)?.[1];
+    if (!shadow) return; // panel-paper is the un-elevated counterpart
+    expect(shadow).toMatch(/^\d+px \d+px 0 /);
+  });
+
+  it("reserves the only glow in the system for .neon-repair", () => {
+    expect(block("neon-repair")).toContain("inset");
+    // Nothing else may carry a blurred shadow.
+    const blurred = [...css.matchAll(/box-shadow:\s*([^;]+);/g)]
+      .map((m) => m[1])
+      .filter((s) => !s.includes("inset") && !/^\d+px \d+px 0 /.test(s.trim()));
+    expect(blurred).toEqual([]);
+  });
+
+  it("borders .stamp from currentColor and sets it uppercase 900", () => {
+    const b = block("stamp");
+    expect(b).toContain("currentcolor");
+    expect(b).toContain("text-transform: uppercase");
+    expect(b).toContain("font-weight: 900");
+  });
+
+  it("lays .masonry out as 8 bricks, 6 on small screens", () => {
+    expect(block("masonry")).toMatch(/grid-template-columns:\s*repeat\(8,\s*1fr\)/);
+    const mobile = css.slice(css.indexOf("max-width: 640px"));
+    expect(mobile).toMatch(/grid-template-columns:\s*repeat\(6,\s*1fr\)/);
+  });
+
+  it("rotates the masonry brick fills across three brand colors", () => {
+    const masonry = css.slice(css.indexOf(".masonry"));
+    for (const token of ["--color-terracotta", "--color-hearth-ochre", "--color-baked-clay"]) {
+      expect(masonry).toContain(token);
+    }
+  });
+});

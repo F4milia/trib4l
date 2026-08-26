@@ -142,6 +142,90 @@ body::before {
 }
 
 /* ============================================================================
+   House utilities (§6) — "the system's own primitives … these classes carry
+   the visual identity." Ported as-is, with every color routed through the
+   brand tokens rather than repeated as literals.
+
+   .panel-paper is not in the source repo. §6 flags it as referenced in
+   vow-rotation.tsx but never defined, and supplies the definition; it lands
+   here as the un-elevated counterpart to .panel-ink.
+
+   In the components layer, not as @utility, so a Tailwind utility on the same
+   element still wins — a card can carry .panel-ink and override its border
+   with border-deep-slate/15 without a specificity fight.
+   ========================================================================= */
+@layer components {
+  /* Elevated panel on paper — the default container treatment. Border draws
+     from currentColor so the panel inverts with whatever it sits in. */
+  .panel-ink {
+    border: 2px solid currentColor;
+    box-shadow: 5px 5px 0 var(--color-deep-slate);
+  }
+
+  /* Elevated panel on ink — terracotta registration shadow. §5.3: ink shadow
+     on paper surfaces, terracotta shadow on ink surfaces. */
+  .panel-dark {
+    border: 2px solid var(--color-parchment);
+    box-shadow: 5px 5px 0 var(--color-terracotta);
+  }
+
+  /* Un-elevated counterpart to .panel-ink (§6, missing definition). */
+  .panel-paper {
+    border: 2px solid var(--color-deep-slate);
+    background: var(--color-parchment);
+  }
+
+  /* The only glow in the system — reserved for repair / conflict entries. */
+  .neon-repair {
+    border: 2px solid var(--color-terracotta);
+    box-shadow:
+      0 0 20px rgb(188 71 46 / 0.8),
+      inset 0 0 16px rgb(188 71 46 / 0.18);
+  }
+
+  /* Inline uppercase badge — inherits currentColor for its border, so setting
+     the text color sets the frame (§7.4). */
+  .stamp {
+    border: 2px solid currentColor;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Progress-as-brickwork — the signature data display (§7.9). CLAUDE.md:
+     Tower progress renders as stacked masonry blocks, never a smooth bar.
+     Bricks are decorative; the container carries the aria-label. */
+  .masonry {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 3px;
+    align-items: end;
+  }
+
+  .masonry > span {
+    min-height: 2rem;
+    border: 2px solid var(--color-deep-slate);
+    background: var(--color-terracotta);
+  }
+
+  .masonry > span:nth-child(3n) {
+    background: var(--color-hearth-ochre);
+  }
+
+  .masonry > span:nth-child(4n) {
+    background: var(--color-baked-clay);
+  }
+
+  @media (max-width: 640px) {
+    .masonry {
+      grid-template-columns: repeat(6, 1fr);
+    }
+  }
+}
+
+/* ============================================================================
    Legacy aliases — REMOVED IN PR D1. Retargeted onto Hearth & Material so the
    existing ~307 class usages re-palette with no component edits. Mappings come
    from f4milia-design-system.md; accent-soft has no counterpart there and maps
