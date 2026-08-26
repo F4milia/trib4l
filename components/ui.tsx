@@ -254,3 +254,72 @@ export function StatusPip({
     />
   );
 }
+
+/**
+ * §7.9, and the mechanism behind CLAUDE.md's rule that Tower progress renders
+ * as stacked masonry blocks, never a smooth bar. 24 bricks; height varies
+ * 25/32/39px on i % 3; incomplete bricks dim rather than disappear.
+ *
+ * role="img" plus the label is an addition to §7.9, which asks for an
+ * aria-label on the container but does not say how it is exposed: a bare div
+ * with aria-label is not reliably announced, and the role makes the bricks
+ * inside it correctly opaque to assistive tech.
+ */
+const MASONRY_BRICKS = 24;
+
+export function Masonry({
+  filled,
+  total = MASONRY_BRICKS,
+  label,
+  className,
+}: {
+  filled: number;
+  total?: number;
+  label: string;
+  className?: string;
+}) {
+  const lit = Math.max(0, Math.min(filled, total));
+  return (
+    <div role="img" aria-label={label} className={cn("masonry", className)}>
+      {Array.from({ length: total }, (_, i) => (
+        <span key={i} style={{ opacity: i < lit ? 1 : 0.2, minHeight: `${25 + (i % 3) * 7}px` }} />
+      ))}
+    </div>
+  );
+}
+
+/** §3.7's page eyebrow. */
+export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <p className={cn("font-mono text-xs font-black uppercase tracking-[0.2em] text-baked-clay", className)}>
+      {children}
+    </p>
+  );
+}
+
+/**
+ * §4.7's page header: a heavy 4px rule closes it, mb-10 to the body, mb-3 from
+ * eyebrow to title. `actions` exists so a surface with a header-right link does
+ * not have to rebuild the flex row itself.
+ */
+export function PageHeader({
+  title,
+  eyebrow,
+  actions,
+  className,
+}: {
+  title: ReactNode;
+  eyebrow?: string;
+  actions?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <header className={cn("mb-10 border-b-4 border-deep-slate pb-5", className)}>
+      {eyebrow ? <Eyebrow className="mb-3">{eyebrow}</Eyebrow> : null}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="max-w-3xl font-serif text-5xl leading-[0.86] tracking-tighter sm:text-7xl">{title}</h1>
+        {actions ? <div className="flex shrink-0 items-center gap-4">{actions}</div> : null}
+      </div>
+    </header>
+  );
+}
