@@ -124,10 +124,16 @@ export function Button({
 /* Input / Select — §7.2                                                      */
 /* -------------------------------------------------------------------------- */
 
-/** Background is always transparent — fields are drawn, not filled. */
+/**
+ * Background is always transparent — fields are drawn, not filled.
+ *
+ * The placeholder is /70, not §7.2's /50: a placeholder is text, and /50
+ * measures 3.26:1 on parchment. The Select chevron stays at /60 (4.44:1) —
+ * it is a graphical object, which WCAG holds to 3:1, not 4.5:1.
+ */
 const field =
   "h-11 w-full min-w-0 border border-deep-slate/20 bg-transparent px-3 text-base " +
-  "transition-colors outline-none placeholder:text-deep-slate/50 " +
+  "transition-colors outline-none placeholder:text-deep-slate/70 " +
   "focus-visible:border-terracotta focus-visible:ring-3 focus-visible:ring-terracotta " +
   "disabled:cursor-not-allowed disabled:opacity-50 " +
   "aria-invalid:border-terracotta aria-invalid:ring-3 aria-invalid:ring-terracotta/20 " +

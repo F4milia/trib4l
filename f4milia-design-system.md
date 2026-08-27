@@ -307,7 +307,7 @@ Tailwind's default scale, used in a deliberately bimodal way — very large or v
 <div class="border-l-4 border-terracotta pl-5 font-serif text-xl leading-8 text-parchment/90">“…”</div>
 
 <!-- Micro label -->
-<p class="font-mono text-[10px] font-black uppercase tracking-widest text-deep-slate/55">Convener / Mara</p>
+<p class="font-mono text-[10px] font-black uppercase tracking-widest text-deep-slate/70">Convener / Mara</p>
 ```
 
 ---
@@ -519,26 +519,38 @@ These five classes carry the visual identity. Port them as-is.
 
 ### 7.1 Button
 
-Base UI `<Button>` + CVA. Radius classes in the variant strings are neutralized by the global reset.
+A plain `<button>` + CVA in `components/ui.tsx` — **not** Base UI. The shadcn
+`base-nova` stack this document was written against was not adopted (§13); the
+specs below describe what ships. Radius is neutralized by the global reset, so
+no variant string here thinks about it.
 
-**Base:** `inline-flex shrink-0 items-center justify-center border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4`
+**Base:** `inline-flex h-11 shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap border-2 border-transparent px-4 text-sm font-medium transition-colors active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta disabled:pointer-events-none disabled:opacity-50 [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4`
+
+Three deliberate differences from the original: `border-2` not `border` (§5.2's
+object outline weight), `transition-colors` not `transition-all` (§8 — things
+shift, they do not ease), and §9's `outline` focus form rather than the `ring`
+form, which §9 reserves for Base UI primitives.
 
 | Variant | Treatment |
 |---|---|
-| `default` | `bg-primary text-primary-foreground` — terracotta on parchment |
-| `outline` | `border-border bg-background hover:bg-muted` |
-| `secondary` | `bg-secondary text-secondary-foreground hover:bg-secondary/80` |
-| `ghost` | `hover:bg-muted hover:text-foreground` |
-| `destructive` | `border-destructive text-destructive hover:bg-destructive/10 hover:text-baked-clay` — **drawn, not filled.** A terracotta label on a terracotta/10 tint measures 4.11:1 at rest and 3.55:1 on hover; drawn measures 4.70:1 and 4.89:1. |
-| `link` | `text-primary underline-offset-4 hover:underline` |
+| `primary` *(default)* | `bg-terracotta text-parchment hover:bg-baked-clay` — terracotta on parchment, 4.70:1 |
+| `danger` | `border-terracotta text-terracotta hover:bg-terracotta/10 hover:text-baked-clay` — **drawn, not filled.** A terracotta label on a terracotta/10 tint measures 4.11:1 at rest and 3.55:1 on hover; drawn measures 4.70:1 and 4.89:1. |
+| `ghost` | `text-deep-slate hover:bg-muted` |
 
-| Size | Height | Padding | Icon |
-|---|---|---|---|
-| `xs` | `h-6` | `px-2` | `size-3` |
-| `sm` | `h-7` | `px-2.5` | `size-3.5` |
-| `default` | `h-8` | `px-2.5` | `size-4` |
-| `lg` | `h-9` | `px-2.5` | `size-4` |
-| `icon-xs` / `icon-sm` / `icon` / `icon-lg` | `size-6` / `size-7` / `size-8` / `size-9` | — | — |
+| Surface | Effect |
+|---|---|
+| `paper` *(default)* | as above |
+| `ink` | `danger` demotes to hearth-ochre (9.12:1) · `ghost` takes `text-parchment` (15.87:1) · `primary` unchanged, it carries its own fill |
+
+**There is no `size` prop.** Height is a fixed `h-11`, matching `Input` so a
+button and a field sit level in the same row. The original document listed an
+`xs`/`sm`/`default`/`lg` scale plus four icon sizes; none of it ships, and
+nothing has needed it.
+
+**`outline`, `secondary` and `link` do not exist.** They were shadcn's stock
+variants, not this system's. `default` and `destructive` are named `primary`
+and `danger` here. Do not write `variant="outline"` — TypeScript will reject
+it, which is the intended outcome.
 
 **House overrides in use** — the default `h-8` is too quiet for a primary action, so real CTAs are lifted:
 
@@ -576,15 +588,15 @@ Base UI `<Button>` + CVA. Radius classes in the variant strings are neutralized 
 
 ### 7.2 Input
 
-Base UI `<Input>`. One variant only.
+A plain `<input>` in `components/ui.tsx` — **not** Base UI. One variant only.
+`Select` shares the same base plus `appearance-none pr-10` and a drawn
+`ChevronDown`.
 
-**Base:** `h-8 w-full min-w-0 border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm`
+**Base:** `h-11 w-full min-w-0 border border-deep-slate/20 bg-transparent px-3 text-base transition-colors outline-none placeholder:text-deep-slate/70 focus-visible:border-terracotta focus-visible:ring-3 focus-visible:ring-terracotta disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-terracotta aria-invalid:ring-3 aria-invalid:ring-terracotta/20 md:text-sm`
 
-**House override for forms** — the `h-8` default is too tight for a labelled field:
-
-```html
-<Input class="h-11 border-deep-slate/20 bg-transparent focus-visible:ring-terracotta" />
-```
+`h-11` is the base, not a house override — the original documented an `h-8`
+default with every form overriding it, which is a default nobody used. The
+placeholder is `/70`: a placeholder is text, and `/50` measures 3.26:1.
 
 **Field pattern** — mono label above, hairline-bordered input, small helper below:
 
@@ -596,7 +608,7 @@ Base UI `<Input>`. One variant only.
   </label>
   <Input id="name" class="h-11 border-deep-slate/20 bg-transparent
                           focus-visible:ring-terracotta" />
-  <p class="text-xs leading-5 text-deep-slate/50">The name used across the household.</p>
+  <p class="text-xs leading-5 text-deep-slate/70">The name used across the household.</p>
 </div>
 ```
 
@@ -610,19 +622,25 @@ Alternate label style inside `.panel-ink` cards: `font-mono text-xs font-black u
 
 ### 7.3 Card
 
-shadcn card with a `--card-spacing` custom property and slot-driven layout.
+A single `<div>` in `components/ui.tsx` with a `treatment` prop — **not**
+shadcn's slot-driven card. **`CardHeader`, `CardTitle`, `CardDescription`,
+`CardAction`, `CardContent` and `CardFooter` do not exist**, and neither does
+`--card-spacing` or `size="sm"`. Those were shadcn's API; the stack was not
+adopted (§13). Compose card internals with plain markup and the type recipes in
+§3.7.
 
-| Slot | Base classes |
-|---|---|
-| `Card` | `flex flex-col gap-(--card-spacing) overflow-hidden bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)]` |
-| `CardHeader` | `grid auto-rows-min items-start gap-1 px-(--card-spacing)` |
-| `CardTitle` | `text-base leading-snug font-medium` |
-| `CardDescription` | `text-sm text-muted-foreground` |
-| `CardAction` | `col-start-2 row-span-2 row-start-1 self-start justify-self-end` |
-| `CardContent` | `px-(--card-spacing)` |
-| `CardFooter` | `flex items-center border-t bg-muted/50 p-(--card-spacing)` |
+| `treatment` | Classes | Use |
+|---|---|---|
+| `panel` *(default)* | `panel-ink bg-parchment p-6 sm:p-8` | ink panel on paper — the default container |
+| `dark` | `panel-dark bg-deep-slate text-parchment p-6 sm:p-8` | inverted panel, terracotta registration shadow. **Pass `surface="ink"` to any Button inside it** (§7.1) |
+| `flat` | `border-deep-slate/15 bg-transparent shadow-none p-6` | quiet — forms and dense lists |
 
-`size="sm"` sets `--card-spacing: --spacing(3)` (12px) instead of `--spacing(4)` (16px).
+The hero treatment is not a `treatment` value: it is `dark` plus
+`shadow-[8px_8px_0px_0px_rgba(188,71,46,0.75)]` via `className`.
+
+`className` merges over the treatment through `cn()`, so any of the three can
+be overridden per instance without a specificity fight — which is why the house
+utilities live in `@layer components` rather than as `@utility` (§6).
 
 **The three house card treatments** — always apply one:
 
@@ -642,7 +660,7 @@ shadcn card with a `--card-spacing` custom property and slot-driven layout.
 **Rules**
 - Card titles inherit the global heading rule when rendered as headings — expect uppercase 900. In-card display titles override upward: `text-3xl sm:text-5xl`, up to `text-5xl sm:text-8xl` for ceremony moments.
 - Card descriptions switch to `font-serif text-lg|text-xl leading-relaxed` at full ink strength (`text-deep-slate`) rather than muted grey — descriptions are content here, not chrome.
-- Header dividers are explicit: `CardHeader class="border-b-2 border-deep-slate"` (panel) or `border-b border-deep-slate/15` (flat).
+- Header dividers are explicit, on whatever element opens the card: `border-b-2 border-deep-slate` (panel) or `border-b border-deep-slate/15` (flat). There is no header slot to carry them.
 - Padding overrides: `p-6 sm:p-8` on panels; `py-8` on form content.
 - Footer is `justify-between` with a mono status string on the left and the action on the right.
 
@@ -941,6 +959,23 @@ printed above are the values that ship.
   than exempting the button, per CLAUDE.md's seeded learned constraint.
   `baked-clay #A04729` is unchanged, so the mandated terracotta → baked-clay
   hover still darkens. Offset shadows and `.masonry` fills move with it.
+- **2026-08-28 · §7.1, §7.2 and §7.3 rewritten to describe what ships** ·
+  all three documented the shadcn `base-nova` / Base UI API, which §11.1's
+  amendment already recorded as not adopted — but the section bodies still
+  specified it in detail, so a session reading them would write
+  `variant="outline"`, `size="sm"` or `<CardHeader>` and hit a confusing
+  failure. §7.1 now lists the three variants and the `surface` prop and states
+  plainly that there is no `size` prop; §7.2 documents `h-11` as the base
+  rather than a house override nobody skipped; §7.3 documents the `treatment`
+  prop and says the six card slots do not exist. Raised by CodeRabbit on PR #1
+  as a variant-name mismatch; the size scale and the card slots were the larger
+  half of the same problem.
+- **2026-08-28 · placeholder and two doc examples raised off failing alphas** ·
+  `Input`'s placeholder shipped at `text-deep-slate/50` (3.26:1) — a
+  placeholder is text. §7.2's helper-text example used `/50` and §3.7's
+  micro-label recipe used `/55` (3.80:1). All three now `/70`. The `Select`
+  chevron stays at `/60` (4.44:1): it is a graphical object, which WCAG holds
+  to 3:1, not 4.5:1 — the distinction now noted in the code.
 - **2026-08-28 · §7.1 gains an ink-surface rule** · `danger` and `ghost` both
   drew their colour from the page ground, so inside a `treatment="dark"` Card
   they measured 3.38:1 and 1.00:1 respectively. `Button` now takes
