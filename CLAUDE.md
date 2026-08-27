@@ -74,6 +74,10 @@ Commerce is dormant-per-Tower; nothing touches Stripe until unparked.
    acceptance criterion not satisfied and why, (c) every assumption the
    prompt didn't specify.
 6. Never delete or weaken an existing test to make a change pass.
+7. On merge, the PR is tagged `clean` or `rework` — nothing else. A `rework`
+   tag adds one line to Learned constraints below before the next session
+   launches. This is the only measurement in the process: an untagged merge
+   is a data point lost, and every estimate stays a guess.
 
 ## Design constraints — Hearth & Material, every screen
 Zero border-radius, everywhere, no exceptions · no SaaS blues ·
