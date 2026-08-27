@@ -117,6 +117,58 @@ Ink and paper are never used at partial-strength arbitrary values. Use this ladd
 
 ---
 
+### 2.7 Theme activation
+
+§2.3 defines every dark token but not when they apply. Three states, in
+precedence order:
+
+| State | Root class | Meaning |
+|---|---|---|
+| **System** (default) | *none* | follow `prefers-color-scheme` |
+| **Light** | `.light` | forced light, overrides a dark system |
+| **Dark** | `.dark` | forced dark, overrides a light system |
+
+**Pure CSS, no client script.** The dark token block is emitted twice — once
+for the explicit class, once inside a media query guarded against the escape
+hatch:
+
+```css
+:root        { /* light tokens (§2.2) */ }
+.dark        { /* dark tokens  (§2.3) */ }
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) { /* dark tokens (§2.3), repeated */ }
+}
+```
+
+The duplication is deliberate. The alternative is a blocking inline script
+that reads `matchMedia` and stamps a class before first paint, which trades a
+maintained duplicate for a JS dependency and a flash risk on every page. This
+system has no skeleton shimmer and no loading choreography; a theme that
+needs JavaScript to paint correctly is the same category of thing.
+
+**Rules**
+
+- The explicit choice persists in a cookie and the class is stamped
+  **server-side** from it, so a forced theme also paints with no flash and no
+  script.
+- Changing theme is a server action that sets the cookie and revalidates. It
+  is not client state.
+- `color-scheme` is declared for each state (§9), so form controls,
+  scrollbars and the canvas behind the noise plate follow.
+- `<meta name="theme-color">` is media-based, which is correct for System.
+  Under a forced theme it can disagree with the page for one paint of browser
+  chrome only — accepted rather than scripted around.
+- The control belongs in the app shell's sidebar footer, as a mono
+  micro-label group beside the communities link. Three explicit options, never
+  a two-state toggle: "System" has to be reachable again once a user has left
+  it.
+- **Dark is a designed mode, not an inversion.** Terracotta demotes from
+  primary to accent and hearth-ochre takes the primary slot (§2.3's porting
+  rule). Never ship a dark surface that keeps terracotta as its primary fill:
+  it measures 3.74:1 on ink, where hearth-ochre measures 9.12:1.
+
+---
+
 ## 3. Typography
 
 ### 3.1 Font roles
@@ -306,6 +358,27 @@ Only three are used: base (mobile) → `sm:` (640px) → `lg:` (1024px). `md:` a
 | List row | `grid-cols-[4.5rem_1fr_auto]` | Date block · content · status |
 | Seamed card row | `grid gap-px bg-deep-slate/20 sm:grid-cols-3` with `bg-parchment` children | Hairline-separated tiles with no visible border on the tiles themselves |
 | Card set | `grid gap-5 md:grid-cols-3` | Choice / option cards |
+
+**Which ratio, and when.** The imbalance tracks how much the aside genuinely
+competes with the main column for attention — the more clearly secondary the
+aside, the wider the gap between the two numbers.
+
+| Ratio | Archetype | The aside is | Surfaces |
+|---|---|---|---|
+| `lg:grid-cols-[1.5fr_1fr]` | **Subject + reference rail** | consulted, not worked in | Org home (composer + feed / org rail) · video watch · live watch · Tower and Keepsake pages |
+| `lg:grid-cols-[1.35fr_0.85fr]` | **Work surface + inventory** | a list of what already exists | every settings surface — "form to create" beside "what is already there" |
+| `lg:grid-cols-[1.1fr_.9fr]` | **Two peers** | a second subject of near-equal weight | Members (roster / safety) · Mentorship (pairings / requests) |
+
+**Single column is a legitimate answer.** A surface with no second subject —
+sign-in, sign-up, report, create-organization — takes §4.3 ramp B and no grid
+at all. Never manufacture an aside to fill a ratio; an invented sidebar is the
+layout equivalent of invented placeholder copy.
+
+**List and tile surfaces do not take a two-column split.** A collection with
+no detail panel (videos index, live index, shop, meetups) uses the list-row
+grid or the seamed card row above. The rhythm comes from the rows, not from a
+column break.
+
 
 ### 4.7 Section rhythm
 
@@ -666,6 +739,60 @@ Patterns already established in the codebase — hold to them.
 
 Icon color follows meaning: `text-terracotta` (active/alert) · `text-hearth-ochre` (value/complete) · `text-baked-clay` (tertiary navigation) · `currentColor` (structural).
 
+### 10.1 Navigation icon map
+
+§7.7 puts an icon on every nav item; this is which one. **The icon depicts the
+item's own title, literally** — not a category, not a mood. A reader who
+covers the label should still know where the row goes.
+
+**Community**
+
+| Item | Icon | Reads as |
+|---|---|---|
+| Home | `House` | the shared roof |
+| Mentorship | `HeartHandshake` | two parties paired |
+| Meetups | `CalendarDays` | dated gatherings |
+| Videos | `Video` | recorded footage |
+| Live | `Radio` | a broadcast in progress |
+| Members | `Users` | the people here |
+| Shop | `ShoppingBag` | goods for sale |
+
+**Manage** — a Manage item **reuses the icon of the subject it configures.**
+Mentorship settings takes `HeartHandshake`, Meetups settings `CalendarDays`,
+Videos settings `Video`, Live settings `Radio`. The section heading already
+says these are settings; giving each a second, gear-flavoured icon would say
+it twice and lose the subject. Items with no public counterpart get their own:
+
+| Item | Icon | Reads as |
+|---|---|---|
+| Invitations | `Mail` | an invitation sent |
+| Products | `Package` | a thing that ships |
+| Cohorts | `UsersRound` | a smaller group of people |
+| Stages | `Milestone` | a point along a progression |
+| Reports | `Flag` | flagged content |
+| Member reports | `ShieldAlert` | flagged people, a safety matter |
+| Commerce | `CreditCard` | money moving |
+
+**Footer**
+
+| Item | Icon | Reads as |
+|---|---|---|
+| All communities | `LayoutGrid` | every space at once |
+
+**Rules**
+
+- Nav icons are `size-5` (§10) and `aria-hidden="true"` — the label carries
+  the meaning, so the icon is decorative and must not be announced twice.
+- Icon color is `currentColor`, so it inherits the nav item's state: ink when
+  resting, parchment on the inverted active row. Never color a nav icon
+  independently of its row.
+- `Users` and `UsersRound` sit in different sections on purpose. Members and
+  Cohorts are adjacent concepts and their labels disambiguate them; §9 asks
+  for color-independence, not icon-uniqueness.
+- Adding a nav item means adding its icon here first. An item with no entry in
+  this table is not finished.
+
+
 ---
 
 ## 11. Implementation Reference
@@ -744,3 +871,45 @@ Not present in the source, but worth adding so shadows and type stop living as a
 | Keep hairlines at `/15`–`/20` | Invent new alpha values mid-scale |
 | Jump the type scale (10px ↔ 5xl) | Fill the middle with 6 near-identical sizes |
 | Ship the noise plate | Let a flat `#F7F4F0` field render bare |
+
+---
+
+## 13. Amendments
+
+Append-only, same discipline as CLAUDE.md's learned constraints. This document
+was ported from another repo; every place the shipped system knowingly departs
+from the text above is recorded here rather than left as a contradiction
+between the doc and the code.
+
+Format: `YYYY-MM-DD · what changed · why`.
+
+- **2026-08-27 · §2.1/§2.2 terracotta is `#BC472E`, not `#C84B31`** · the
+  original value measures 4.25:1 against its own parchment label, below AA's
+  4.5:1 for normal text. `#BC472E` measures 4.70:1. Darkened globally rather
+  than exempting the button, per CLAUDE.md's seeded learned constraint.
+  `baked-clay #A04729` is unchanged, so the mandated terracotta → baked-clay
+  hover still darkens. Offset shadows and `.masonry` fills move with it.
+- **2026-08-27 · §7.7 nav descriptions are `text-deep-slate/70`, not
+  `/45`** · `/45` measures 2.83:1 on parchment. §9 permits `/45` for redundant
+  metadata, but CLAUDE.md requires AA verified at rendered size for all copy,
+  and a nav description is doing real work. `/70` measures 6.18:1. On the
+  inverted active row the equivalent is `text-parchment/70` (8.32:1). Note
+  `/60` also fails, at 4.44:1 — `/70` is the first passing step.
+- **2026-08-27 · §2.7 added** · §2.3 defined the dark tokens but nothing said
+  when they apply. Resolved as three states with a pure-CSS activation and no
+  client script.
+- **2026-08-27 · §4.6 ratio mapping added** · the three column ratios were
+  listed without being mapped to surface types, so every page was an
+  independent judgment call. Mapped by how secondary the aside is, with single
+  column made an explicit legitimate answer.
+- **2026-08-27 · §10.1 added** · §10 gave icon sizes and color meanings but no
+  per-item mapping, which left 19 undecided choices in one nav. Mapped
+  literally to each item's title, with Manage items reusing their subject's
+  icon.
+- **2026-08-27 · §11.1 stack not adopted** · the shadcn `base-nova` / Base UI
+  stack this document assumes is not installed. §7's specs were ported onto
+  the repo's existing hand-rolled primitives in `components/ui.tsx` plus
+  `lucide-react`, `clsx`, `tailwind-merge` and `cva`. The visual contract is
+  the same; the component library underneath is not. §7.3's slot-based card
+  (`CardHeader` / `CardTitle` / `--card-spacing`) is therefore not implemented
+  — `Card` takes a `treatment` prop instead.
