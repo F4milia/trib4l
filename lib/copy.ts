@@ -19,6 +19,17 @@ export const copy = {
     /** §3.4 sets the wordmark at text-2xl. Text, not an image -- no logo exists. */
     wordmark: "F4milia",
   },
+  /**
+   * global-error.tsx replaces the root layout entirely, so it renders outside
+   * every other surface. Copy is honest about what is and is not known: the
+   * App Router exposes no status code to it, so it must not claim one.
+   */
+  globalError: {
+    eyebrow: "Error",
+    title: "Something broke.",
+    body: "The page could not be rendered. The error has been reported. Reloading may work; if it does not, the problem is on our side.",
+    reload: "Reload the page",
+  },
   orgNav: {
     /** §9: <aside> nav gets an aria-label. */
     landmark: "Main navigation",
