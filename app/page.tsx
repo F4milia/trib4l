@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPendingInvitations, getUserOrgs } from "@/lib/session";
 import { acceptInvitation } from "@/app/actions/invitations";
 import { signOut } from "@/app/actions/auth";
-import { Button, Card, PageHeading } from "@/components/ui";
+import { Button, Card, PageHeader } from "@/components/ui";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -13,13 +13,13 @@ export default async function Home() {
   if (!user) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-6 px-4 text-center">
-        <PageHeading>F4milia</PageHeading>
-        <p className="text-ink-soft">
-          <Link href="/login" className="text-primary underline">
+        <PageHeader title="F4milia" />
+        <p className="text-deep-slate/70">
+          <Link href="/login" className="text-terracotta underline">
             Log in
           </Link>{" "}
           or{" "}
-          <Link href="/signup" className="text-primary underline">
+          <Link href="/signup" className="text-terracotta underline">
             sign up
           </Link>
           .
@@ -32,18 +32,18 @@ export default async function Home() {
   const invitations = user.email ? await getPendingInvitations(supabase, user.email) : [];
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-8">
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-8">
       <div className="flex items-center justify-between">
-        <PageHeading>F4milia</PageHeading>
+        <PageHeader title="F4milia" />
         <form action={signOut}>
           <Button type="submit" variant="ghost">
             Log out
           </Button>
         </form>
       </div>
-      <p className="text-ink-soft">
+      <p className="text-deep-slate/70">
         Signed in as {user.email}.{" "}
-        <Link href="/settings/blocked" className="text-primary underline">
+        <Link href="/settings/blocked" className="text-terracotta underline">
           Blocked people
         </Link>
       </p>
@@ -70,15 +70,15 @@ export default async function Home() {
       <Card>
         <h2 className="mb-3 text-xl">Your communities</h2>
         {orgs.length === 0 ? (
-          <p className="text-ink-soft">You&apos;re not a member of any community yet.</p>
+          <p className="text-deep-slate/70">You&apos;re not a member of any community yet.</p>
         ) : (
           <ul className="space-y-2">
             {orgs.map((org) => (
-              <li key={org.org_id} className="flex items-center justify-between border-b border-line pb-2 last:border-0">
-                <Link href={`/o/${org.slug}`} className="text-primary underline">
+              <li key={org.org_id} className="flex items-center justify-between border-b border-deep-slate/20 pb-2 last:border-0">
+                <Link href={`/o/${org.slug}`} className="text-terracotta underline">
                   {org.name}
                 </Link>
-                <span className="text-sm text-ink-soft">{org.role}</span>
+                <span className="text-sm text-deep-slate/70">{org.role}</span>
               </li>
             ))}
           </ul>

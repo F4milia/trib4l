@@ -40,6 +40,13 @@ export const MIGRATED = [
   "app/o/[slug]/live/page.tsx",
   "app/o/[slug]/live/[liveStreamId]/page.tsx",
   "components/video-player.tsx",
+  // C5b — meetups, mentorship, shop, report, root home, blocked
+  "app/o/[slug]/meetups/page.tsx",
+  "app/o/[slug]/mentorship/page.tsx",
+  "app/o/[slug]/shop/page.tsx",
+  "app/o/[slug]/report/page.tsx",
+  "app/page.tsx",
+  "app/settings/blocked/page.tsx",
 ];
 
 const LEGACY =
