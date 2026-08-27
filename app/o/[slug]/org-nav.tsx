@@ -1,10 +1,51 @@
 "use client";
 
+import {
+  CalendarDays,
+  CreditCard,
+  Flag,
+  HeartHandshake,
+  House,
+  LayoutGrid,
+  type LucideIcon,
+  Mail,
+  Milestone,
+  Package,
+  Radio,
+  ShieldAlert,
+  ShoppingBag,
+  Users,
+  UsersRound,
+  Video,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { copy } from "@/lib/copy";
-import type { OrgNavSection } from "@/lib/org-nav";
+import type { OrgNavIcon, OrgNavSection } from "@/lib/org-nav";
 import { cn } from "@/lib/utils";
+
+/**
+ * §10.1's navigation icon map. Resolved here rather than in lib/org-nav.ts so
+ * that module stays free of JSX. Record<OrgNavIcon, LucideIcon> means adding a
+ * name to the union without an icon here is a type error, not a blank slot.
+ */
+export const NAV_ICONS: Record<OrgNavIcon, LucideIcon> = {
+  House,
+  HeartHandshake,
+  CalendarDays,
+  Video,
+  Radio,
+  Users,
+  ShoppingBag,
+  Mail,
+  Package,
+  UsersRound,
+  Milestone,
+  Flag,
+  ShieldAlert,
+  CreditCard,
+  LayoutGrid,
+};
 
 /**
  * §7.7's navigation item. Active = terracotta left rule + full ink fill
@@ -21,17 +62,29 @@ import { cn } from "@/lib/utils";
  * size. /70 measures 6.18:1. On the inverted active item the equivalent is
  * text-parchment/70 (8.32:1).
  *
- * Icons are deliberately absent. §7.7 shows one per item and §10 gives the
- * sizes, but choosing 19 of them is a design decision per item rather than an
- * implementation detail -- deferred rather than invented.
+ * Icons follow §10.1: each depicts its own item's title, sized size-5, drawn
+ * in currentColor so it inherits the row's state, and aria-hidden because the
+ * label already carries the meaning.
  */
-export function OrgNav({ sections, className }: { sections: OrgNavSection[]; className?: string }) {
+export function OrgNav({
+  sections,
+  className,
+}: {
+  sections: OrgNavSection[];
+  className?: string;
+}) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label={copy.orgNav.landmark} className={cn("flex flex-col", className)}>
+    <nav
+      aria-label={copy.orgNav.landmark}
+      className={cn("flex flex-col", className)}
+    >
       {sections.map((section) => (
-        <div key={section.id} className="border-b border-deep-slate/15 py-4 last:border-b-0">
+        <div
+          key={section.id}
+          className="border-b border-deep-slate/15 py-4 last:border-b-0"
+        >
           {section.heading ? (
             <p className="mb-2 px-3 font-mono text-[10px] font-black uppercase tracking-[0.18em] text-deep-slate/70">
               {section.heading}
@@ -40,26 +93,32 @@ export function OrgNav({ sections, className }: { sections: OrgNavSection[]; cla
           <ul>
             {section.items.map((item) => {
               const active = pathname === item.href;
+              const Icon = NAV_ICONS[item.icon];
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "block border-l-2 px-3 py-3 transition-colors",
+                      "flex items-center gap-4 border-l-2 px-3 py-3 transition-colors",
                       active
                         ? "border-terracotta bg-deep-slate text-parchment"
                         : "border-transparent text-deep-slate hover:border-hearth-ochre hover:bg-hearth-ochre/20",
                     )}
                   >
-                    <span className="block font-serif text-base font-semibold">{item.label}</span>
-                    <span
-                      className={cn(
-                        "block font-mono text-[10px] uppercase tracking-wider",
-                        active ? "text-parchment/70" : "text-deep-slate/70",
-                      )}
-                    >
-                      {item.description}
+                    <Icon className="size-5 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block font-serif text-base font-semibold">
+                        {item.label}
+                      </span>
+                      <span
+                        className={cn(
+                          "block font-mono text-[10px] uppercase tracking-wider",
+                          active ? "text-parchment/70" : "text-deep-slate/70",
+                        )}
+                      >
+                        {item.description}
+                      </span>
                     </span>
                   </Link>
                 </li>

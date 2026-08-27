@@ -3,40 +3,69 @@ import type { Database } from "./supabase/database.types";
 
 type Role = Database["public"]["Enums"]["membership_role"];
 
-export type OrgNavItem = { href: string; label: string; description: string };
+/**
+ * Icon names from §10.1's navigation map. Kept as names rather than
+ * components so this module stays free of JSX and can be imported by the
+ * server layout as well as the client nav; org-nav.tsx resolves them.
+ */
+export type OrgNavIcon =
+  | "House"
+  | "HeartHandshake"
+  | "CalendarDays"
+  | "Video"
+  | "Radio"
+  | "Users"
+  | "ShoppingBag"
+  | "Mail"
+  | "Package"
+  | "UsersRound"
+  | "Milestone"
+  | "Flag"
+  | "ShieldAlert"
+  | "CreditCard"
+  | "LayoutGrid";
+
+export type OrgNavItem = { href: string; label: string; description: string; icon: OrgNavIcon };
 export type OrgNavSection = { id: "community" | "manage"; heading: string | null; items: OrgNavItem[] };
 
 const items = copy.orgNav.items;
 
-/** Path suffix -> deck key. "" is the org home. */
-const COMMUNITY: ReadonlyArray<[string, keyof typeof items]> = [
-  ["", "home"],
-  ["/mentorship", "mentorship"],
-  ["/meetups", "meetups"],
-  ["/videos", "videos"],
-  ["/live", "live"],
-  ["/members", "members"],
-  ["/shop", "shop"],
+type Def = [suffix: string, key: keyof typeof items, icon: OrgNavIcon];
+
+/** Path suffix -> deck key -> §10.1 icon. "" is the org home. */
+const COMMUNITY: ReadonlyArray<Def> = [
+  ["", "home", "House"],
+  ["/mentorship", "mentorship", "HeartHandshake"],
+  ["/meetups", "meetups", "CalendarDays"],
+  ["/videos", "videos", "Video"],
+  ["/live", "live", "Radio"],
+  ["/members", "members", "Users"],
+  ["/shop", "shop", "ShoppingBag"],
 ];
 
-const MANAGE: ReadonlyArray<[string, keyof typeof items]> = [
-  ["/settings/members", "invitations"],
-  ["/settings/products", "products"],
-  ["/settings/cohorts", "cohorts"],
-  ["/settings/stages", "stages"],
-  ["/settings/mentorship", "mentorshipSettings"],
-  ["/settings/meetups", "meetupsSettings"],
-  ["/settings/videos", "videosSettings"],
-  ["/settings/live", "liveSettings"],
-  ["/settings/reports", "reports"],
-  ["/settings/member-reports", "memberReports"],
+/**
+ * §10.1: a Manage item reuses the icon of the subject it configures. The
+ * section heading already says these are settings; a second gear-flavoured
+ * icon would say it twice and lose the subject.
+ */
+const MANAGE: ReadonlyArray<Def> = [
+  ["/settings/members", "invitations", "Mail"],
+  ["/settings/products", "products", "Package"],
+  ["/settings/cohorts", "cohorts", "UsersRound"],
+  ["/settings/stages", "stages", "Milestone"],
+  ["/settings/mentorship", "mentorshipSettings", "HeartHandshake"],
+  ["/settings/meetups", "meetupsSettings", "CalendarDays"],
+  ["/settings/videos", "videosSettings", "Video"],
+  ["/settings/live", "liveSettings", "Radio"],
+  ["/settings/reports", "reports", "Flag"],
+  ["/settings/member-reports", "memberReports", "ShieldAlert"],
 ];
 
 /** org_owner only, matching the pre-migration nav exactly. */
-const OWNER: ReadonlyArray<[string, keyof typeof items]> = [["/settings/commerce", "commerce"]];
+const OWNER: ReadonlyArray<Def> = [["/settings/commerce", "commerce", "CreditCard"]];
 
-const build = (slug: string, defs: ReadonlyArray<[string, keyof typeof items]>): OrgNavItem[] =>
-  defs.map(([suffix, key]) => ({ href: `/o/${slug}${suffix}`, ...items[key] }));
+const build = (slug: string, defs: ReadonlyArray<Def>): OrgNavItem[] =>
+  defs.map(([suffix, key, icon]) => ({ href: `/o/${slug}${suffix}`, icon, ...items[key] }));
 
 /**
  * The single source of truth for what a role can see in the org navigation.

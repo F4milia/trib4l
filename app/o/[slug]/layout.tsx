@@ -1,3 +1,4 @@
+import { LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { copy } from "@/lib/copy";
@@ -51,8 +52,9 @@ export default async function OrgLayout({
   const allCommunities = (
     <Link
       href="/"
-      className="block font-mono text-[10px] font-black uppercase tracking-widest text-deep-slate/70 transition-colors hover:text-terracotta"
+      className="flex items-center gap-4 font-mono text-[10px] font-black uppercase tracking-widest text-deep-slate/70 transition-colors hover:text-terracotta"
     >
+      <LayoutGrid className="size-5 shrink-0" aria-hidden="true" />
       {copy.orgNav.items.allCommunities.label}
     </Link>
   );

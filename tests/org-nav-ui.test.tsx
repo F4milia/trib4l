@@ -6,7 +6,7 @@ import { orgNav } from "@/lib/org-nav";
 const PATH = "/o/caregiver-circle/members";
 vi.mock("next/navigation", () => ({ usePathname: () => PATH }));
 
-const { OrgNav } = await import("@/app/o/[slug]/org-nav");
+const { OrgNav, NAV_ICONS } = await import("@/app/o/[slug]/org-nav");
 const sections = orgNav("caregiver-circle", "org_owner");
 const renderNav = () => render(<OrgNav sections={sections} />);
 
@@ -66,5 +66,54 @@ describe("OrgNav (§7.7)", () => {
     const home = screen.getByRole("link", { name: /Home/ });
     expect(home).toHaveTextContent(copy.orgNav.items.home.label);
     expect(home).toHaveTextContent(copy.orgNav.items.home.description);
+  });
+});
+
+/**
+ * §10.1. The icon depicts the item's own title, so a reader who covers the
+ * label still knows where the row goes.
+ */
+describe("navigation icons (§10.1)", () => {
+  it("resolves an icon for every item in the map", () => {
+    for (const item of sections.flatMap((s) => s.items)) {
+      // lucide icons are forwardRef objects, not plain functions.
+      expect(NAV_ICONS[item.icon], `no icon for ${item.label}`).toBeDefined();
+    }
+  });
+
+  it("renders one icon per nav row", () => {
+    const { container } = renderNav();
+    const rows = sections.flatMap((s) => s.items).length;
+    expect(container.querySelectorAll("a svg")).toHaveLength(rows);
+  });
+
+  it("keeps every icon decorative -- the label carries the meaning", () => {
+    const { container } = renderNav();
+    for (const svg of container.querySelectorAll("a svg")) {
+      expect(svg).toHaveAttribute("aria-hidden", "true");
+      expect(svg.getAttribute("class")).toContain("size-5");
+    }
+  });
+
+  it("reuses the subject's icon for its Manage counterpart", () => {
+    const all = sections.flatMap((s) => s.items);
+    const pairs: [string, string][] = [
+      ["/mentorship", "/settings/mentorship"],
+      ["/meetups", "/settings/meetups"],
+      ["/videos", "/settings/videos"],
+      ["/live", "/settings/live"],
+    ];
+    for (const [publicPath, settingsPath] of pairs) {
+      const subject = all.find((i) => i.href.endsWith(publicPath))!;
+      const setting = all.find((i) => i.href.endsWith(settingsPath))!;
+      expect(setting.icon).toBe(subject.icon);
+    }
+  });
+
+  it("draws icons in currentColor, so they inherit the row state", () => {
+    const { container } = renderNav();
+    for (const svg of container.querySelectorAll("a svg")) {
+      expect(svg.getAttribute("class")).not.toMatch(/\btext-(terracotta|hearth-ochre|baked-clay)\b/);
+    }
   });
 });
