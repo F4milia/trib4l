@@ -178,10 +178,8 @@ describe("type voices (3.1)", () => {
     expect(css).toMatch(new RegExp(`${token}:\\s*var\\(--font-[a-z0-9-]+\\),[^;]*${generic}`));
   });
 
-  it("declares theme-color for both themes (9)", () => {
+  it("declares a theme-color", () => {
     expect(layout).toContain("themeColor");
-    expect(layout).toMatch(/prefers-color-scheme:\s*light/);
-    expect(layout).toMatch(/prefers-color-scheme:\s*dark/);
   });
 });
 

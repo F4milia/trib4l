@@ -55,8 +55,22 @@ describe("Button (§7.1)", () => {
     render(<Button variant="danger">Delete</Button>);
     const b = screen.getByRole("button");
     expect(b).toHaveClass("border-terracotta", "text-terracotta");
-    expect(b.className).not.toMatch(/(?<!hover:)bg-terracotta\/10/);
     expect(b.className).toContain("hover:text-baked-clay");
+  });
+
+  /**
+   * The 4.70:1 figure assumes the label sits on the page ground. Any resting
+   * fill changes the pair and voids it, so the absence of one is the actual
+   * contract -- asserting the border and label colours alone would let a fill
+   * back in silently.
+   */
+  it("gives the danger variant no resting fill -- its contrast depends on the ground", () => {
+    render(<Button variant="danger">Delete</Button>);
+    const resting = screen
+      .getByRole("button")
+      .className.split(/\s+/)
+      .filter((c) => c.startsWith("bg-"));
+    expect(resting).toEqual([]);
   });
 
   it("presses down rather than easing, and never rounds", () => {
@@ -161,5 +175,49 @@ describe("ErrorText", () => {
     const e = screen.getByRole("alert");
     expect(e).toHaveTextContent("Wrong password");
     expect(e.className).toMatch(/terracotta/);
+  });
+});
+
+/**
+ * An ink surface is not the dark theme. A Card with treatment="dark" is a dark
+ * context inside a light page, so semantic tokens do not flip and any variant
+ * drawing its colour from the page ground breaks. Measured on bg-deep-slate:
+ * danger's terracotta label 3.38:1, ghost's ink label 1.00:1 — invisible.
+ */
+describe("Button on an ink surface (§2.3 porting rule)", () => {
+  it("demotes danger from terracotta to hearth-ochre", () => {
+    render(
+      <Button variant="danger" surface="ink">
+        Delete
+      </Button>,
+    );
+    const b = screen.getByRole("button");
+    expect(b).toHaveClass("text-hearth-ochre", "border-hearth-ochre");
+    expect(b.className).not.toMatch(/(?:^|\s)text-terracotta(?:\s|$)/);
+  });
+
+  it("makes ghost visible at all -- ink on ink is 1.00:1", () => {
+    render(
+      <Button variant="ghost" surface="ink">
+        Cancel
+      </Button>,
+    );
+    const b = screen.getByRole("button");
+    expect(b).toHaveClass("text-parchment");
+    expect(b.className).not.toMatch(/(?:^|\s)text-deep-slate(?:\s|$)/);
+  });
+
+  it("leaves primary alone -- it carries its own fill", () => {
+    render(
+      <Button variant="primary" surface="ink">
+        Save
+      </Button>,
+    );
+    expect(screen.getByRole("button")).toHaveClass("bg-terracotta", "text-parchment");
+  });
+
+  it("defaults to the paper surface, so existing call sites are unchanged", () => {
+    render(<Button variant="danger">Delete</Button>);
+    expect(screen.getByRole("button")).toHaveClass("text-terracotta");
   });
 });

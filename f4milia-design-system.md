@@ -177,6 +177,10 @@ needs JavaScript to paint correctly is the same category of thing.
 - `<meta name="theme-color">` is media-based, which is correct for System.
   Under a forced theme it can disagree with the page for one paint of browser
   chrome only — accepted rather than scripted around.
+- **The dark theme-color entry lands with this section's token block, never
+  before it.** Declaring one while the page is still light-only gives a
+  dark-preference visitor dark browser chrome above a parchment page. Until
+  §2.7 is implemented, `themeColor` is the single parchment value.
 - The control belongs in the app shell's sidebar footer, as a mono
   micro-label group beside the communities link. Three explicit options, never
   a two-state toggle: "System" has to be reachable again once a user has left
@@ -556,6 +560,14 @@ Base UI `<Button>` + CVA. Radius classes in the variant strings are neutralized 
 ```
 
 **Rules**
+- **An ink surface is not the dark theme.** A `Card` with `treatment="dark"`
+  is a dark context inside a light page, so the semantic tokens do not flip.
+  Any variant that draws its colour from the page ground must be given the ink
+  treatment explicitly — measured on `bg-deep-slate`, `danger`'s terracotta
+  label is 3.38:1 and `ghost`'s ink label is **1.00:1**, invisible. On ink,
+  `danger` demotes to hearth-ochre (9.12:1) and `ghost` takes
+  `text-parchment` (15.87:1), per §2.3's porting rule. `primary` needs no
+  override: it carries its own fill, so the surface behind it is irrelevant.
 - Primary hover is always `terracotta → baked-clay`. Never lighten terracotta.
 - Icons use `data-icon="inline-start" | "inline-end"`; the base style tightens the matching side automatically.
 - Disabled: `opacity-50` (`opacity-40` on hero CTAs).
@@ -929,6 +941,21 @@ printed above are the values that ship.
   than exempting the button, per CLAUDE.md's seeded learned constraint.
   `baked-clay #A04729` is unchanged, so the mandated terracotta → baked-clay
   hover still darkens. Offset shadows and `.masonry` fills move with it.
+- **2026-08-28 · §7.1 gains an ink-surface rule** · `danger` and `ghost` both
+  drew their colour from the page ground, so inside a `treatment="dark"` Card
+  they measured 3.38:1 and 1.00:1 respectively. `Button` now takes
+  `surface="ink"`. The document had no rule for this because §2.3's porting
+  rule reads as being about the dark *theme*; a dark surface inside a light
+  page is the same problem and §7.1 now says so. CodeRabbit flagged `danger`;
+  `ghost` — the worse of the two — was found by measuring every variant
+  against ink rather than only the one reported.
+- **2026-08-28 · §9's theme-color instruction is conditional** · §9 asks for
+  `theme-color` on both themes, but nothing activates the dark tokens and the
+  run doc schedules no dark-mode session in any wave. A dark entry without a
+  dark theme gave dark-preference visitors dark browser chrome above a
+  parchment page (Greptile P1 on PR #1). `themeColor` is a single parchment
+  value until §2.7 ships; §2.7 now carries the sequencing rule. Dark mode is
+  specified in this document but **unscheduled** — no wave requires it.
 - **2026-08-27 · §7.1 destructive is drawn, not filled** · the specified
   `bg-destructive/10 text-destructive hover:bg-destructive/20` measures 4.11:1
   at rest and 3.55:1 on hover against parchment — both below AA. Ships as a

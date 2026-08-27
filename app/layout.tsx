@@ -40,12 +40,17 @@ export const metadata: Metadata = {
   description: "Community platform for caregivers and mentors.",
 };
 
-// 9: theme-color declared for both themes, matching the ground each paints.
+/**
+ * Parchment only, deliberately. §9 asks for theme-color on both themes, but
+ * the app has no dark theme: the tokens exist (§2.3) and nothing activates
+ * them, and the run doc schedules no dark-mode session in any wave.
+ *
+ * Declaring a dark theme-color anyway gave a dark-preference visitor a dark
+ * browser toolbar above a parchment page. The dark entry lands with §2.7's
+ * token block, not before it.
+ */
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f4f0" },
-    { media: "(prefers-color-scheme: dark)", color: "#1a1a1a" },
-  ],
+  themeColor: "#f7f4f0",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

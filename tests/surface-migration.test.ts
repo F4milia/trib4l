@@ -54,7 +54,10 @@ describe.each(files)("%s", (file) => {
   it("carries no radius utility at all, bare or suffixed (§5.1)", () => {
     // `rounded` on its own is a real Tailwind utility; the old assertion only
     // caught `rounded-*`.
-    expect(classes).not.toMatch(/(?:^|["'`\s:])rounded(?:-[a-z0-9[\]]+)?(?=["'`\s]|$)/m);
+    // -\S+ rather than a character class: Tailwind accepts arbitrary values,
+    // and `rounded-[0.5rem]` applies a real radius while escaping a narrower
+    // pattern. Safe here because the scan runs over string literals only.
+    expect(classes).not.toMatch(/(?:^|["'`\s:])rounded(?:-\S+?)?(?=["'`\s]|$)/m);
   });
 
   it("carries no blurred or spread shadow (§5.3 — no blur, no spread, ever)", () => {

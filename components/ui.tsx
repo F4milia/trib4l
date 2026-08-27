@@ -70,6 +70,7 @@ const button = cva(
     "[&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
+      surface: { paper: "", ink: "" },
       variant: {
         // §7.1: primary hover is always terracotta -> baked-clay. Never lighten.
         primary: "bg-terracotta text-parchment hover:bg-baked-clay",
@@ -86,16 +87,37 @@ const button = cva(
         ghost: "text-deep-slate hover:bg-muted",
       },
     },
-    defaultVariants: { variant: "primary" },
+    /**
+     * An ink surface is not the dark *theme* -- a Card with treatment="dark"
+     * is a dark context inside a light page, so the semantic tokens do not
+     * flip and any variant that draws its colour from the page ground breaks.
+     * Measured on bg-deep-slate: danger's terracotta label is 3.38:1, and
+     * ghost's ink label is 1.00:1 -- invisible.
+     *
+     * §2.3's porting rule covers it: in dark contexts terracotta demotes and
+     * hearth-ochre takes the primary slot (9.12:1 on ink). `primary` needs no
+     * override -- it carries its own fill, so the surface behind it is
+     * irrelevant.
+     */
+    compoundVariants: [
+      {
+        variant: "danger",
+        surface: "ink",
+        class: "border-hearth-ochre text-hearth-ochre hover:bg-hearth-ochre/10 hover:text-hearth-ochre",
+      },
+      { variant: "ghost", surface: "ink", class: "text-parchment hover:bg-parchment/10" },
+    ],
+    defaultVariants: { variant: "primary", surface: "paper" },
   },
 );
 
 export function Button({
   variant,
+  surface,
   className,
   ...props
 }: VariantProps<typeof button> & ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button className={cn(button({ variant }), className)} {...props} />;
+  return <button className={cn(button({ variant, surface }), className)} {...props} />;
 }
 
 /* -------------------------------------------------------------------------- */
