@@ -140,6 +140,25 @@ hatch:
 }
 ```
 
+**The `dark:` variant must move with the tokens.** A class-only variant —
+`@custom-variant dark (&:is(.dark *))`, which is what ships today — will not
+fire in the System state, because System deliberately has no class. Tokens
+would flip while every `dark:` utility silently did not. The variant has to
+match both forms:
+
+```css
+@custom-variant dark {
+  &:is(.dark *) { @slot }
+  @media (prefers-color-scheme: dark) { &:not(:is(.light *)) { @slot } }
+}
+```
+
+**Land the variant and the token media block in the same change.** Either one
+alone is a half-state: the variant alone makes `dark:` utilities fire against
+light tokens; the tokens alone make `dark:` utilities dead. Neither is visible
+today because nothing uses `dark:` yet, which is exactly why it would ship
+unnoticed.
+
 The duplication is deliberate. The alternative is a blocking inline script
 that reads `matchMedia` and stamps a class before first paint, which trades a
 maintained duplicate for a JS dependency and a flash risk on every page. This
@@ -897,7 +916,10 @@ Format: `YYYY-MM-DD · what changed · why`.
   `/60` also fails, at 4.44:1 — `/70` is the first passing step.
 - **2026-08-27 · §2.7 added** · §2.3 defined the dark tokens but nothing said
   when they apply. Resolved as three states with a pure-CSS activation and no
-  client script.
+  client script. Amended the same day: the shipped
+  `@custom-variant dark (&:is(.dark *))` is class-only and would not fire in
+  the System state, so §2.7 now specifies the two-form variant and requires it
+  to land in the same change as the token media block.
 - **2026-08-27 · §4.6 ratio mapping added** · the three column ratios were
   listed without being mapped to surface types, so every page was an
   independent judgment call. Mapped by how secondary the aside is, with single
