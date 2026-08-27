@@ -1,6 +1,6 @@
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { upsertRsvp } from "@/app/actions/meetups";
-import { Button, Card, ErrorText, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, PageHeader, Select } from "@/components/ui";
 
 export default async function MeetupsPage({
   params,
@@ -32,25 +32,25 @@ export default async function MeetupsPage({
   const myStatusByMeetup = new Map((myRsvps ?? []).map((r) => [r.meetup_id, r.status]));
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <PageHeading>Meetups</PageHeading>
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="Meetups" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       {!meetups?.length ? (
-        <p className="text-ink-soft">No upcoming meetups.</p>
+        <p className="text-deep-slate/70">No upcoming meetups.</p>
       ) : (
         <div className="space-y-4">
           {meetups.map((m) => (
             <Card key={m.id}>
               <p className="font-medium">{m.title}</p>
-              <p className="text-sm text-ink-soft">{new Date(m.starts_at).toLocaleString()}</p>
+              <p className="text-sm text-deep-slate/70">{new Date(m.starts_at).toLocaleString()}</p>
               {m.description && <p className="mt-2 text-sm">{m.description}</p>}
               <p className="mt-2 text-sm">
                 {m.meeting_provider}
                 {m.meeting_url && (
                   <>
                     {" — "}
-                    <a href={m.meeting_url} className="text-primary underline">
+                    <a href={m.meeting_url} className="text-terracotta underline">
                       Join link
                     </a>
                   </>

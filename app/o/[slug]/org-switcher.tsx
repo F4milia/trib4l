@@ -1,23 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Select } from "@/components/ui";
 
 type OrgOption = { slug: string; name: string };
 
+/**
+ * Uses the Select primitive so it picks up §7.2's drawn treatment and the
+ * chevron, rather than carrying its own border and fill.
+ */
 export function OrgSwitcher({ current, orgs }: { current: string; orgs: OrgOption[] }) {
   const router = useRouter();
 
   return (
-    <select
-      defaultValue={current}
-      onChange={(e) => router.push(`/o/${e.target.value}`)}
-      className="rounded-md border border-white/30 bg-primary-dark px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none"
-    >
+    <Select defaultValue={current} onChange={(e) => router.push(`/o/${e.target.value}`)}>
       {orgs.map((org) => (
-        <option key={org.slug} value={org.slug} className="text-ink">
+        <option key={org.slug} value={org.slug}>
           {org.name}
         </option>
       ))}
-    </select>
+    </Select>
   );
 }

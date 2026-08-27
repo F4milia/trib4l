@@ -22,7 +22,7 @@ export function VideoPlayer({
       playbackId={playbackId}
       tokens={{ playback: token }}
       streamType={live ? "live" : "on-demand"}
-      className="w-full rounded-md"
+      className="w-full"
     />
   );
 }

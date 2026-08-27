@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/session";
 import { getPlaybackAuth } from "@/app/actions/video";
-import { Card, ErrorText, PageHeading } from "@/components/ui";
+import { Card, ErrorText, PageHeader } from "@/components/ui";
 import { VideoPlayer } from "@/components/video-player";
 
 export default async function WatchVideoPage({
@@ -19,8 +19,8 @@ export default async function WatchVideoPage({
   const auth = await getPlaybackAuth(videoAssetId);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <PageHeading>Watch</PageHeading>
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="Watch" />
       {auth ? (
         <Card>
           <VideoPlayer playbackId={auth.playbackId} token={auth.token} />

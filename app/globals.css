@@ -1,66 +1,226 @@
 @import "tailwindcss";
 
-/* Design tokens matched to the BrandLamb / LovingNewHome palette
-   (C:\Users\Ferenz\Documents\BrandLamb\loving-new-home\client\app\globals.css)
-   so F4milia and its sibling BrandLamb properties share one visual family. */
-:root {
-  --color-canvas: #f5f5f0;
-  --color-canvas-raised: #ffffff;
-  --color-ink: #1e2e2c;
-  --color-ink-soft: #4a5a57;
-  --color-primary: #2f5d56;
-  --color-primary-dark: #1e3f3a;
-  --color-primary-soft: #e3ebe8;
-  --color-accent: #c98a3e;
-  --color-accent-soft: #f3e3c5;
-  --color-line: #ddd9cd;
-  --color-danger: #b3432b;
+/* ============================================================================
+   f4milia — Hearth & Material token layer
+   Source of truth: f4milia-design-system.md (repo root).
+   docs/design-system.md (canvas/ink/teal/amber) is SUPERSEDED — 2026-08-27.
 
-  --font-display: Iowan Old Style, Palatino Linotype, Palatino, Georgia, serif;
-  --font-body: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica Neue, Arial, sans-serif;
-  --font-mono: SF Mono, IBM Plex Mono, Menlo, Consolas, monospace;
+   One deliberate divergence from the source doc: terracotta ships darkened, at
+   #BC472E. The value the doc specifies measures 4.25:1 against its own
+   parchment label and fails WCAG AA for normal text; this one measures 4.70:1.
+   Darkened globally rather than exempted, per CLAUDE.md's seeded learned
+   constraint. Both values and the full measurement table are in
+   docs/preflight-audit.md §4c -- the rejected hex is deliberately not repeated
+   here, so tests/design-tokens.test.ts can assert on its absence.
+
+   Legacy canvas/ink/primary/accent/line/danger names are retained at the
+   bottom, retargeted to the new values, so the ~307 existing class usages
+   shift palette without touching a component. They are removed in PR D1.
+   ========================================================================= */
+
+@theme {
+  /* --- Brand core (§2.1) — fixed, never swaps per theme --- */
+  --color-parchment: #f7f4f0;
+  --color-deep-slate: #1a1a1a;
+  --color-terracotta: #bc472e;
+  --color-baked-clay: #a04729;
+  --color-hearth-ochre: #e3b46b;
+
+  /* --- Radius: zero, absolutely (§5.1) --- */
+  --radius: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+
+  /* --- Elevation: hard offset, no blur (§5.3, §11.4) --- */
+  --shadow-panel: 5px 5px 0 #1a1a1a;
+  --shadow-panel-sm: 3px 3px 0 #1a1a1a;
+  --shadow-panel-xs: 4px 4px 0 #1a1a1a;
+  --shadow-panel-warm: 5px 5px 0 #bc472e;
+  --shadow-panel-hero: 8px 8px 0 rgba(188, 71, 46, 0.75);
+
+  /* --- Type voices (§3.1). Families bound in app/layout.tsx via next/font;
+         the fallback stacks behind them cover the pre-swap paint. --- */
+  --font-serif: var(--font-playfair), Iowan Old Style, Palatino, Georgia, Cambria, serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica Neue, Arial, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), SF Mono, IBM Plex Mono, Menlo, Consolas, ui-monospace, monospace;
 }
 
+/* --- Semantic tokens — light (§2.2) --- */
+:root {
+  color-scheme: light;
+
+  --background: #f7f4f0;
+  --foreground: #1a1a1a;
+  --card: #f7f4f0; /* cards are not lifted by tint */
+  --card-foreground: #1a1a1a;
+  --primary: #bc472e;
+  --primary-foreground: #f7f4f0;
+  --secondary: #e8e1d8; /* muted paper (§2.6) */
+  --secondary-foreground: #1a1a1a;
+  --muted: #e8e1d8;
+  --muted-foreground: #604e45; /* warm brown-grey */
+  --destructive: #bc472e; /* terracotta doubles as destructive (§2.6) */
+  --border: #1a1a1a; /* full-strength ink; hairlines are applied per component */
+  --input: #1a1a1a;
+  --ring: #bc472e;
+}
+
+/* --- Semantic tokens — dark (§2.3) --- */
+.dark {
+  color-scheme: dark;
+
+  --background: #1a1a1a;
+  --foreground: #f7f4f0;
+  --card: #232323; /* one step off the ground */
+  --card-foreground: #f7f4f0;
+  --primary: #e3b46b; /* flips to hearth-ochre — terracotta lacks contrast on ink */
+  --primary-foreground: #1a1a1a;
+  --secondary: #302b27;
+  --secondary-foreground: #f7f4f0;
+  --muted: #302b27;
+  --muted-foreground: #d1c2b3;
+  --destructive: #bc472e;
+  --border: #f7f4f0;
+  --input: #f7f4f0;
+  --ring: #e3b46b;
+}
+
+@custom-variant dark (&:is(.dark *));
+
 @theme inline {
-  --color-canvas: var(--color-canvas);
-  --color-canvas-raised: var(--color-canvas-raised);
-  --color-ink: var(--color-ink);
-  --color-ink-soft: var(--color-ink-soft);
-  --color-primary: var(--color-primary);
-  --color-primary-dark: var(--color-primary-dark);
-  --color-primary-soft: var(--color-primary-soft);
-  --color-accent: var(--color-accent);
-  --color-accent-soft: var(--color-accent-soft);
-  --color-line: var(--color-line);
-  --color-danger: var(--color-danger);
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
-  --font-mono: var(--font-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+/* --- Global heading rule (§3.2). Do not restyle per-heading. --- */
+h1, h2, h3, h4, h5, h6 {
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: -0.08em;
+  line-height: 0.92;
+}
+
+/* --- Radius reset (§5.1). The !important is deliberate: it neutralizes
+       rounded-* in primitives without editing every variant string. --- */
+* {
+  border-radius: 0 !important;
 }
 
 body {
-  background: var(--color-canvas);
-  color: var(--color-ink);
-  font-family: var(--font-body);
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
 }
 
-h1, h2, h3, h4, .font-display {
-  font-family: var(--font-display);
+/* --- Surface texture (§5.4). Ships verbatim — it is what keeps the palette
+       reading as stock rather than screen. --- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  z-index: 50;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
 }
 
-.font-data {
-  font-family: var(--font-mono);
-}
+/* ============================================================================
+   House utilities (§6) — "the system's own primitives … these classes carry
+   the visual identity." Ported as-is, with every color routed through the
+   brand tokens rather than repeated as literals.
 
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
+   .panel-paper is not in the source repo. §6 flags it as referenced in
+   vow-rotation.tsx but never defined, and supplies the definition; it lands
+   here as the un-elevated counterpart to .panel-ink.
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+   In the components layer, not as @utility, so a Tailwind utility on the same
+   element still wins — a card can carry .panel-ink and override its border
+   with border-deep-slate/15 without a specificity fight.
+   ========================================================================= */
+@layer components {
+  /* Elevated panel on paper — the default container treatment. Border draws
+     from currentColor so the panel inverts with whatever it sits in. */
+  .panel-ink {
+    border: 2px solid currentColor;
+    box-shadow: 5px 5px 0 var(--color-deep-slate);
+  }
+
+  /* Elevated panel on ink — terracotta registration shadow. §5.3: ink shadow
+     on paper surfaces, terracotta shadow on ink surfaces. */
+  .panel-dark {
+    border: 2px solid var(--color-parchment);
+    box-shadow: 5px 5px 0 var(--color-terracotta);
+  }
+
+  /* Un-elevated counterpart to .panel-ink (§6, missing definition). */
+  .panel-paper {
+    border: 2px solid var(--color-deep-slate);
+    background: var(--color-parchment);
+  }
+
+  /* The only glow in the system — reserved for repair / conflict entries. */
+  .neon-repair {
+    border: 2px solid var(--color-terracotta);
+    box-shadow:
+      0 0 20px rgb(188 71 46 / 0.8),
+      inset 0 0 16px rgb(188 71 46 / 0.18);
+  }
+
+  /* Inline uppercase badge — inherits currentColor for its border, so setting
+     the text color sets the frame (§7.4). */
+  .stamp {
+    border: 2px solid currentColor;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Progress-as-brickwork — the signature data display (§7.9). CLAUDE.md:
+     Tower progress renders as stacked masonry blocks, never a smooth bar.
+     Bricks are decorative; the container carries the aria-label. */
+  .masonry {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 3px;
+    align-items: end;
+  }
+
+  .masonry > span {
+    min-height: 2rem;
+    border: 2px solid var(--color-deep-slate);
+    background: var(--color-terracotta);
+  }
+
+  .masonry > span:nth-child(3n) {
+    background: var(--color-hearth-ochre);
+  }
+
+  .masonry > span:nth-child(4n) {
+    background: var(--color-baked-clay);
+  }
+
+  @media (max-width: 640px) {
+    .masonry {
+      grid-template-columns: repeat(6, 1fr);
+    }
   }
 }

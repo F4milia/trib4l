@@ -1,0 +1,24 @@
+{
+  "scope": {
+    "include": [
+      "supabase/migrations/**",
+      "**/rls*",
+      "lib/auth/**",
+      "lib/session.ts",
+      "lib/supabase/**",
+      "lib/audit.ts",
+      "lib/idempotency.ts",
+      "lib/family-cap.ts",
+      "app/actions/**",
+      "app/api/webhooks/**",
+      "app/login/**",
+      "app/signup/**",
+      "app/admin/**",
+      "**/conversations/**",
+      "**/messages/**",
+      "**/contribution/**",
+      "**/ai/**",
+      "**/storage/**"
+    ]
+  }
+}

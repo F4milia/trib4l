@@ -1,6 +1,6 @@
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { transitionMentorPairing } from "@/app/actions/mentorship";
-import { Button, Card, ErrorText, PageHeading } from "@/components/ui";
+import { Button, Card, ErrorText, PageHeader } from "@/components/ui";
 
 export default async function MyMentorshipPage({
   params,
@@ -27,12 +27,12 @@ export default async function MyMentorshipPage({
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <PageHeading>My mentorship</PageHeading>
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="My mentorship" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       {!pairings?.length ? (
-        <p className="text-ink-soft">No mentor pairings yet.</p>
+        <p className="text-deep-slate/70">No mentor pairings yet.</p>
       ) : (
         <div className="space-y-4">
           {pairings.map((p) => {
@@ -47,7 +47,7 @@ export default async function MyMentorshipPage({
                     <p className="font-medium">
                       {otherRoleLabel}: {otherName}
                     </p>
-                    <p className="text-sm text-ink-soft">{p.status}</p>
+                    <p className="text-sm text-deep-slate/70">{p.status}</p>
                   </div>
                   <div className="flex gap-2">
                     {p.status === "proposed" && iAmMentor && (

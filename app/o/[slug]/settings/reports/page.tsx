@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { resolveReport, escalateReport } from "@/app/actions/safety";
-import { Button, Card, ErrorText, PageHeading } from "@/components/ui";
+import { Button, Card, ErrorText, PageHeader } from "@/components/ui";
 
 export default async function ReportsSettingsPage({
   params,
@@ -27,24 +27,24 @@ export default async function ReportsSettingsPage({
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 space-y-6">
-      <PageHeading>Reports</PageHeading>
+    <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="Reports" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       {reports?.length ? (
         <div className="space-y-4">
           {reports.map((r) => (
             <Card key={r.id}>
-              <div className="flex items-center justify-between text-sm text-ink-soft">
+              <div className="flex items-center justify-between text-sm text-deep-slate/70">
                 <span>
                   {r.target_type} reported by {r.profiles?.display_name}
                 </span>
-                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs text-primary-dark">
+                <span className=" bg-muted px-2 py-0.5 text-xs text-baked-clay">
                   {r.status}
                 </span>
               </div>
               <p className="mt-2">{r.reason}</p>
-              <p className="mt-1 text-xs text-ink-soft">{new Date(r.created_at).toLocaleString()}</p>
+              <p className="mt-1 text-xs text-deep-slate/70">{new Date(r.created_at).toLocaleString()}</p>
 
               {r.status !== "resolved" && (
                 <div className="mt-3 flex gap-2">
@@ -68,7 +68,7 @@ export default async function ReportsSettingsPage({
           ))}
         </div>
       ) : (
-        <p className="text-ink-soft">No reports.</p>
+        <p className="text-deep-slate/70">No reports.</p>
       )}
     </main>
   );

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { signIn } from "@/app/actions/auth";
-import { Button, Card, ErrorText, Input, Label, PageHeading } from "@/components/ui";
+import { Button, Card, ErrorText, Input, Label, PageHeader } from "@/components/ui";
 
 export default async function LoginPage({
   searchParams,
@@ -10,8 +10,8 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-4 py-10">
-      <PageHeading>Log in</PageHeading>
+    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
+      <PageHeader title="Log in" />
       {error ? <ErrorText>{error}</ErrorText> : null}
       <Card>
         <form action={signIn} className="space-y-4">
@@ -28,9 +28,9 @@ export default async function LoginPage({
           </Button>
         </form>
       </Card>
-      <p className="text-center text-sm text-ink-soft">
+      <p className="text-center text-sm text-deep-slate/70">
         No account?{" "}
-        <Link href="/signup" className="text-primary underline">
+        <Link href="/signup" className="text-terracotta underline">
           Sign up
         </Link>
       </p>

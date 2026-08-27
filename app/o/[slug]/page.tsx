@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createPost, createComment, toggleLike, moderatePost, moderateComment } from "@/app/actions/posts";
 import { blockUser } from "@/app/actions/safety";
-import { Button, Card, ErrorText, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, PageHeader, Select, Textarea } from "@/components/ui";
 
 export default async function OrgHomePage({
   params,
@@ -94,7 +94,7 @@ export default async function OrgHomePage({
   const { data: allPosts } = await supabase
     .from("posts")
     .select(
-      "id, body, created_at, cohort_id, author_profile_id, video_asset_id, profiles(display_name), cohorts(name), stages(name)",
+"id, body, created_at, cohort_id, author_profile_id, video_asset_id, profiles(display_name), cohorts(name), stages(name)",
     )
     .eq("org_id", orgId)
     .is("deleted_at", null)
@@ -134,26 +134,30 @@ export default async function OrgHomePage({
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <div className="flex items-center justify-between">
-        <PageHeading>{org?.name}</PageHeading>
-        <Link href={`/o/${slug}/search`} className="text-sm text-primary underline">
-          Search
-        </Link>
-      </div>
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader
+        title={org?.name}
+        actions={
+          <Link
+            href={`/o/${slug}/search`}
+            className="font-mono text-[10px] font-black uppercase tracking-widest text-deep-slate/70 transition-colors hover:text-terracotta"
+          >
+            Search
+          </Link>
+        }
+      />
       {error ? <ErrorText>{error}</ErrorText> : null}
-      {notice ? <p className="rounded-md bg-primary-soft px-3 py-2 text-sm text-primary-dark">{notice}</p> : null}
+      {notice ? <p className="bg-muted px-3 py-2 text-sm text-baked-clay">{notice}</p> : null}
 
       <Card>
         <form action={createPost} className="space-y-3">
           <input type="hidden" name="org_id" value={orgId} />
           <input type="hidden" name="org_slug" value={slug} />
-          <textarea
+          <Textarea
             name="body"
             required
             rows={3}
             placeholder="Share something with the community..."
-            className="w-full rounded-md border border-line bg-white px-3 py-2 text-ink placeholder:text-ink-soft focus:border-primary focus:outline-none"
           />
           <div className="flex items-center justify-between gap-3">
             <div className="flex gap-3">
@@ -187,7 +191,7 @@ export default async function OrgHomePage({
               )}
             </div>
             <div className="flex items-center gap-3">
-              <Link href={`/o/${slug}/videos/upload`} className="text-sm text-primary underline">
+              <Link href={`/o/${slug}/videos/upload`} className="text-sm text-terracotta underline">
                 Upload a video
               </Link>
               <Button type="submit">Post</Button>
@@ -198,11 +202,11 @@ export default async function OrgHomePage({
 
       <div className="space-y-4">
         {posts.length === 0 ? (
-          <p className="text-ink-soft">Nothing here yet.</p>
+          <p className="text-deep-slate/70">Nothing here yet.</p>
         ) : (
           posts.map((post) => (
             <Card key={post.id}>
-              <div className="flex items-center justify-between text-sm text-ink-soft">
+              <div className="flex items-center justify-between text-sm text-deep-slate/70">
                 <span>
                   {post.profiles?.display_name}
                   {post.cohorts ? ` · ${post.cohorts.name}` : ""}
@@ -212,7 +216,7 @@ export default async function OrgHomePage({
               </div>
               <p className="mt-2 whitespace-pre-wrap">{post.body}</p>
               {post.video_asset_id && (
-                <Link href={`/o/${slug}/videos/${post.video_asset_id}`} className="mt-2 inline-block text-sm text-primary underline">
+                <Link href={`/o/${slug}/videos/${post.video_asset_id}`} className="mt-2 inline-block text-sm text-terracotta underline">
                   Watch video
                 </Link>
               )}
@@ -236,7 +240,7 @@ export default async function OrgHomePage({
                 )}
                 <Link
                   href={`/o/${slug}/report?type=post&id=${post.id}`}
-                  className="text-xs text-ink-soft underline"
+                  className="text-xs text-deep-slate/70 underline"
                 >
                   Report
                 </Link>
@@ -244,28 +248,28 @@ export default async function OrgHomePage({
                   <form action={blockUser}>
                     <input type="hidden" name="blocked_profile_id" value={post.author_profile_id} />
                     <input type="hidden" name="org_slug" value={slug} />
-                    <button type="submit" className="text-xs text-ink-soft underline">
+                    <button type="submit" className="text-xs text-deep-slate/70 underline">
                       Block {post.profiles?.display_name}
                     </button>
                   </form>
                 )}
               </div>
 
-              <div className="mt-4 space-y-2 border-t border-line pt-3">
+              <div className="mt-4 space-y-2 border-t border-deep-slate/20 pt-3">
                 {(commentsByPost.get(post.id) ?? []).map((c) => (
                   <div key={c.id} className="flex items-start justify-between gap-2 text-sm">
                     <p>
                       <span className="font-medium">{c.profiles?.display_name}</span>: {c.body}
                     </p>
                     <div className="flex shrink-0 gap-2">
-                      <Link href={`/o/${slug}/report?type=comment&id=${c.id}`} className="text-xs text-ink-soft underline">
+                      <Link href={`/o/${slug}/report?type=comment&id=${c.id}`} className="text-xs text-deep-slate/70 underline">
                         report
                       </Link>
                       {isStaff && (
                         <form action={moderateComment}>
                           <input type="hidden" name="comment_id" value={c.id} />
                           <input type="hidden" name="org_slug" value={slug} />
-                          <button type="submit" className="text-danger text-xs whitespace-nowrap">
+                          <button type="submit" className="text-terracotta text-xs whitespace-nowrap">
                             remove
                           </button>
                         </form>
@@ -281,7 +285,7 @@ export default async function OrgHomePage({
                     name="body"
                     required
                     placeholder="Write a comment..."
-                    className="flex-1 rounded-md border border-line bg-white px-3 py-1.5 text-sm placeholder:text-ink-soft focus:border-primary focus:outline-none"
+                    className="flex-1 border border-deep-slate/20 bg-parchment px-3 py-1.5 text-sm placeholder:text-deep-slate/70 focus:border-terracotta focus:outline-none"
                   />
                   <Button type="submit" variant="ghost">
                     Reply

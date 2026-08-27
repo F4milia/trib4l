@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createProduct, toggleProductActive } from "@/app/actions/products";
-import { Button, Card, ErrorText, Label, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, Label, PageHeader, Select, Textarea } from "@/components/ui";
 
 export default async function ProductsSettingsPage({
   params,
@@ -33,10 +33,10 @@ export default async function ProductsSettingsPage({
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <PageHeading>Products</PageHeading>
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="Products" />
       {!account?.charges_enabled && (
-        <p className="text-sm text-ink-soft">
+        <p className="text-sm text-deep-slate/70">
           This community can&apos;t accept payments yet -- products can be listed here, but checkout stays
           disabled until{" "}
           <a href={`/o/${slug}/settings/commerce`} className="underline">
@@ -58,7 +58,7 @@ export default async function ProductsSettingsPage({
               id="product-name"
               name="name"
               required
-              className="w-full rounded-md border border-line bg-white px-3 py-2 text-ink placeholder:text-ink-soft focus:border-primary focus:outline-none"
+              className="w-full border border-deep-slate/20 bg-parchment px-3 py-2 text-deep-slate placeholder:text-deep-slate/70 focus:border-terracotta focus:outline-none"
             />
           </div>
           <div>
@@ -79,17 +79,12 @@ export default async function ProductsSettingsPage({
               min="0"
               step="0.01"
               required
-              className="w-full rounded-md border border-line bg-white px-3 py-2 text-ink placeholder:text-ink-soft focus:border-primary focus:outline-none"
+              className="w-full border border-deep-slate/20 bg-parchment px-3 py-2 text-deep-slate placeholder:text-deep-slate/70 focus:border-terracotta focus:outline-none"
             />
           </div>
           <div>
             <Label htmlFor="product-description">Description</Label>
-            <textarea
-              id="product-description"
-              name="description"
-              rows={3}
-              className="w-full rounded-md border border-line bg-white px-3 py-2 text-ink placeholder:text-ink-soft focus:border-primary focus:outline-none"
-            />
+            <Textarea id="product-description" name="description" rows={3} />
           </div>
           <Button type="submit">Add product</Button>
         </form>
@@ -98,12 +93,12 @@ export default async function ProductsSettingsPage({
       <Card>
         <h2 className="mb-3 text-xl">Catalog</h2>
         {products?.length ? (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-deep-slate/15">
             {products.map((p) => (
               <li key={p.id} className="flex items-center justify-between py-2">
                 <div>
                   <span>{p.name}</span>
-                  <span className="ml-2 text-sm text-ink-soft">
+                  <span className="ml-2 text-sm text-deep-slate/70">
                     {p.type} · ${(p.price_cents / 100).toFixed(2)} {p.currency.toUpperCase()}
                     {!p.active ? " · inactive" : ""}
                   </span>
@@ -120,7 +115,7 @@ export default async function ProductsSettingsPage({
             ))}
           </ul>
         ) : (
-          <p className="text-ink-soft">No products yet.</p>
+          <p className="text-deep-slate/70">No products yet.</p>
         )}
       </Card>
     </main>

@@ -1,0 +1,84 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { describe, expect, it } from "vitest";
+
+/**
+ * Whole-tree drift guard. Phase C carried a hand-maintained file list; now
+ * that PR D1 has removed the legacy aliases from the token layer entirely,
+ * this walks app/ and components/ instead -- so a NEW surface is covered the
+ * moment it is created, without anyone remembering to add it.
+ *
+ * Every rule here is a line from f4milia-design-system.md that CSS alone
+ * cannot enforce, because the offending class would still render.
+ */
+const ROOTS = ["app", "components"];
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) walk(full, out);
+    else if (/\.tsx$/.test(entry)) out.push(relative(process.cwd(), full));
+  }
+  return out;
+}
+
+const files = ROOTS.flatMap((r) => walk(join(process.cwd(), r)));
+
+/** The canvas/ink/teal/amber palette of the superseded docs/design-system.md. */
+const LEGACY_ALIAS =
+  /\b(?:bg|text|border|divide|ring|from|to|placeholder|outline|caret|decoration)-(?:canvas|canvas-raised|ink|ink-soft|primary-dark|primary-soft|accent-soft|line|danger)\b/;
+
+describe("surfaces exist to guard", () => {
+  it("found the tsx tree", () => {
+    expect(files.length).toBeGreaterThan(30);
+  });
+});
+
+/**
+ * Class guards run against string literals only, not raw source. Scanning the
+ * whole file made `const rounded = false` a violation -- a false positive that
+ * would have taught people to work around the guard rather than trust it.
+ */
+function classStrings(src: string): string {
+  return (src.match(/(["'`])(?:\\.|(?!\1)[^\\])*\1/g) ?? []).join("\n");
+}
+
+describe.each(files)("%s", (file) => {
+  const src = readFileSync(join(process.cwd(), file), "utf8");
+  const classes = classStrings(src);
+
+  it("uses no superseded palette alias", () => {
+    expect(classes).not.toMatch(LEGACY_ALIAS);
+  });
+
+  it("carries no radius utility at all, bare or suffixed (§5.1)", () => {
+    // `rounded` on its own is a real Tailwind utility; the old assertion only
+    // caught `rounded-*`.
+    // -\S+ rather than a character class: Tailwind accepts arbitrary values,
+    // and `rounded-[0.5rem]` applies a real radius while escaping a narrower
+    // pattern. Safe here because the scan runs over string literals only.
+    expect(classes).not.toMatch(/(?:^|["'`\s:])rounded(?:-\S+?)?(?=["'`\s]|$)/m);
+  });
+
+  it("carries no blurred or spread shadow (§5.3 — no blur, no spread, ever)", () => {
+    // shadow-none, shadow-panel* and the arbitrary offset forms are
+    // legitimate; the bare `shadow` utility and the named blur scale are not.
+    expect(classes).not.toMatch(/(?:^|["'`\s:])shadow(?=["'`\s]|$)/m);
+    expect(classes).not.toMatch(/\bshadow-(?:sm|md|lg|xl|2xl|inner)\b/);
+  });
+
+  it("uses the design system's type voices, not the legacy font aliases", () => {
+    expect(classes).not.toMatch(/\bfont-(?:display|body)\b/);
+  });
+
+  it("routes form controls through the primitives, not raw markup", () => {
+    // components/ui.tsx is where the primitives are defined.
+    if (file === "components/ui.tsx") return;
+    expect(src).not.toMatch(/<textarea\b/);
+    expect(src).not.toMatch(/<select\b/);
+  });
+
+  it("uses no white or off-white fill outside the palette", () => {
+    expect(classes).not.toMatch(/\b(?:bg|text)-white\b/);
+  });
+});

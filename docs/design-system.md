@@ -1,5 +1,20 @@
 # Design system
 
+> ## ⚠️ SUPERSEDED — August 27, 2026
+>
+> **`f4milia-design-system.md` (repo root) is the single source of truth for
+> all design work from this date forward.** Decided by James, 2026-08-27.
+>
+> This document describes the palette actually implemented in
+> `app/globals.css` today (canvas/ink/teal/amber, ported from the sibling
+> BrandLamb `loving-new-home` property). It is retained as the historical
+> record of what is currently shipped and why — not as guidance.
+>
+> Do not use it for new work. Screens still on this palette need a retrofit
+> to Hearth & Material (parchment `#F7F4F0`, deep-slate `#1A1A1A`,
+> terracotta `#C84B31`, zero border-radius), tracked as pre-flight item 3
+> in [`preflight-audit.md`](./preflight-audit.md).
+
 The build plan never schedules a dedicated design/frontend session across
 its 19 sessions — checked directly against the plan text, not assumed (see
 the conversation that led here). This was a gap, not a deferral, until this

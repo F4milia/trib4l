@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { moderateVideoAsset } from "@/app/actions/video";
-import { Button, Card, ErrorText, PageHeading } from "@/components/ui";
+import { Button, Card, ErrorText, PageHeader } from "@/components/ui";
 
 export default async function VideosSettingsPage({
   params,
@@ -28,27 +28,27 @@ export default async function VideosSettingsPage({
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 space-y-6">
-      <PageHeading>Videos</PageHeading>
+    <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="Videos" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       <Card>
         {videos?.length ? (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-line text-ink-soft">
+              <tr className="border-b border-deep-slate/20 text-deep-slate/70">
                 <th className="py-2 font-medium">Uploader</th>
                 <th className="py-2 font-medium">Status</th>
                 <th className="py-2 font-medium">Moderation</th>
                 <th className="py-2 font-medium"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-deep-slate/15">
               {videos.map((v) => (
                 <tr key={v.id}>
                   <td className="py-2">{v.profiles?.display_name}</td>
-                  <td className="py-2 text-ink-soft">{v.status}</td>
-                  <td className="py-2 text-ink-soft">{v.moderation_state}</td>
+                  <td className="py-2 text-deep-slate/70">{v.status}</td>
+                  <td className="py-2 text-deep-slate/70">{v.moderation_state}</td>
                   <td className="py-2">
                     {v.moderation_state === "approved" && (
                       <form action={moderateVideoAsset}>
@@ -65,7 +65,7 @@ export default async function VideosSettingsPage({
             </tbody>
           </table>
         ) : (
-          <p className="text-ink-soft">None yet.</p>
+          <p className="text-deep-slate/70">None yet.</p>
         )}
       </Card>
     </main>

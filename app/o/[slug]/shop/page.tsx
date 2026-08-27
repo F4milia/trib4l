@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createCheckoutSession } from "@/app/actions/checkout";
-import { Button, Card, ErrorText, PageHeading } from "@/components/ui";
+import { Button, Card, ErrorText, PageHeader } from "@/components/ui";
 
 export default async function ShopPage({
   params,
@@ -37,13 +37,13 @@ export default async function ShopPage({
   const idempotencyKey = crypto.randomUUID();
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <PageHeading>Shop</PageHeading>
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="Shop" />
       {!account?.charges_enabled && (
-        <p className="text-sm text-ink-soft">This community can&apos;t accept payments yet.</p>
+        <p className="text-sm text-deep-slate/70">This community can&apos;t accept payments yet.</p>
       )}
       {error ? <ErrorText>{error}</ErrorText> : null}
-      {notice ? <p className="rounded-md bg-primary-soft px-3 py-2 text-sm text-primary-dark">{notice}</p> : null}
+      {notice ? <p className=" bg-muted px-3 py-2 text-sm text-baked-clay">{notice}</p> : null}
 
       <Card>
         {products?.length ? (
@@ -51,13 +51,13 @@ export default async function ShopPage({
             <input type="hidden" name="org_id" value={currentOrg.org_id} />
             <input type="hidden" name="org_slug" value={slug} />
             <input type="hidden" name="idempotency_key" value={idempotencyKey} />
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-deep-slate/15">
               {products.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3 py-3">
                   <div>
                     <p>{p.name}</p>
-                    {p.description ? <p className="text-sm text-ink-soft">{p.description}</p> : null}
-                    <p className="text-sm text-ink-soft">
+                    {p.description ? <p className="text-sm text-deep-slate/70">{p.description}</p> : null}
+                    <p className="text-sm text-deep-slate/70">
                       ${(p.price_cents / 100).toFixed(2)} {p.currency.toUpperCase()}
                     </p>
                   </div>
@@ -66,7 +66,7 @@ export default async function ShopPage({
                     name={`qty_${p.id}`}
                     min="0"
                     defaultValue="0"
-                    className="w-20 rounded-md border border-line bg-white px-2 py-1 text-ink focus:border-primary focus:outline-none"
+                    className="w-20 border border-deep-slate/20 bg-parchment px-2 py-1 text-deep-slate focus:border-terracotta focus:outline-none"
                   />
                 </li>
               ))}
@@ -76,7 +76,7 @@ export default async function ShopPage({
             </Button>
           </form>
         ) : (
-          <p className="text-ink-soft">Nothing for sale here yet.</p>
+          <p className="text-deep-slate/70">Nothing for sale here yet.</p>
         )}
       </Card>
     </main>

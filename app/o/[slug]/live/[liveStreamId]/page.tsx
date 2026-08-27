@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/session";
 import { getLiveStreamPlaybackAuth } from "@/app/actions/live-streams";
 import { getPlaybackAuth } from "@/app/actions/video";
-import { Card, ErrorText, PageHeading } from "@/components/ui";
+import { Card, ErrorText, PageHeader } from "@/components/ui";
 import { VideoPlayer } from "@/components/video-player";
 
 export default async function WatchLiveStreamPage({
@@ -20,8 +20,8 @@ export default async function WatchLiveStreamPage({
 
   if (liveAuth) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-        <PageHeading>Live</PageHeading>
+      <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+        <PageHeader title="Live" />
         <Card>
           <VideoPlayer playbackId={liveAuth.playbackId} token={liveAuth.token} live />
         </Card>
@@ -41,8 +41,8 @@ export default async function WatchLiveStreamPage({
   const vodAuth = stream?.video_asset_id ? await getPlaybackAuth(stream.video_asset_id) : null;
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <PageHeading>{vodAuth ? "Recording" : "Live"}</PageHeading>
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title={vodAuth ? "Recording" : "Live"} />
       {vodAuth ? (
         <Card>
           <VideoPlayer playbackId={vodAuth.playbackId} token={vodAuth.token} />
