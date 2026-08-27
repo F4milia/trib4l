@@ -32,6 +32,14 @@ export const MIGRATED = [
   "app/o/[slug]/settings/videos/page.tsx",
   "app/o/[slug]/settings/reports/page.tsx",
   "app/o/[slug]/settings/member-reports/page.tsx",
+  // C5a — video and live
+  "app/o/[slug]/videos/page.tsx",
+  "app/o/[slug]/videos/upload/page.tsx",
+  "app/o/[slug]/videos/upload/video-file-uploader.tsx",
+  "app/o/[slug]/videos/[videoAssetId]/page.tsx",
+  "app/o/[slug]/live/page.tsx",
+  "app/o/[slug]/live/[liveStreamId]/page.tsx",
+  "components/video-player.tsx",
 ];
 
 const LEGACY =

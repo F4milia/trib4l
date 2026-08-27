@@ -47,7 +47,7 @@ export function VideoFileUploader({
 
   if (status === "done") {
     return (
-      <p className="text-sm text-primary-dark">
+      <p className="text-sm text-baked-clay">
         Uploaded. Mux is processing it now — this can take a few minutes. Check{" "}
         <Link href={videosPath} className="underline">
           your videos
@@ -60,8 +60,8 @@ export function VideoFileUploader({
   return (
     <div className="space-y-2">
       <input type="file" accept="video/*" onChange={handleChange} disabled={status === "uploading"} />
-      {status === "uploading" && <p className="text-sm text-ink-soft">Uploading…</p>}
-      {status === "error" && errorMessage && <p className="text-sm text-danger">{errorMessage}</p>}
+      {status === "uploading" && <p className="text-sm text-deep-slate/70">Uploading…</p>}
+      {status === "error" && errorMessage && <p className="text-sm text-terracotta">{errorMessage}</p>}
       <Link href={`/o/${orgSlug}/videos`}>
         <Button type="button" variant="ghost">
           Back to my videos

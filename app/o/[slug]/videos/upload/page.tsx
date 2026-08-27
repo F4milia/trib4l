@@ -1,6 +1,6 @@
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createVideoUpload } from "@/app/actions/video";
-import { Button, Card, ErrorText, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, PageHeader, Select } from "@/components/ui";
 import { VideoFileUploader } from "./video-file-uploader";
 
 export default async function UploadVideoPage({
@@ -22,8 +22,8 @@ export default async function UploadVideoPage({
     : { data: [] };
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-10 space-y-6">
-      <PageHeading>Upload a video</PageHeading>
+    <main className="mx-auto max-w-xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="Upload a video" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       {uploadUrl ? (

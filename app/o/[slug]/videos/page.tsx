@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
-import { Button, Card, PageHeading } from "@/components/ui";
+import { Button, Card, PageHeader } from "@/components/ui";
 
 export default async function MyVideosPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -14,31 +14,31 @@ export default async function MyVideosPage({ params }: { params: Promise<{ slug:
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
       <div className="flex items-center justify-between">
-        <PageHeading>My videos</PageHeading>
+        <PageHeader title="My videos" />
         <Link href={`/o/${slug}/videos/upload`}>
           <Button type="button">Upload a video</Button>
         </Link>
       </div>
 
       {!videos?.length ? (
-        <p className="text-ink-soft">No videos yet.</p>
+        <p className="text-deep-slate/70">No videos yet.</p>
       ) : (
         <div className="space-y-3">
           {videos.map((v) => (
             <Card key={v.id}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-ink-soft">
+                  <p className="text-sm text-deep-slate/70">
                     {v.status}
                     {v.moderation_state !== "pending" ? ` · ${v.moderation_state}` : ""}
                     {v.duration_seconds ? ` · ${Math.round(v.duration_seconds)}s` : ""}
                   </p>
-                  <p className="text-xs text-ink-soft">{new Date(v.created_at).toLocaleString()}</p>
+                  <p className="text-xs text-deep-slate/70">{new Date(v.created_at).toLocaleString()}</p>
                 </div>
                 {v.status === "ready" && v.moderation_state === "approved" && (
-                  <Link href={`/o/${slug}/videos/${v.id}`} className="text-primary underline">
+                  <Link href={`/o/${slug}/videos/${v.id}`} className="text-terracotta underline">
                     Watch
                   </Link>
                 )}

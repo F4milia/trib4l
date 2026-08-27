@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser, getUserOrgs } from "@/lib/session";
-import { Card, PageHeading } from "@/components/ui";
+import { Card, PageHeader } from "@/components/ui";
 
 export default async function LiveLibraryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -21,22 +21,22 @@ export default async function LiveLibraryPage({ params }: { params: Promise<{ sl
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <PageHeading>Live &amp; recordings</PageHeading>
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="Live &amp; recordings" />
 
       {!streams?.length ? (
-        <p className="text-ink-soft">Nothing here yet.</p>
+        <p className="text-deep-slate/70">Nothing here yet.</p>
       ) : (
         <div className="space-y-4">
           {streams.map((s) => (
             <Card key={s.id}>
               <p className="font-medium">{s.title}</p>
               {s.description && <p className="mt-1 text-sm">{s.description}</p>}
-              <p className="mt-2 text-sm text-ink-soft">
+              <p className="mt-2 text-sm text-deep-slate/70">
                 {s.status === "active" ? "Live now" : s.video_asset_id ? "Recording available" : "Not live yet"}
               </p>
               {(s.status === "active" || s.video_asset_id) && (
-                <Link href={`/o/${slug}/live/${s.id}`} className="mt-2 inline-block text-sm text-primary underline">
+                <Link href={`/o/${slug}/live/${s.id}`} className="mt-2 inline-block text-sm text-terracotta underline">
                   Watch
                 </Link>
               )}
