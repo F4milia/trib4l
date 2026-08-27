@@ -16,9 +16,16 @@ returns trigger
 language plpgsql
 security definer
 -- Mandatory, not stylistic: a SECURITY DEFINER function with a mutable
--- search_path is a privilege-escalation vector. Everything below is
--- fully qualified; only pg_catalog is implicitly reachable.
-set search_path = ''
+-- search_path is a privilege-escalation vector.
+--
+-- pg_temp is listed EXPLICITLY and LAST. An empty search_path is not enough:
+-- Postgres searches pg_temp implicitly *first* unless the path names it, so a
+-- caller with temp-create rights could define a temporary domain shadowing an
+-- unqualified `uuid`, `text` or `jsonb` reference and have its CHECK
+-- constraint execute with this function's privileges. Naming pg_temp last
+-- moves it behind pg_catalog. This is the hardening Postgres' own SECURITY
+-- DEFINER guidance prescribes.
+set search_path = pg_catalog, pg_temp
 as $$
 declare
   v_row     jsonb;

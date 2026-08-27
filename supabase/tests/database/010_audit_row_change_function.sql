@@ -25,19 +25,17 @@ select is(
   'service-role write with no auth.uid() could not be logged'
 );
 
--- Postgres stores an empty pin as search_path="" ; accept either spelling
--- rather than the one this version happens to emit.
-select ok(
-  exists (
-    select 1
-      from pg_proc p
-      join pg_namespace n on n.oid = p.pronamespace,
-           unnest(p.proconfig) as cfg
-     where n.nspname = 'public'
-       and p.proname = 'audit_row_change'
-       and cfg in ('search_path=', 'search_path=""')
-  ),
-  'pins search_path to empty -- mandatory for SECURITY DEFINER, not stylistic'
+-- pg_temp must be named explicitly and last. An empty pin leaves pg_temp
+-- implicitly FIRST, so a caller-created temporary domain could shadow an
+-- unqualified type reference and run its CHECK with definer privileges.
+select is(
+  (select array_to_string(p.proconfig, ',')
+     from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'audit_row_change'),
+  'search_path=pg_catalog, pg_temp',
+  'pins search_path with pg_temp explicit and last -- an empty pin leaves '
+  'pg_temp implicitly ahead of pg_catalog'
 );
 
 select ok(
