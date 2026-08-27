@@ -14,6 +14,11 @@ export const MIGRATED = [
   "app/login/page.tsx",
   "app/signup/page.tsx",
   "app/admin/organizations/new/page.tsx",
+  // C3 — org dashboard, members, search
+  "app/o/[slug]/page.tsx",
+  "app/o/[slug]/members/page.tsx",
+  "app/o/[slug]/search/page.tsx",
+  "app/o/[slug]/members/report/page.tsx",
 ];
 
 const LEGACY =
@@ -40,5 +45,10 @@ describe.each(MIGRATED)("%s", (file) => {
 
   it("uses PageHeader rather than the bare PageHeading", () => {
     if (src.includes("PageHead")) expect(src).toContain("PageHeader");
+  });
+
+  it("routes form controls through the primitives, not raw markup", () => {
+    expect(src).not.toMatch(/<textarea\b/);
+    expect(src).not.toMatch(/<select\b/);
   });
 });

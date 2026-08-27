@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
-import { Card, Input, PageHeading } from "@/components/ui";
+import { Card, Input, PageHeader } from "@/components/ui";
 
 export default async function SearchPage({
   params,
@@ -36,8 +36,8 @@ export default async function SearchPage({
     : [{ data: [] }, { data: [] }];
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-      <PageHeading>Search</PageHeading>
+    <main className="mx-auto max-w-2xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
+      <PageHeader title="Search" />
       <form className="flex gap-2">
         <Input type="search" name="q" defaultValue={q ?? ""} placeholder="Search posts and comments..." />
       </form>
@@ -45,37 +45,37 @@ export default async function SearchPage({
       {q ? (
         <div className="space-y-4">
           <div>
-            <h2 className="mb-2 text-lg text-ink-soft">Posts</h2>
+            <h2 className="mb-2 text-lg text-deep-slate/70">Posts</h2>
             {postResults.data?.length ? (
               <div className="space-y-2">
                 {postResults.data.map((p) => (
                   <Card key={p.id}>
-                    <p className="text-sm text-ink-soft">{p.profiles?.display_name}</p>
+                    <p className="text-sm text-deep-slate/70">{p.profiles?.display_name}</p>
                     <p>{p.body}</p>
                   </Card>
                 ))}
               </div>
             ) : (
-              <p className="text-ink-soft text-sm">No matching posts.</p>
+              <p className="text-deep-slate/70 text-sm">No matching posts.</p>
             )}
           </div>
 
           <div>
-            <h2 className="mb-2 text-lg text-ink-soft">Comments</h2>
+            <h2 className="mb-2 text-lg text-deep-slate/70">Comments</h2>
             {commentResults.data?.length ? (
               <div className="space-y-2">
                 {commentResults.data.map((c) => (
                   <Card key={c.id}>
-                    <p className="text-sm text-ink-soft">{c.profiles?.display_name}</p>
+                    <p className="text-sm text-deep-slate/70">{c.profiles?.display_name}</p>
                     <p>{c.body}</p>
-                    <Link href={`/o/${slug}`} className="text-sm text-primary underline">
+                    <Link href={`/o/${slug}`} className="text-sm text-terracotta underline">
                       View in feed
                     </Link>
                   </Card>
                 ))}
               </div>
             ) : (
-              <p className="text-ink-soft text-sm">No matching comments.</p>
+              <p className="text-deep-slate/70 text-sm">No matching comments.</p>
             )}
           </div>
         </div>
