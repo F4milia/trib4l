@@ -4,6 +4,23 @@
 **Executor:** James Jarin  |  **Owner:** Ivan Rattliff
 **Solo-dev note:** with one developer, this pipeline is load-bearing, not advisory. The human review on high-stakes PRs is shared between James (the full checklist below) and Ivan (present at the 09:30 merge window for Greptile-tier PRs). Nothing high-stakes merges outside that window.
 
+> **Note — 2026-08-27: known conflict, deliberately left unresolved.** The
+> paragraph above requires Ivan for *every* Greptile-tier PR. The run doc
+> ("F4milia — Complete Run Doc (Prompts Included).md", *How to run this*)
+> instead gates Ivan on **A1, A5, and any PR touching `**/contribution/**`**
+> only, and argues that routing the rest through him *"would make his
+> availability a false bottleneck on 90% of work that doesn't need it"* — while
+> its own wave notes say most Stream A PRs in Waves 0–2 and 5–7 are
+> Greptile-tier. Both readings are kept as written; neither document has been
+> amended to match the other.
+>
+> **Standing position until it is decided:** the gate is not enforced during
+> the alignment phase, and James merges. The decision is deferred to the Wave 1
+> retro, which is already scheduled to re-decide the Greptile glob list against
+> measured `clean`/`rework` data — the same 30 minutes, with numbers instead of
+> a guess. Raised by CodeRabbit on PR #1; noted rather than resolved, at
+> James's direction.
+
 ---
 
 ## The pipeline (automated, runs on every PR)
