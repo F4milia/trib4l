@@ -1,0 +1,52 @@
+import { expect, test } from "@playwright/test";
+import { ORG, signIn } from "./helpers";
+
+/**
+ * The nav is where Phase E's restructuring is most likely to leak a
+ * role-gated link. orgNav() is unit-tested, but only an end-to-end pass
+ * proves the server actually resolves the role and renders accordingly.
+ */
+test.describe("org navigation", () => {
+  test("shows a member the community section and no manage section", async ({ page }) => {
+    await signIn(page, "alice");
+    await page.goto(`/o/${ORG.caregiverCircle}`);
+
+    const nav = page.getByRole("navigation", { name: "Main navigation" }).first();
+    await expect(nav.getByRole("link", { name: /Members/ })).toBeVisible();
+    await expect(nav.getByText("Manage")).toHaveCount(0);
+    await expect(nav.getByRole("link", { name: /Invitations/ })).toHaveCount(0);
+  });
+
+  test("shows an organizer the manage section but not commerce", async ({ page }) => {
+    await signIn(page, "bob");
+    await page.goto(`/o/${ORG.caregiverCircle}`);
+
+    const nav = page.getByRole("navigation", { name: "Main navigation" }).first();
+    await expect(nav.getByText("Manage")).toBeVisible();
+    await expect(nav.getByRole("link", { name: /Invitations/ })).toBeVisible();
+    await expect(nav.getByRole("link", { name: /Commerce/ })).toHaveCount(0);
+  });
+
+  test("marks the current page and inverts it", async ({ page }) => {
+    await signIn(page, "bob");
+    await page.goto(`/o/${ORG.caregiverCircle}/members`);
+
+    const current = page.locator('aside a[aria-current="page"]');
+    await expect(current).toHaveCount(1);
+    await expect(current).toHaveCSS("background-color", "rgb(26, 26, 26)");
+    await expect(current).toHaveCSS("border-left-color", "rgb(188, 71, 46)");
+  });
+
+  test("hides the sidebar on mobile and opens the same nav from the disclosure", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signIn(page, "bob");
+    await page.goto(`/o/${ORG.caregiverCircle}`);
+
+    await expect(page.locator("aside")).toBeHidden();
+    const summary = page.locator("summary");
+    await expect(summary).toBeVisible();
+    await summary.click();
+    await expect(page.locator("details a").first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Invitations/ }).first()).toBeVisible();
+  });
+});

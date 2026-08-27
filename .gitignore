@@ -43,3 +43,13 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Session working notes -- local documentation, not part of the repo record.
+# The tracked equivalent is docs/SESSION-LOG.md.
+docs/session-notes/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
