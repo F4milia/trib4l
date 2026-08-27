@@ -1,6 +1,6 @@
 import { requirePlatformAdmin } from "@/lib/session";
 import { createOrganization } from "@/app/actions/organizations";
-import { Button, Card, ErrorText, Input, Label, PageHeading } from "@/components/ui";
+import { Button, Card, ErrorText, Input, Label, PageHeader } from "@/components/ui";
 
 export default async function NewOrganizationPage({
   searchParams,
@@ -11,10 +11,10 @@ export default async function NewOrganizationPage({
   const { error } = await searchParams;
 
   return (
-    <main className="mx-auto max-w-md px-4 py-10 space-y-6">
+    <main className="mx-auto max-w-md px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-6">
       <div>
-        <PageHeading>New organization</PageHeading>
-        <p className="mt-1 text-sm text-ink-soft">
+        <PageHeader title="New organization" />
+        <p className="mt-1 text-sm text-deep-slate/70">
           platform_admin only. Optionally send the first org_owner invitation immediately.
         </p>
       </div>
