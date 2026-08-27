@@ -45,6 +45,20 @@ describe("Button (§7.1)", () => {
     expect(screen.getByRole("button").className.length).toBeGreaterThan(0);
   });
 
+  /**
+   * §7.1's destructive variant is a tinted fill with a terracotta label, which
+   * measures 4.11:1 at rest and 3.55:1 on hover -- both below AA. Drawn
+   * instead: label on parchment is 4.70:1, and hover darkens to baked-clay on
+   * the tint at 4.89:1.
+   */
+  it("keeps the danger variant above AA at rest and on hover", () => {
+    render(<Button variant="danger">Delete</Button>);
+    const b = screen.getByRole("button");
+    expect(b).toHaveClass("border-terracotta", "text-terracotta");
+    expect(b.className).not.toMatch(/(?<!hover:)bg-terracotta\/10/);
+    expect(b.className).toContain("hover:text-baked-clay");
+  });
+
   it("presses down rather than easing, and never rounds", () => {
     render(<Button>Go</Button>);
     const b = screen.getByRole("button");

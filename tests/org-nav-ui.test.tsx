@@ -117,3 +117,42 @@ describe("navigation icons (§10.1)", () => {
     }
   });
 });
+
+/**
+ * Nested routes exist under four nav hrefs -- videos/upload,
+ * videos/[videoAssetId], live/[liveStreamId], members/report -- and a strict
+ * pathname equality check left every one of them with nothing highlighted.
+ */
+describe("active state on nested routes", () => {
+  const renderAt = async (path: string) => {
+    vi.resetModules();
+    vi.doMock("next/navigation", () => ({ usePathname: () => path }));
+    const mod = await import("@/app/o/[slug]/org-nav");
+    return render(<mod.OrgNav sections={orgNav("caregiver-circle", "org_owner")} />);
+  };
+
+  it.each([
+    ["/o/caregiver-circle/videos/upload", "Videos"],
+    ["/o/caregiver-circle/videos/abc123", "Videos"],
+    ["/o/caregiver-circle/members/report", "Members"],
+  ])("%s keeps %s lit", async (path, label) => {
+    const { container } = await renderAt(path);
+    const current = container.querySelectorAll('[aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent(label);
+  });
+
+  it("keeps the org home exact -- it must not match every page in the org", async () => {
+    const { container } = await renderAt("/o/caregiver-circle/members");
+    const current = container.querySelector('[aria-current="page"]')!;
+    expect(current).toHaveTextContent("Members");
+    expect(current).not.toHaveTextContent("The shared feed");
+  });
+
+  it("does not let /settings/members swallow /settings/member-reports", async () => {
+    const { container } = await renderAt("/o/caregiver-circle/settings/member-reports");
+    const current = container.querySelectorAll('[aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent("Member reports");
+  });
+});

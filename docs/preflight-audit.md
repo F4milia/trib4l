@@ -23,6 +23,34 @@ light up when those waves land. `lib/auth/**` is a different case; see 1a.
 
 ---
 
+---
+
+## Status since this audit was written
+
+This document is the **snapshot taken before any of it was acted on** — it is
+kept as the record of what was found, not as a live checklist. Resolved since,
+all on 2026-08-27:
+
+| Finding | Status |
+|---|---|
+| B1 — governing docs untracked | **closed** — committed in `e506a39`; the branch is pushed |
+| B2 — `f4milia-product-narrative-and-spec.md` missing | **closed as not needed** (James) |
+| 1a/1b — Greptile glob list and Stripe exclusion | **closed** in `9c77bb2` |
+| 1c — review bots not installed | **closed** — CodeRabbit and Greptile both active on PR #1. Greptile needed a post-install push; it does not review retroactively |
+| 2a/2b — Playwright and pgTAP gates produced no signal | **Playwright closed** — config, 8 specs, working workflow. **pgTAP still open**; `supabase/tests/database/` is empty and `pgtap.yml` stays untracked until it has tests |
+| 4a/4b — two design systems, Tailwind config mechanism | **closed** in `c1982b0` |
+| 4c — terracotta contrast | **closed** — `#BC472E`, and the design system body now prints only AA-passing values |
+| C1 — Ivan gate conflict | **still open** — a doc-vs-doc conflict, James decides |
+| C2 — `clean`/`rework` labels | **still open** |
+
+Not found by this audit, discovered later and worth recording here: **`ci.yml`
+had never passed once**, on any run in its history. `typecheck` ran before
+Next's generated route types existed, and `e2e-tests` had no Supabase env
+because `.env.local` is gitignored. Both fixed in `9c77bb2`; PR #1 is the first
+green run in the repo.
+
+---
+
 # Blockers
 
 ## B1 — Every newly added doc and config is untracked; a worktree would see none of it

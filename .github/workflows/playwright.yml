@@ -6,15 +6,30 @@ on:
     paths:
       - 'app/**'
       - 'components/**'
+      - 'lib/**'
       - 'tests/e2e/**'
       - 'playwright.config.ts'
+      - 'proxy.ts'
+      - 'next.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
   pull_request:
     branches: [ main ]
     paths:
       - 'app/**'
       - 'components/**'
+      - 'lib/**'
       - 'tests/e2e/**'
       - 'playwright.config.ts'
+      - 'proxy.ts'
+      - 'next.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+
+# Least privilege: the job checks out code and uploads an artifact. It needs
+# neither write access to the repo nor any of the default write scopes.
+permissions:
+  contents: read
 
 jobs:
   e2e-tests:

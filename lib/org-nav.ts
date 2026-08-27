@@ -25,7 +25,19 @@ export type OrgNavIcon =
   | "CreditCard"
   | "LayoutGrid";
 
-export type OrgNavItem = { href: string; label: string; description: string; icon: OrgNavIcon };
+export type OrgNavItem = {
+  href: string;
+  label: string;
+  description: string;
+  icon: OrgNavIcon;
+  /**
+   * The org home matches its path exactly; every other item also matches its
+   * descendants. Without this, /o/x/videos/upload, /o/x/videos/[id],
+   * /o/x/live/[id], /o/x/members/report and /o/x/report mark nothing active --
+   * and the home item would match every page in the org.
+   */
+  exact?: true;
+};
 export type OrgNavSection = { id: "community" | "manage"; heading: string | null; items: OrgNavItem[] };
 
 const items = copy.orgNav.items;
@@ -65,7 +77,12 @@ const MANAGE: ReadonlyArray<Def> = [
 const OWNER: ReadonlyArray<Def> = [["/settings/commerce", "commerce", "CreditCard"]];
 
 const build = (slug: string, defs: ReadonlyArray<Def>): OrgNavItem[] =>
-  defs.map(([suffix, key, icon]) => ({ href: `/o/${slug}${suffix}`, icon, ...items[key] }));
+  defs.map(([suffix, key, icon]) => ({
+    href: `/o/${slug}${suffix}`,
+    icon,
+    ...items[key],
+    ...(suffix === "" ? { exact: true as const } : {}),
+  }));
 
 /**
  * The single source of truth for what a role can see in the org navigation.

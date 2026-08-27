@@ -95,9 +95,9 @@ search, embeddings, AI context, exports. Failing isolation tests block
 merge, no override.
 
 ## Companion docs
-f4milia-design-system.md · f4milia-product-narrative-and-spec.md ·
-f4milia-testing-workflow.md · f4milia-complete-run-doc.md (waves,
-session prompts, edge-case register).
+f4milia-design-system.md ·
+f4milia-testing-workflow.md · "F4milia — Complete Run Doc (Prompts
+Included).md" (waves, session prompts, edge-case register).
 
 ## Learned constraints — append-only; never edit or remove entries
 Format: `YYYY-MM-DD · session · what happened · the rule now`.

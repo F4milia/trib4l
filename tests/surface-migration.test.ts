@@ -34,23 +34,38 @@ describe("surfaces exist to guard", () => {
   });
 });
 
+/**
+ * Class guards run against string literals only, not raw source. Scanning the
+ * whole file made `const rounded = false` a violation -- a false positive that
+ * would have taught people to work around the guard rather than trust it.
+ */
+function classStrings(src: string): string {
+  return (src.match(/(["'`])(?:\\.|(?!\1)[^\\])*\1/g) ?? []).join("\n");
+}
+
 describe.each(files)("%s", (file) => {
   const src = readFileSync(join(process.cwd(), file), "utf8");
+  const classes = classStrings(src);
 
   it("uses no superseded palette alias", () => {
-    expect(src).not.toMatch(LEGACY_ALIAS);
+    expect(classes).not.toMatch(LEGACY_ALIAS);
   });
 
-  it("carries no rounded-* class (§5.1 — zero radius, absolutely)", () => {
-    expect(src).not.toMatch(/\brounded-/);
+  it("carries no radius utility at all, bare or suffixed (§5.1)", () => {
+    // `rounded` on its own is a real Tailwind utility; the old assertion only
+    // caught `rounded-*`.
+    expect(classes).not.toMatch(/(?:^|["'`\s:])rounded(?:-[a-z0-9[\]]+)?(?=["'`\s]|$)/m);
   });
 
   it("carries no blurred or spread shadow (§5.3 — no blur, no spread, ever)", () => {
-    expect(src).not.toMatch(/\bshadow-(?:sm|md|lg|xl|2xl|inner)\b/);
+    // shadow-none, shadow-panel* and the arbitrary offset forms are
+    // legitimate; the bare `shadow` utility and the named blur scale are not.
+    expect(classes).not.toMatch(/(?:^|["'`\s:])shadow(?=["'`\s]|$)/m);
+    expect(classes).not.toMatch(/\bshadow-(?:sm|md|lg|xl|2xl|inner)\b/);
   });
 
   it("uses the design system's type voices, not the legacy font aliases", () => {
-    expect(src).not.toMatch(/\bfont-(?:display|body)\b/);
+    expect(classes).not.toMatch(/\bfont-(?:display|body)\b/);
   });
 
   it("routes form controls through the primitives, not raw markup", () => {
@@ -61,6 +76,6 @@ describe.each(files)("%s", (file) => {
   });
 
   it("uses no white or off-white fill outside the palette", () => {
-    expect(src).not.toMatch(/\b(?:bg|text)-white\b/);
+    expect(classes).not.toMatch(/\b(?:bg|text)-white\b/);
   });
 });

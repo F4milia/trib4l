@@ -37,14 +37,16 @@ describe("Avatar (§7.5)", () => {
 describe("StatusPip (§7.6)", () => {
   it("is always square, always bordered, and always labelled", () => {
     render(<StatusPip label="Mara: Confirmed" />);
-    const p = screen.getByLabelText("Mara: Confirmed");
+    // role="img": an aria-label on a bare <span> has no role to attach to and
+    // is not reliably announced (WCAG 4.1.2).
+    const p = screen.getByRole("img", { name: "Mara: Confirmed" });
     expect(p).toHaveClass("border-2", "border-deep-slate", "size-3");
     expect(p.className).not.toMatch(/rounded/);
   });
 
   it("drops to size-2 on ink", () => {
     render(<StatusPip label="x" surface="ink" />);
-    expect(screen.getByLabelText("x")).toHaveClass("size-2");
+    expect(screen.getByRole("img", { name: "x" })).toHaveClass("size-2");
   });
 });
 

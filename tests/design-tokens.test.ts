@@ -51,14 +51,14 @@ describe("legacy aliases are gone (D1)", () => {
     "--color-primary-dark", "--color-primary-soft", "--color-accent", "--color-accent-soft",
     "--color-line", "--color-danger", "--font-display", "--font-body",
   ])("no longer defines %s", (token) => {
-    expect(css).not.toContain(`${token}:`);
+    expect(css).not.toMatch(new RegExp(`${token}\\s*:`));
   });
 });
 
 describe("shape", () => {
-  it("zeroes every radius scale step", () => {
+  it("zeroes every radius scale step, exactly -- not 0.25rem", () => {
     for (const step of ["", "-sm", "-md", "-lg", "-xl", "-2xl", "-3xl"]) {
-      expect(css).toMatch(new RegExp(`--radius${step}:\\s*0`));
+      expect(css).toMatch(new RegExp(`--radius${step}\\s*:\\s*0\\s*;`));
     }
   });
 
@@ -68,6 +68,13 @@ describe("shape", () => {
 });
 
 describe("global heading rule", () => {
+  it("applies to every heading level, not just h1", () => {
+    const selector = css.slice(css.indexOf("h1,"), css.indexOf("{", css.indexOf("h1,")));
+    for (const level of ["h1", "h2", "h3", "h4", "h5", "h6"]) {
+      expect(selector).toContain(level);
+    }
+  });
+
   it.each([
     ["text-transform", "uppercase"],
     ["font-weight", "900"],
@@ -103,8 +110,9 @@ describe("theming", () => {
     (token) => {
       const light = css.slice(css.indexOf(":root"), css.indexOf(".dark {"));
       const dark = css.slice(css.indexOf(".dark {"));
-      expect(light).toContain(`${token}:`);
-      expect(dark).toContain(`${token}:`);
+      const declared = new RegExp(`${token}\\s*:`);
+      expect(light).toMatch(declared);
+      expect(dark).toMatch(declared);
     },
   );
 

@@ -10,8 +10,8 @@ describe("global-error", () => {
   });
 
   it("paints the ground explicitly on both html and body", () => {
-    expect(src).toMatch(/<html[\s\S]*?bg-parchment/);
-    expect(src).toMatch(/<body[\s\S]*?bg-parchment/);
+    expect(src).toMatch(/<html\s[^>]*bg-parchment[^>]*>/);
+    expect(src).toMatch(/<body\s[^>]*bg-parchment[^>]*>/);
   });
 
   it("takes its strings from the copy deck, not inline", () => {

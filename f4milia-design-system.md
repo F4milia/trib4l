@@ -13,7 +13,7 @@
 | **Structure is visible** | Borders and grid seams are content, not decoration. 1px hairlines for grouping, 2px for objects, 4px for section breaks. |
 | **Light is physical** | No blurred shadows. Elevation is a hard offset block of ink or terracotta — a print registration mark, not a glow. |
 | **Type does the shouting** | Display type is uppercase, weight 900, negative tracking, sub-1.0 line-height. Body copy stays quiet and lowercase. |
-| **Terracotta is scarce** | `#C84B31` marks the one thing that is live, active, or urgent on a screen. Never a background wash. |
+| **Terracotta is scarce** | `#BC472E` marks the one thing that is live, active, or urgent on a screen. Never a background wash. |
 | **The surface has tooth** | A fixed multiply-blend noise layer sits over the whole app at 16% so nothing reads as flat digital white. |
 
 ---
@@ -24,7 +24,7 @@
 
 | Token | Hex | Role |
 |---|---|---|
-| `terracotta` | **`#C84B31`** | **Primary brand color.** Active state, primary action, confirmed presence, repair flag, accent rules. |
+| `terracotta` | **`#BC472E`** | **Primary brand color.** Active state, primary action, confirmed presence, repair flag, accent rules. |
 | `baked-clay` | `#A04729` | Primary hover / pressed. Eyebrow and micro-label text on paper. |
 | `hearth-ochre` | `#E3B46B` | Accent and highlight. Completed states, money/record signals, dark-mode primary. |
 | `parchment` | `#F7F4F0` | Page ground (light) and ink-on-dark text color. |
@@ -35,7 +35,7 @@
 colors: {
   parchment:      '#F7F4F0',
   'deep-slate':   '#1A1A1A',
-  terracotta:     '#C84B31',
+  terracotta:     '#BC472E',
   'baked-clay':   '#A04729',
   'hearth-ochre': '#E3B46B',
 }
@@ -49,13 +49,13 @@ colors: {
 | `--foreground` | `#1A1A1A` | deep-slate |
 | `--card` | `#F7F4F0` | parchment (cards are not lifted by tint) |
 | `--card-foreground` | `#1A1A1A` | deep-slate |
-| `--primary` | `#C84B31` | **terracotta** |
+| `--primary` | `#BC472E` | **terracotta** |
 | `--primary-foreground` | `#F7F4F0` | parchment |
 | `--muted` | `#E8E1D8` | warm paper shade |
 | `--muted-foreground` | `#604E45` | warm brown-grey |
 | `--border` | `#1A1A1A` | full-strength ink |
 | `--input` | `#1A1A1A` | full-strength ink |
-| `--ring` | `#C84B31` | terracotta |
+| `--ring` | `#BC472E` | terracotta |
 | `--radius` | `0` | — |
 
 ### 2.3 Semantic tokens — dark (`.dark`)
@@ -106,12 +106,12 @@ Ink and paper are never used at partial-strength arbitrary values. Use this ladd
 :root {
   --secondary: #E8E1D8;            /* muted paper */
   --secondary-foreground: #1A1A1A;
-  --destructive: #C84B31;          /* terracotta doubles as destructive */
+  --destructive: #BC472E;          /* terracotta doubles as destructive */
 }
 .dark {
   --secondary: #302B27;
   --secondary-foreground: #F7F4F0;
-  --destructive: #C84B31;
+  --destructive: #BC472E;
 }
 ```
 
@@ -448,8 +448,8 @@ No blur, no spread. Ever.
 | `shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]` | 3px ink | Resting/upcoming list rows |
 | `shadow-[4px_4px_0_#1a1a1a]` | 4px ink | Small badges, icon medallions |
 | `shadow-[5px_5px_0px_0px_rgba(26,26,26,1)]` | 5px ink | **Default panel elevation** (`.panel-ink`) |
-| `shadow-[5px_5px_0px_0px_rgba(200,75,49,1)]` | 5px terracotta | Active / current row on ink (`.panel-dark`) |
-| `shadow-[8px_8px_0px_0px_rgba(200,75,49,0.75)]` | 8px terracotta @75% | Hero panel, maximum lift |
+| `shadow-[5px_5px_0px_0px_rgba(188,71,46,1)]` | 5px terracotta | Active / current row on ink (`.panel-dark`) |
+| `shadow-[8px_8px_0px_0px_rgba(188,71,46,0.75)]` | 8px terracotta @75% | Hero panel, maximum lift |
 | `shadow-none` | — | **Pressed state** (paired with `translate-x-1 translate-y-1`) |
 
 **Shadow color rule:** ink shadow on paper surfaces; terracotta shadow on ink surfaces.
@@ -482,12 +482,12 @@ These five classes carry the visual identity. Port them as-is.
 .panel-ink   { border: 2px solid currentColor; box-shadow: 5px 5px 0 #1a1a1a; }
 
 /* Elevated panel on ink — terracotta registration shadow */
-.panel-dark  { border: 2px solid #f7f4f0; box-shadow: 5px 5px 0 #c84b31; }
+.panel-dark  { border: 2px solid #f7f4f0; box-shadow: 5px 5px 0 #bc472e; }
 
 /* The only glow in the system — reserved for repair / conflict entries */
-.neon-repair { border: 2px solid #c84b31;
-               box-shadow: 0 0 20px rgba(200,75,49,.8),
-                           inset 0 0 16px rgba(200,75,49,.18); }
+.neon-repair { border: 2px solid #bc472e;
+               box-shadow: 0 0 20px rgba(188,71,46,.8),
+                           inset 0 0 16px rgba(188,71,46,.18); }
 
 /* Inline uppercase badge — inherits currentColor for its border */
 .stamp       { border: 2px solid currentColor; padding: .2rem .45rem;
@@ -498,7 +498,7 @@ These five classes carry the visual identity. Port them as-is.
 .masonry     { display: grid; grid-template-columns: repeat(8, 1fr);
                gap: 3px; align-items: end; }
 .masonry > span            { min-height: 2rem; border: 2px solid #1a1a1a;
-                             background: #c84b31; }
+                             background: #bc472e; }
 .masonry > span:nth-child(3n) { background: #e3b46b; }
 .masonry > span:nth-child(4n) { background: #a04729; }
 @media (max-width: 640px) { .masonry { grid-template-columns: repeat(6, 1fr); } }
@@ -525,7 +525,7 @@ Base UI `<Button>` + CVA. Radius classes in the variant strings are neutralized 
 | `outline` | `border-border bg-background hover:bg-muted` |
 | `secondary` | `bg-secondary text-secondary-foreground hover:bg-secondary/80` |
 | `ghost` | `hover:bg-muted hover:text-foreground` |
-| `destructive` | `bg-destructive/10 text-destructive hover:bg-destructive/20` |
+| `destructive` | `border-destructive text-destructive hover:bg-destructive/10 hover:text-baked-clay` — **drawn, not filled.** A terracotta label on a terracotta/10 tint measures 4.11:1 at rest and 3.55:1 on hover; drawn measures 4.70:1 and 4.89:1. |
 | `link` | `text-primary underline-offset-4 hover:underline` |
 
 | Size | Height | Padding | Icon |
@@ -621,7 +621,7 @@ shadcn card with a `--card-spacing` custom property and slot-driven layout.
 <!-- 2. Inverted panel — terracotta registration shadow -->
 <Card class="panel-dark bg-deep-slate text-parchment">
 <Card class="panel-ink bg-deep-slate text-parchment
-             shadow-[8px_8px_0px_0px_rgba(200,75,49,0.75)]">   <!-- hero -->
+             shadow-[8px_8px_0px_0px_rgba(188,71,46,0.75)]">   <!-- hero -->
 
 <!-- 3. Flat / quiet — forms and dense lists -->
 <Card class="border-deep-slate/15 bg-transparent shadow-none">
@@ -674,7 +674,7 @@ Accent rotation: `bg-terracotta` → `bg-hearth-ochre text-deep-slate` → `bg-b
   <span>
     <span class="block font-serif text-base font-semibold">Table</span>
     <span class="block font-mono text-[10px] uppercase tracking-wider
-                 text-deep-slate/45">Shared space</span>
+                 text-deep-slate/70">Shared space</span>
   </span>
 </Link>
 ```
@@ -740,7 +740,16 @@ Patterns already established in the codebase — hold to them.
 - **State:** active nav = `aria-current="page"`; toggle cards = `aria-pressed`; save confirmations = `role="status"`.
 - **Decorative graphics:** `.masonry` containers get an `aria-label` describing what they represent; `img` used as ornament gets `alt=""`.
 - **Color-independence:** every status color is paired with an icon or text label (`Check` / `Clock3` / `ChevronRight`), never color alone.
-- **Contrast caution:** `text-deep-slate/45` and `/50` on parchment fall below 4.5:1 at 10px. Acceptable for redundant metadata; **never** for the only copy conveying a fact.
+- **Contrast is not a judgement call — it is measured.** `deep-slate` over
+  parchment: `/45` = 2.83:1 · `/50` = 3.26:1 · `/55` = 3.80:1 · `/60` = 4.44:1
+  — **all four fail AA.** `/70` = 6.18:1 is the first passing step; `/80` =
+  8.62:1. Any text conveying information uses `/70` or darker, with no
+  exception for "redundant" metadata: a second line under a nav label is doing
+  work, not decoration. On ink the equivalent is `text-parchment/70` (8.32:1).
+- **No value printed in this document may fail AA at its rendered size.** Where
+  a value here was corrected for that reason, §13 records what it was and why.
+  A correction to the palette is never resolved by exempting the element that
+  uses it.
 - **Theme:** `color-scheme` is declared per theme and `<meta name="theme-color">` is set for both.
 
 ---
@@ -866,8 +875,8 @@ Not present in the source, but worth adding so shadows and type stop living as a
   --shadow-panel:      5px 5px 0 #1a1a1a;
   --shadow-panel-sm:   3px 3px 0 #1a1a1a;
   --shadow-panel-xs:   4px 4px 0 #1a1a1a;
-  --shadow-panel-warm: 5px 5px 0 #c84b31;
-  --shadow-panel-hero: 8px 8px 0 rgba(200, 75, 49, 0.75);
+  --shadow-panel-warm: 5px 5px 0 #bc472e;
+  --shadow-panel-hero: 8px 8px 0 rgba(188, 71, 46, 0.75);
 
   --font-serif: var(--font-display), Georgia, Cambria, serif;
   --font-mono:  var(--font-micro), ui-monospace, Menlo, monospace;
@@ -902,18 +911,33 @@ between the doc and the code.
 
 Format: `YYYY-MM-DD · what changed · why`.
 
+**Standing rule, set 2026-08-27:** where a value in this document conflicts
+with WCAG AA, **WCAG wins and the document body is corrected** — the entries
+below are the record of what the body used to say, not a list of live
+divergences. Earlier entries have now been folded into the body; the values
+printed above are the values that ship.
+
+- **2026-08-27 · §7.7 nav description and §9's contrast note** · §7.7's
+  example printed `text-deep-slate/45` (2.83:1) and §9 sanctioned `/45` and
+  `/50` as "acceptable for redundant metadata". Both corrected in the body:
+  §7.7 now prints `/70`, and §9 carries the measured alpha ladder plus the rule
+  that any text conveying information uses `/70` or darker. `/60` also fails,
+  at 4.44:1, which the original note did not mention.
 - **2026-08-27 · §2.1/§2.2 terracotta is `#BC472E`, not `#C84B31`** · the
   original value measures 4.25:1 against its own parchment label, below AA's
   4.5:1 for normal text. `#BC472E` measures 4.70:1. Darkened globally rather
   than exempting the button, per CLAUDE.md's seeded learned constraint.
   `baked-clay #A04729` is unchanged, so the mandated terracotta → baked-clay
   hover still darkens. Offset shadows and `.masonry` fills move with it.
-- **2026-08-27 · §7.7 nav descriptions are `text-deep-slate/70`, not
-  `/45`** · `/45` measures 2.83:1 on parchment. §9 permits `/45` for redundant
-  metadata, but CLAUDE.md requires AA verified at rendered size for all copy,
-  and a nav description is doing real work. `/70` measures 6.18:1. On the
-  inverted active row the equivalent is `text-parchment/70` (8.32:1). Note
-  `/60` also fails, at 4.44:1 — `/70` is the first passing step.
+- **2026-08-27 · §7.1 destructive is drawn, not filled** · the specified
+  `bg-destructive/10 text-destructive hover:bg-destructive/20` measures 4.11:1
+  at rest and 3.55:1 on hover against parchment — both below AA. Ships as a
+  terracotta rule with the label on parchment (4.70:1), hover adding the tint
+  and darkening the label to baked-clay (4.89:1), which also preserves §7.1's
+  "primary hover always darkens" rule. Found by CodeRabbit on PR #1; the token
+  guards did not catch it because they check the token layer, not composed
+  alpha-over-alpha pairs. **Any new tinted-fill-plus-same-hue-label pair needs
+  measuring before it ships.**
 - **2026-08-27 · §2.7 added** · §2.3 defined the dark tokens but nothing said
   when they apply. Resolved as three states with a pure-CSS activation and no
   client script. Amended the same day: the shipped

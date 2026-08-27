@@ -73,8 +73,16 @@ const button = cva(
       variant: {
         // §7.1: primary hover is always terracotta -> baked-clay. Never lighten.
         primary: "bg-terracotta text-parchment hover:bg-baked-clay",
-        // Terracotta doubles as destructive (§2.6); §7.1 destructive is a tinted fill.
-        danger: "border-terracotta bg-terracotta/10 text-terracotta hover:bg-terracotta/20",
+        /**
+         * Terracotta doubles as destructive (§2.6). §7.1 specifies a tinted
+         * fill -- `bg-destructive/10 text-destructive hover:bg-destructive/20`
+         * -- but that measures 4.11:1 at rest and 3.55:1 on hover, failing AA
+         * at both states. Drawn instead of filled: the rule carries the
+         * terracotta, the label sits on parchment (4.70:1), and hover adds the
+         * tint while darkening the label to baked-clay (4.89:1). Preserves the
+         * hover-always-darkens rule. See design system §13.
+         */
+        danger: "border-terracotta text-terracotta hover:bg-terracotta/10 hover:text-baked-clay",
         ghost: "text-deep-slate hover:bg-muted",
       },
     },
@@ -224,6 +232,7 @@ export function StatusPip({
 }) {
   return (
     <span
+      role="img"
       aria-label={label}
       className={cn(
         "border-2 border-deep-slate bg-terracotta",

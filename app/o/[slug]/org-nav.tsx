@@ -92,7 +92,10 @@ export function OrgNav({
           ) : null}
           <ul>
             {section.items.map((item) => {
-              const active = pathname === item.href;
+              // Descendant routes keep their parent lit; the org home stays exact.
+              const active = item.exact
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = NAV_ICONS[item.icon];
               return (
                 <li key={item.href}>
