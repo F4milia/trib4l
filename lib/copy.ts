@@ -15,6 +15,10 @@
  * old one. Descriptions here avoid the noun where they can.
  */
 export const copy = {
+  brand: {
+    /** §3.4 sets the wordmark at text-2xl. Text, not an image -- no logo exists. */
+    wordmark: "F4milia",
+  },
   orgNav: {
     /** §9: <aside> nav gets an aria-label. */
     landmark: "Main navigation",

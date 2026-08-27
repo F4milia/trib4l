@@ -58,7 +58,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <body> before hydration; suppression is one level deep, so real
           mismatches inside the tree still surface. */}
       <body
-        className="min-h-full flex flex-col bg-canvas text-ink"
+        className="min-h-full flex flex-col bg-parchment text-deep-slate"
         suppressHydrationWarning
       >
         {children}
