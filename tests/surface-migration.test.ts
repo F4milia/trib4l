@@ -1,69 +1,51 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Drift guard for the surfaces Phase C has migrated. Each PR appends its
- * files here, so a later edit cannot quietly reintroduce a superseded alias,
- * a radius, or a blurred shadow on a surface already converted. D1 removes
- * the aliases from the token layer entirely and turns this into a
- * whole-tree assertion.
+ * Whole-tree drift guard. Phase C carried a hand-maintained file list; now
+ * that PR D1 has removed the legacy aliases from the token layer entirely,
+ * this walks app/ and components/ instead -- so a NEW surface is covered the
+ * moment it is created, without anyone remembering to add it.
+ *
+ * Every rule here is a line from f4milia-design-system.md that CSS alone
+ * cannot enforce, because the offending class would still render.
  */
-export const MIGRATED = [
-  // C2 — auth + admin
-  "app/login/page.tsx",
-  "app/signup/page.tsx",
-  "app/admin/organizations/new/page.tsx",
-  // C3 — org dashboard, members, search
-  "app/o/[slug]/page.tsx",
-  "app/o/[slug]/members/page.tsx",
-  "app/o/[slug]/search/page.tsx",
-  "app/o/[slug]/members/report/page.tsx",
-  // C4a — settings: members, cohorts, stages, products, commerce
-  "app/o/[slug]/settings/members/page.tsx",
-  "app/o/[slug]/settings/cohorts/page.tsx",
-  "app/o/[slug]/settings/stages/page.tsx",
-  "app/o/[slug]/settings/products/page.tsx",
-  "app/o/[slug]/settings/commerce/page.tsx",
-  // C4b — settings: meetups, mentorship, live, videos, reports, member-reports
-  "app/o/[slug]/settings/meetups/page.tsx",
-  "app/o/[slug]/settings/mentorship/page.tsx",
-  "app/o/[slug]/settings/live/page.tsx",
-  "app/o/[slug]/settings/videos/page.tsx",
-  "app/o/[slug]/settings/reports/page.tsx",
-  "app/o/[slug]/settings/member-reports/page.tsx",
-  // C5a — video and live
-  "app/o/[slug]/videos/page.tsx",
-  "app/o/[slug]/videos/upload/page.tsx",
-  "app/o/[slug]/videos/upload/video-file-uploader.tsx",
-  "app/o/[slug]/videos/[videoAssetId]/page.tsx",
-  "app/o/[slug]/live/page.tsx",
-  "app/o/[slug]/live/[liveStreamId]/page.tsx",
-  "components/video-player.tsx",
-  // C5b — meetups, mentorship, shop, report, root home, blocked
-  "app/o/[slug]/meetups/page.tsx",
-  "app/o/[slug]/mentorship/page.tsx",
-  "app/o/[slug]/shop/page.tsx",
-  "app/o/[slug]/report/page.tsx",
-  "app/page.tsx",
-  "app/settings/blocked/page.tsx",
-];
+const ROOTS = ["app", "components"];
 
-const LEGACY =
-  /\b(?:bg|text|border|divide|ring|from|to|placeholder|outline)-(?:canvas|canvas-raised|ink|ink-soft|primary|primary-dark|primary-soft|accent|accent-soft|line|danger)\b/;
+function walk(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) walk(full, out);
+    else if (/\.tsx$/.test(entry)) out.push(relative(process.cwd(), full));
+  }
+  return out;
+}
 
-describe.each(MIGRATED)("%s", (file) => {
+const files = ROOTS.flatMap((r) => walk(join(process.cwd(), r)));
+
+/** The canvas/ink/teal/amber palette of the superseded docs/design-system.md. */
+const LEGACY_ALIAS =
+  /\b(?:bg|text|border|divide|ring|from|to|placeholder|outline|caret|decoration)-(?:canvas|canvas-raised|ink|ink-soft|primary-dark|primary-soft|accent-soft|line|danger)\b/;
+
+describe("surfaces exist to guard", () => {
+  it("found the tsx tree", () => {
+    expect(files.length).toBeGreaterThan(30);
+  });
+});
+
+describe.each(files)("%s", (file) => {
   const src = readFileSync(join(process.cwd(), file), "utf8");
 
   it("uses no superseded palette alias", () => {
-    expect(src).not.toMatch(LEGACY);
+    expect(src).not.toMatch(LEGACY_ALIAS);
   });
 
-  it("carries no rounded-* class -- §5.1 is absolute, not just reset in CSS", () => {
+  it("carries no rounded-* class (§5.1 — zero radius, absolutely)", () => {
     expect(src).not.toMatch(/\brounded-/);
   });
 
-  it("carries no blurred or spread shadow", () => {
+  it("carries no blurred or spread shadow (§5.3 — no blur, no spread, ever)", () => {
     expect(src).not.toMatch(/\bshadow-(?:sm|md|lg|xl|2xl|inner)\b/);
   });
 
@@ -71,12 +53,14 @@ describe.each(MIGRATED)("%s", (file) => {
     expect(src).not.toMatch(/\bfont-(?:display|body)\b/);
   });
 
-  it("uses PageHeader rather than the bare PageHeading", () => {
-    if (src.includes("PageHead")) expect(src).toContain("PageHeader");
-  });
-
   it("routes form controls through the primitives, not raw markup", () => {
+    // components/ui.tsx is where the primitives are defined.
+    if (file === "components/ui.tsx") return;
     expect(src).not.toMatch(/<textarea\b/);
     expect(src).not.toMatch(/<select\b/);
+  });
+
+  it("uses no white or off-white fill outside the palette", () => {
+    expect(src).not.toMatch(/\b(?:bg|text)-white\b/);
   });
 });

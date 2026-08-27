@@ -45,6 +45,16 @@ describe("superseded palette is gone", () => {
   );
 });
 
+describe("legacy aliases are gone (D1)", () => {
+  it.each([
+    "--color-canvas", "--color-canvas-raised", "--color-ink", "--color-ink-soft",
+    "--color-primary-dark", "--color-primary-soft", "--color-accent", "--color-accent-soft",
+    "--color-line", "--color-danger", "--font-display", "--font-body",
+  ])("no longer defines %s", (token) => {
+    expect(css).not.toContain(`${token}:`);
+  });
+});
+
 describe("shape", () => {
   it("zeroes every radius scale step", () => {
     for (const step of ["", "-sm", "-md", "-lg", "-xl", "-2xl", "-3xl"]) {

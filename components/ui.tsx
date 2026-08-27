@@ -154,27 +154,6 @@ export function ErrorText({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * §3.7's page-title recipe at §3.4's editorial pair (text-5xl sm:text-7xl).
- * Uppercase, 900 and the -0.08em stamp come from the global h1-h6 rule; this
- * overrides tracking and leading upward, as §3.7 does.
- *
- * Deliberately still a bare <h1>, same DOM shape as before, so restyling 31
- * pages here cannot break a layout that puts the heading in a flex row. The
- * bordered page-header wrapper §4.7 describes arrives as its own primitive in
- * PR B3 and gets applied per-surface in Phase C.
- */
-export function PageHeading({ children, eyebrow }: { children: ReactNode; eyebrow?: string }) {
-  return (
-    <>
-      {eyebrow ? (
-        <p className="mb-3 font-mono text-xs font-black uppercase tracking-[0.2em] text-baked-clay">{eyebrow}</p>
-      ) : null}
-      <h1 className="max-w-3xl font-serif text-5xl leading-[0.86] tracking-tighter sm:text-7xl">{children}</h1>
-    </>
-  );
-}
-
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className={cn(field, "min-h-28 h-auto py-2", className)} {...props} />;
 }

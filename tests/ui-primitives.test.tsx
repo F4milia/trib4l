@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Button, Card, ErrorText, Input, Label, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, Input, Label, Select } from "@/components/ui";
 
 /**
  * The primitives carry Hearth & Material for 30 of 34 pages, so these assert
@@ -147,24 +147,5 @@ describe("ErrorText", () => {
     const e = screen.getByRole("alert");
     expect(e).toHaveTextContent("Wrong password");
     expect(e.className).toMatch(/terracotta/);
-  });
-});
-
-describe("PageHeading (§3.7)", () => {
-  it("renders the display voice at the editorial page-title scale", () => {
-    render(<PageHeading>The house gathers</PageHeading>);
-    const h = screen.getByRole("heading", { level: 1 });
-    expect(h).toHaveClass("font-serif", "text-5xl", "sm:text-7xl", "tracking-tighter");
-  });
-
-  it("renders an eyebrow above the title in baked-clay when given one", () => {
-    render(<PageHeading eyebrow="01 / People">The house gathers</PageHeading>);
-    const eyebrow = screen.getByText("01 / People");
-    expect(eyebrow).toHaveClass("font-mono", "uppercase", "text-baked-clay");
-  });
-
-  it("omits the eyebrow entirely when not given -- no invented placeholder", () => {
-    const { container } = render(<PageHeading>Only a title</PageHeading>);
-    expect(container.querySelectorAll("p")).toHaveLength(0);
   });
 });
