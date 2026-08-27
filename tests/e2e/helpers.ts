@@ -5,9 +5,14 @@ export const USERS = {
   alice: { email: "alice@f4milia.test", password: "password123" }, // member: caregiver-circle
   bob: { email: "bob@f4milia.test", password: "password123" }, // organizer: caregiver-circle
   carol: { email: "carol@f4milia.test", password: "password123" }, // org_owner: founder-collective
+  dave: { email: "dave@f4milia.test", password: "password123" }, // member: wellness-guild
 } as const;
 
-export const ORG = { caregiverCircle: "caregiver-circle", founderCollective: "founder-collective" } as const;
+export const ORG = {
+  caregiverCircle: "caregiver-circle",
+  founderCollective: "founder-collective",
+  wellnessGuild: "wellness-guild",
+} as const;
 
 /**
  * Signs in through the real form. Next.js 16 Server Actions reject a POST with
