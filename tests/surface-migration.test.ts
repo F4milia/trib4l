@@ -25,6 +25,13 @@ export const MIGRATED = [
   "app/o/[slug]/settings/stages/page.tsx",
   "app/o/[slug]/settings/products/page.tsx",
   "app/o/[slug]/settings/commerce/page.tsx",
+  // C4b — settings: meetups, mentorship, live, videos, reports, member-reports
+  "app/o/[slug]/settings/meetups/page.tsx",
+  "app/o/[slug]/settings/mentorship/page.tsx",
+  "app/o/[slug]/settings/live/page.tsx",
+  "app/o/[slug]/settings/videos/page.tsx",
+  "app/o/[slug]/settings/reports/page.tsx",
+  "app/o/[slug]/settings/member-reports/page.tsx",
 ];
 
 const LEGACY =

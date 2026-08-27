@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { designateMentor, proposeMentorPairing, transitionMentorPairing } from "@/app/actions/mentorship";
-import { Button, Card, ErrorText, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, PageHeader, Select } from "@/components/ui";
 
 export default async function MentorshipSettingsPage({
   params,
@@ -38,14 +38,14 @@ export default async function MentorshipSettingsPage({
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
-      <PageHeading>Mentorship</PageHeading>
+    <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-8">
+      <PageHeader title="Mentorship" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       <Card>
         <h2 className="mb-3 text-xl">Mentors</h2>
         {mentors.length ? (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-deep-slate/15">
             {mentors.map((m) => (
               <li key={m.profile_id} className="py-2">
                 {m.profiles?.display_name}
@@ -53,7 +53,7 @@ export default async function MentorshipSettingsPage({
             ))}
           </ul>
         ) : (
-          <p className="text-ink-soft">None yet.</p>
+          <p className="text-deep-slate/70">None yet.</p>
         )}
       </Card>
 
@@ -81,7 +81,7 @@ export default async function MentorshipSettingsPage({
               <Button type="submit">Designate as mentor</Button>
             </form>
           ) : (
-            <p className="text-ink-soft">No plain members left to designate.</p>
+            <p className="text-deep-slate/70">No plain members left to designate.</p>
           )}
         </Card>
       )}
@@ -89,7 +89,7 @@ export default async function MentorshipSettingsPage({
       <Card>
         <h2 className="mb-3 text-xl">Propose a pairing</h2>
         {!mentors.length ? (
-          <p className="text-ink-soft">Designate a mentor first.</p>
+          <p className="text-deep-slate/70">Designate a mentor first.</p>
         ) : (
           <form action={proposeMentorPairing} className="flex items-end gap-3">
             <input type="hidden" name="org_id" value={currentOrg.org_id} />
@@ -124,19 +124,19 @@ export default async function MentorshipSettingsPage({
         {pairings?.length ? (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-line text-ink-soft">
+              <tr className="border-b border-deep-slate/20 text-deep-slate/70">
                 <th className="py-2 font-medium">Mentor</th>
                 <th className="py-2 font-medium">Mentee</th>
                 <th className="py-2 font-medium">Status</th>
                 <th className="py-2 font-medium">Staff action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-deep-slate/15">
               {pairings.map((p) => (
                 <tr key={p.id}>
                   <td className="py-2">{p.mentor?.display_name}</td>
                   <td className="py-2">{p.mentee?.display_name}</td>
-                  <td className="py-2 text-ink-soft">{p.status}</td>
+                  <td className="py-2 text-deep-slate/70">{p.status}</td>
                   <td className="py-2">
                     {p.status === "proposed" && (
                       <form action={transitionMentorPairing}>
@@ -166,7 +166,7 @@ export default async function MentorshipSettingsPage({
             </tbody>
           </table>
         ) : (
-          <p className="text-ink-soft">None yet.</p>
+          <p className="text-deep-slate/70">None yet.</p>
         )}
       </Card>
     </main>

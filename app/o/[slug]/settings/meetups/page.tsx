@@ -7,7 +7,7 @@ import {
   markAttendance,
   unmarkAttendance,
 } from "@/app/actions/meetups";
-import { Button, Card, ErrorText, Input, Label, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, Input, Label, PageHeader, Select } from "@/components/ui";
 
 export default async function MeetupsSettingsPage({
   params,
@@ -78,8 +78,8 @@ export default async function MeetupsSettingsPage({
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
-      <PageHeading>Meetups</PageHeading>
+    <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-8">
+      <PageHeader title="Meetups" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       <Card>
@@ -205,7 +205,7 @@ export default async function MeetupsSettingsPage({
       <Card>
         <h2 className="mb-3 text-xl">Series</h2>
         {series?.length ? (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-deep-slate/15">
             {series.map((s) => (
               <li key={s.id} className="flex items-center justify-between py-2">
                 <span>
@@ -224,7 +224,7 @@ export default async function MeetupsSettingsPage({
             ))}
           </ul>
         ) : (
-          <p className="text-ink-soft">None yet.</p>
+          <p className="text-deep-slate/70">None yet.</p>
         )}
       </Card>
 
@@ -239,12 +239,12 @@ export default async function MeetupsSettingsPage({
               const notYetMarked = (members ?? []).filter((mem) => !attendeeIds.has(mem.profile_id));
 
               return (
-                <div key={m.id} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
+                <div key={m.id} className="border-t border-deep-slate/20 pt-3 first:border-t-0 first:pt-0">
                   <p className="font-medium">{m.title}</p>
-                  <p className="text-sm text-ink-soft">
+                  <p className="text-sm text-deep-slate/70">
                     {new Date(m.starts_at).toLocaleString()} — {m.meeting_provider}
                   </p>
-                  <p className="text-sm text-ink-soft">
+                  <p className="text-sm text-deep-slate/70">
                     Going: {counts.going ?? 0} · Maybe: {counts.maybe ?? 0} · Not going: {counts.not_going ?? 0}
                   </p>
 
@@ -256,7 +256,7 @@ export default async function MeetupsSettingsPage({
                       <form key={a.id} action={unmarkAttendance}>
                         <input type="hidden" name="attendance_id" value={a.id} />
                         <input type="hidden" name="org_slug" value={slug} />
-                        <button type="submit" className="text-xs text-ink-soft underline">
+                        <button type="submit" className="text-xs text-deep-slate/70 underline">
                           Unmark {a.profiles?.display_name}
                         </button>
                       </form>
@@ -287,7 +287,7 @@ export default async function MeetupsSettingsPage({
             })}
           </div>
         ) : (
-          <p className="text-ink-soft">None yet.</p>
+          <p className="text-deep-slate/70">None yet.</p>
         )}
       </Card>
     </main>

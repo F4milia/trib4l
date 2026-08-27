@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createLiveStream } from "@/app/actions/live-streams";
 import { RTMP_INGEST_URL } from "@/lib/mux";
-import { Button, Card, ErrorText, Input, Label, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, Input, Label, PageHeader, Select } from "@/components/ui";
 
 export default async function LiveStreamsSettingsPage({
   params,
@@ -48,8 +48,8 @@ export default async function LiveStreamsSettingsPage({
   const keyByStreamId = new Map((credentials ?? []).map((c) => [c.live_stream_id, c.stream_key]));
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
-      <PageHeading>Live streams</PageHeading>
+    <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-8">
+      <PageHeader title="Live streams" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       <Card>
@@ -98,22 +98,22 @@ export default async function LiveStreamsSettingsPage({
         {streams?.length ? (
           <div className="space-y-4">
             {streams.map((s) => (
-              <div key={s.id} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
+              <div key={s.id} className="border-t border-deep-slate/20 pt-3 first:border-t-0 first:pt-0">
                 <div className="flex items-center justify-between">
                   <p className="font-medium">
-                    {s.title} <span className="text-sm text-ink-soft">— {s.status}</span>
+                    {s.title} <span className="text-sm text-deep-slate/70">— {s.status}</span>
                   </p>
-                  <Link href={`/o/${slug}/live/${s.id}`} className="text-sm text-primary underline">
+                  <Link href={`/o/${slug}/live/${s.id}`} className="text-sm text-terracotta underline">
                     View
                   </Link>
                 </div>
                 {keyByStreamId.has(s.id) && (
-                  <div className="mt-1 text-sm text-ink-soft">
+                  <div className="mt-1 text-sm text-deep-slate/70">
                     <p>
-                      RTMP URL: <code className="text-ink">{RTMP_INGEST_URL}</code>
+                      RTMP URL: <code className="text-deep-slate">{RTMP_INGEST_URL}</code>
                     </p>
                     <p>
-                      Stream key: <code className="text-ink">{keyByStreamId.get(s.id)}</code>
+                      Stream key: <code className="text-deep-slate">{keyByStreamId.get(s.id)}</code>
                     </p>
                   </div>
                 )}
@@ -121,7 +121,7 @@ export default async function LiveStreamsSettingsPage({
             ))}
           </div>
         ) : (
-          <p className="text-ink-soft">None yet.</p>
+          <p className="text-deep-slate/70">None yet.</p>
         )}
       </Card>
     </main>
