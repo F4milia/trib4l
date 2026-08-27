@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createCohort, assignToCohort } from "@/app/actions/cohorts";
-import { Button, Card, ErrorText, Input, Label, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, Input, Label, PageHeader, Select } from "@/components/ui";
 
 export default async function CohortsSettingsPage({
   params,
@@ -42,14 +42,14 @@ export default async function CohortsSettingsPage({
   const cohortNameById = new Map((cohorts ?? []).map((c) => [c.id, c.name]));
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
-      <PageHeading>Cohorts</PageHeading>
+    <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-8">
+      <PageHeader title="Cohorts" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       <Card>
         <h2 className="mb-3 text-xl">Existing cohorts</h2>
         {cohorts?.length ? (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-deep-slate/15">
             {cohorts.map((c) => (
               <li key={c.id} className="py-2">
                 {c.name}
@@ -57,7 +57,7 @@ export default async function CohortsSettingsPage({
             ))}
           </ul>
         ) : (
-          <p className="text-ink-soft">None yet.</p>
+          <p className="text-deep-slate/70">None yet.</p>
         )}
       </Card>
 
@@ -77,21 +77,21 @@ export default async function CohortsSettingsPage({
       <Card>
         <h2 className="mb-3 text-xl">Assign members</h2>
         {!cohorts?.length ? (
-          <p className="text-ink-soft">Create a cohort first.</p>
+          <p className="text-deep-slate/70">Create a cohort first.</p>
         ) : (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-line text-ink-soft">
+              <tr className="border-b border-deep-slate/20 text-deep-slate/70">
                 <th className="py-2 font-medium">Member</th>
                 <th className="py-2 font-medium">Current cohort</th>
                 <th className="py-2 font-medium">Move to</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-deep-slate/15">
               {members?.map((m) => (
                 <tr key={m.profile_id}>
                   <td className="py-2">{m.profiles?.display_name}</td>
-                  <td className="py-2 text-ink-soft">
+                  <td className="py-2 text-deep-slate/70">
                     {cohortByProfile.has(m.profile_id)
                       ? cohortNameById.get(cohortByProfile.get(m.profile_id)!) ?? "—"
                       : "—"}

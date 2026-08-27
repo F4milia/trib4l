@@ -19,6 +19,12 @@ export const MIGRATED = [
   "app/o/[slug]/members/page.tsx",
   "app/o/[slug]/search/page.tsx",
   "app/o/[slug]/members/report/page.tsx",
+  // C4a — settings: members, cohorts, stages, products, commerce
+  "app/o/[slug]/settings/members/page.tsx",
+  "app/o/[slug]/settings/cohorts/page.tsx",
+  "app/o/[slug]/settings/stages/page.tsx",
+  "app/o/[slug]/settings/products/page.tsx",
+  "app/o/[slug]/settings/commerce/page.tsx",
 ];
 
 const LEGACY =

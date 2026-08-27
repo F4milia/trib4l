@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createStage, transitionMemberStage } from "@/app/actions/stages";
-import { Button, Card, ErrorText, Input, Label, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, Input, Label, PageHeader, Select } from "@/components/ui";
 
 export default async function StagesSettingsPage({
   params,
@@ -42,23 +42,23 @@ export default async function StagesSettingsPage({
   const stageNameById = new Map((stages ?? []).map((s) => [s.id, s.name]));
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
-      <PageHeading>Stages</PageHeading>
+    <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-8">
+      <PageHeader title="Stages" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       <Card>
         <h2 className="mb-3 text-xl">Existing stages, in order</h2>
         {stages?.length ? (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-deep-slate/15">
             {stages.map((s) => (
               <li key={s.id} className="flex items-center justify-between py-2">
                 <span>{s.name}</span>
-                <span className="text-ink-soft text-sm">order {s.sort_order}</span>
+                <span className="text-deep-slate/70 text-sm">order {s.sort_order}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-ink-soft">None yet.</p>
+          <p className="text-deep-slate/70">None yet.</p>
         )}
       </Card>
 
@@ -82,21 +82,21 @@ export default async function StagesSettingsPage({
       <Card>
         <h2 className="mb-3 text-xl">Move members between stages</h2>
         {!stages?.length ? (
-          <p className="text-ink-soft">Create a stage first.</p>
+          <p className="text-deep-slate/70">Create a stage first.</p>
         ) : (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-line text-ink-soft">
+              <tr className="border-b border-deep-slate/20 text-deep-slate/70">
                 <th className="py-2 font-medium">Member</th>
                 <th className="py-2 font-medium">Current stage</th>
                 <th className="py-2 font-medium">Move to</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-deep-slate/15">
               {members?.map((m) => (
                 <tr key={m.profile_id}>
                   <td className="py-2">{m.profiles?.display_name}</td>
-                  <td className="py-2 text-ink-soft">
+                  <td className="py-2 text-deep-slate/70">
                     {stageByProfile.has(m.profile_id)
                       ? stageNameById.get(stageByProfile.get(m.profile_id)!) ?? "—"
                       : "—"}

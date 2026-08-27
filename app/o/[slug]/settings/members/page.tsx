@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createInvitation, revokeInvitation } from "@/app/actions/invitations";
-import { Button, Card, ErrorText, Input, Label, PageHeading, Select } from "@/components/ui";
+import { Button, Card, ErrorText, Input, Label, PageHeader, Select } from "@/components/ui";
 
 export default async function MembersSettingsPage({
   params,
@@ -34,17 +34,17 @@ export default async function MembersSettingsPage({
     .order("created_at");
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
-      <PageHeading>Invitations</PageHeading>
+    <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12 space-y-8">
+      <PageHeader title="Invitations" />
       {error ? <ErrorText>{error}</ErrorText> : null}
 
       <Card>
         <h2 className="mb-3 text-xl">Current members</h2>
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-deep-slate/15">
           {members?.map((m, i) => (
             <li key={i} className="flex items-center justify-between py-2">
               <span>{m.profiles?.display_name}</span>
-              <span className="text-sm text-ink-soft">{m.role}</span>
+              <span className="text-sm text-deep-slate/70">{m.role}</span>
             </li>
           ))}
         </ul>
@@ -53,7 +53,7 @@ export default async function MembersSettingsPage({
       <Card>
         <h2 className="mb-3 text-xl">Pending invitations</h2>
         {invitations?.length ? (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-deep-slate/15">
             {invitations.map((inv) => (
               <li key={inv.id} className="flex items-center justify-between py-2">
                 <span>
@@ -70,7 +70,7 @@ export default async function MembersSettingsPage({
             ))}
           </ul>
         ) : (
-          <p className="text-ink-soft">None.</p>
+          <p className="text-deep-slate/70">None.</p>
         )}
       </Card>
 
