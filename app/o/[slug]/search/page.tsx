@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { Card, Input, PageHeader } from "@/components/ui";
 
@@ -14,6 +15,18 @@ export default async function SearchPage({
   const { supabase } = await requireUser();
 
   const { data: org } = await supabase.from("organizations").select("id").eq("slug", slug).single();
+  // RLS hides an org from a non-member, so this returns null both for "does not
+  // exist" and for "exists, you are not in it" -- indistinguishable on purpose
+  // (invariant 1).
+  //
+  // Defence in depth, not a user-visible fix: the layout's notFound() already
+  // answers 404 for every route under /o/[slug], verified by reverting this
+  // guard and watching tests/e2e/dual-family.spec.ts stay green. What it does
+  // remove is a real server-side exception -- this page previously read
+  // `org!.id` and threw on every non-member request, logged and swallowed
+  // because the layout won the race. A page should not depend on a
+  // parallel-rendered layout for its own null-safety.
+  if (!org) notFound();
 
   // RLS applies here exactly as it does to the feed -- a search can never
   // surface a cohort post to someone outside that cohort, since
@@ -23,13 +36,13 @@ export default async function SearchPage({
         supabase
           .from("posts")
           .select("id, body, created_at, profiles(display_name)")
-          .eq("org_id", org?.id ?? "")
+          .eq("org_id", org.id ?? "")
           .is("deleted_at", null)
           .textSearch("search_vector", q, { type: "websearch" }),
         supabase
           .from("comments")
           .select("id, post_id, body, created_at, profiles(display_name)")
-          .eq("org_id", org?.id ?? "")
+          .eq("org_id", org.id ?? "")
           .is("deleted_at", null)
           .textSearch("search_vector", q, { type: "websearch" }),
       ])

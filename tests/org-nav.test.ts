@@ -89,3 +89,53 @@ describe("copy deck", () => {
     }
   });
 });
+
+/**
+ * The dual-Family fixture. CLAUDE.md names it the canonical test: "a member of
+ * Families A and B sees exactly their own scope in each, on every surface."
+ *
+ * alice is `member` in caregiver-circle and `mentor` in founder-collective, so
+ * this covers two things at once -- that nav built for one Family never carries
+ * an href into another, and that `mentor` is not a managing role even though it
+ * is a privileged-sounding one.
+ */
+describe("dual-Family scoping", () => {
+  const A = "caregiver-circle";
+  const B = "founder-collective";
+
+  it("never leaks an href from one Family into the other's nav", () => {
+    for (const [slug, other, role] of [
+      [A, B, "member"],
+      [B, A, "mentor"],
+    ] as const) {
+      const items = orgNav(slug, role).flatMap((s) => s.items);
+      expect(items.length).toBeGreaterThan(0);
+      for (const item of items) {
+        expect(item.href.startsWith(`/o/${slug}`), `${item.href} escaped /o/${slug}`).toBe(true);
+        expect(item.href).not.toContain(other);
+      }
+    }
+  });
+
+  it("treats mentor as non-managing, despite the privileged-sounding name", () => {
+    const sections = orgNav(B, "mentor");
+    expect(sections).toHaveLength(1);
+    expect(sections[0].id).toBe("community");
+    expect(sections.flatMap((s) => s.items).some((i) => i.href.includes("/settings/"))).toBe(false);
+  });
+
+  it("gives the same person the same nav shape in each Family, on disjoint routes", () => {
+    const hrefs = (slug: string, role: "member" | "mentor") =>
+      orgNav(slug, role).flatMap((s) => s.items).map((i) => i.href);
+    const asMember = hrefs(A, "member");
+    const asMentor = hrefs(B, "mentor");
+
+    // Normalise the slug out and compare the route shapes themselves. Equal
+    // lengths alone would have passed two entirely different route sets.
+    const shape = (list: string[], slug: string) => list.map((h) => h.replace(`/o/${slug}`, ""));
+    expect(shape(asMember, A)).toEqual(shape(asMentor, B));
+
+    // Same shape, and yet not one shared destination -- that is the isolation.
+    expect(asMember.filter((h) => asMentor.includes(h))).toEqual([]);
+  });
+});

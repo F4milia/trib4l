@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { requireUser, getUserOrgs } from "@/lib/session";
 import { createPost, createComment, toggleLike, moderatePost, moderateComment } from "@/app/actions/posts";
 import { blockUser } from "@/app/actions/safety";
@@ -16,7 +17,19 @@ export default async function OrgHomePage({
   const { supabase, user } = await requireUser();
 
   const { data: org } = await supabase.from("organizations").select("id, name").eq("slug", slug).single();
-  const orgId = org!.id;
+  // RLS hides an org from a non-member, so this returns null both for "does not
+  // exist" and for "exists, you are not in it" -- indistinguishable on purpose
+  // (invariant 1).
+  //
+  // Defence in depth, not a user-visible fix: the layout's notFound() already
+  // answers 404 for every route under /o/[slug], verified by reverting this
+  // guard and watching tests/e2e/dual-family.spec.ts stay green. What it does
+  // remove is a real server-side exception -- this page previously read
+  // `org!.id` and threw on every non-member request, logged and swallowed
+  // because the layout won the race. A page should not depend on a
+  // parallel-rendered layout for its own null-safety.
+  if (!org) notFound();
+  const orgId = org.id;
 
   const { data: myBlocks } = await supabase.from("blocks").select("blocked_profile_id");
   const blockedIds = new Set((myBlocks ?? []).map((b) => b.blocked_profile_id));
