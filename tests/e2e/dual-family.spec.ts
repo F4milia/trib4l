@@ -45,15 +45,31 @@ test.describe("dual-Family user", () => {
     }
   });
 
-  test("gets no Manage section in either Family -- mentor is not a managing role", async ({ page }) => {
+  /**
+   * founder-collective only, and deliberately not caregiver-circle.
+   *
+   * alice has to be the fixture here -- she is the only user in two Families --
+   * but her caregiver-circle role is NOT stable:
+   * tests/isolation/invitations.test.ts durably promotes her to organizer
+   * within a run, which is documented in tests/isolation/helpers.ts. Her
+   * founder-collective role is `mentor` and nothing mutates it.
+   *
+   * So this asserts the claim where the role is guaranteed. The cross-Family
+   * isolation tests above hold either way, because they assert on href scoping
+   * rather than on which sections render.
+   *
+   * Third time this fixture-mutability trap has bitten in this session: fixing
+   * it once in nav.spec.ts by switching to dave did not generalise, because
+   * dave belongs to one Family and cannot stand in here.
+   */
+  test("gets no Manage section in Family B -- mentor is not a managing role", async ({ page }) => {
     await signIn(page, "alice");
-    for (const slug of [ORG.caregiverCircle, ORG.founderCollective]) {
-      await page.goto(`/o/${slug}`);
-      const nav = page.getByRole("navigation", { name: "Main navigation" }).first();
-      await expect(nav.getByText("Manage"), `Manage leaked in ${slug}`).toHaveCount(0);
-      const hrefs = await sidebarHrefs(page);
-      expect(hrefs.filter((h) => h.includes("/settings/")), `settings link in ${slug}`).toEqual([]);
-    }
+    await page.goto(`/o/${ORG.founderCollective}`);
+
+    const nav = page.getByRole("navigation", { name: "Main navigation" }).first();
+    await expect(nav.getByText("Manage")).toHaveCount(0);
+    const hrefs = await sidebarHrefs(page);
+    expect(hrefs.filter((h) => h.includes("/settings/"))).toEqual([]);
   });
 
   test("is offered exactly her own two Families in the switcher, and no third", async ({ page }) => {

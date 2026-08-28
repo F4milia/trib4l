@@ -43,13 +43,22 @@ select ok(
   'EXECUTE is revoked from PUBLIC'
 );
 
--- --------------------------------------------------- attached to nothing yet
-select is(
-  (select count(*)::int from pg_trigger t
+-- ------------------------------------------------- attachment discipline
+-- This asserted "attached to no table" in PR 1/5, which was a claim about that
+-- PR's deliberate inertness and stopped being true the moment PR 2/5 attached
+-- it. Not deleted: replaced with the permanent, stronger claim, and coverage
+-- counting now lives in 020 ("exactly 25 triggers, no more, no fewer").
+--
+-- Every attachment must follow the <table>_audit naming convention, so an
+-- ad-hoc trigger wired to this function under some other name is a finding
+-- rather than a silent addition.
+select ok(
+  (select bool_and(t.tgname = c.relname || '_audit')
+     from pg_trigger t
      join pg_proc p on p.oid = t.tgfoid
+     join pg_class c on c.oid = t.tgrelid
     where p.proname = 'audit_row_change' and not t.tgisinternal),
-  0,
-  'this PR attaches the function to no table -- PR 2 does that'
+  'every trigger using this function is named <table>_audit'
 );
 
 -- ------------------------------------------------------------------ behaviour
