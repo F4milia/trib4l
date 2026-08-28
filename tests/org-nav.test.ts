@@ -124,11 +124,18 @@ describe("dual-Family scoping", () => {
     expect(sections.flatMap((s) => s.items).some((i) => i.href.includes("/settings/"))).toBe(false);
   });
 
-  it("gives the same person different navs in each Family, keyed only by role", () => {
-    const asMember = orgNav(A, "member").flatMap((s) => s.items).map((i) => i.href);
-    const asMentor = orgNav(B, "mentor").flatMap((s) => s.items).map((i) => i.href);
-    // Same shape, entirely disjoint destinations.
-    expect(asMember).toHaveLength(asMentor.length);
+  it("gives the same person the same nav shape in each Family, on disjoint routes", () => {
+    const hrefs = (slug: string, role: "member" | "mentor") =>
+      orgNav(slug, role).flatMap((s) => s.items).map((i) => i.href);
+    const asMember = hrefs(A, "member");
+    const asMentor = hrefs(B, "mentor");
+
+    // Normalise the slug out and compare the route shapes themselves. Equal
+    // lengths alone would have passed two entirely different route sets.
+    const shape = (list: string[], slug: string) => list.map((h) => h.replace(`/o/${slug}`, ""));
+    expect(shape(asMember, A)).toEqual(shape(asMentor, B));
+
+    // Same shape, and yet not one shared destination -- that is the isolation.
     expect(asMember.filter((h) => asMentor.includes(h))).toEqual([]);
   });
 });

@@ -64,7 +64,11 @@ test.describe("dual-Family user", () => {
       .locator("aside select option")
       .evaluateAll((els) => els.map((e) => (e as HTMLOptionElement).value));
 
-    expect(new Set(values)).toEqual(new Set([ORG.caregiverCircle, ORG.founderCollective]));
+    // Length, then uniqueness, then contents. Comparing Sets alone would have
+    // passed a switcher that listed the same Family twice.
+    expect(values).toHaveLength(2);
+    expect(new Set(values).size).toBe(2);
+    expect(values.slice().sort()).toEqual([ORG.caregiverCircle, ORG.founderCollective].sort());
     expect(values, "a Family she does not belong to appeared").not.toContain(ORG.wellnessGuild);
   });
 
@@ -75,8 +79,16 @@ test.describe("dual-Family user", () => {
    */
   test("cannot reach a Family B owner-only surface by URL", async ({ page }) => {
     await signIn(page, "alice");
-    await page.goto(`/o/${ORG.founderCollective}/settings/commerce`);
-    await expect(page).not.toHaveURL(/settings\/commerce/);
+    const res = await page.goto(`/o/${ORG.founderCollective}/settings/commerce`);
+
+    // Pin the destination, not merely "somewhere else". settings/commerce is
+    // org_owner scope, not organizer, and redirects to the Family home -- so a
+    // bounce to `/`, to another Family, or to an error page would all be wrong
+    // and all used to satisfy this test.
+    await expect(page).toHaveURL(new RegExp(`/o/${ORG.founderCollective}$`));
+    expect(res?.status()).toBe(200);
+    // And she is still genuinely inside Family B, not bounced out of it.
+    await expect(page.getByRole("navigation", { name: "Main navigation" }).first()).toBeVisible();
   });
 
   /**
