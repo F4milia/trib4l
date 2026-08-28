@@ -117,3 +117,52 @@ than week one.
 - 2026-08-26 · (seed) · Terracotta-on-Parchment primary button is a
   known contrast flag · resolve by adjusting the token to a verified-
   passing value (Q1), never by exempting the button.
+- 2026-08-27 · pre-flight · every governing doc was untracked or
+  unstaged, so `git worktree add` would have checked out none of them ·
+  commit the companion docs before creating any worktree; "the file
+  exists" and "the worktree sees it" are different claims.
+- 2026-08-27 · pre-flight · greptile.json declared `scope.include` with
+  18 globs; `lib/auth/**` matched nothing here, and the key does not
+  exist in Greptile's schema at all, so the file was inert for ~20
+  commits while being reported as corrected · verify a third-party
+  config's format against the vendor's own docs before writing it, and
+  verify every path glob against real repo paths; an ignored config is
+  indistinguishable from a working one.
+- 2026-08-27 · design migration · Input and Select spread `{...props}`
+  after their own className, so any caller passing className silently
+  lost all base styling — four call sites had been rendering as bare
+  native controls · every primitive merges classes through cn(); never
+  spread props after className.
+- 2026-08-27 · design migration · the destructive button passed every
+  token-level contrast guard while measuring 4.11:1, because the guards
+  check tokens and the failure was a composed pair (`bg-terracotta/10`
+  under `text-terracotta`) · measure the rendered
+  foreground-on-background combination, including alpha over alpha,
+  before shipping any tinted fill; a token-layer guard cannot see it.
+- 2026-08-28 · design migration · `danger` and `ghost` drew their colour
+  from the page ground, so inside a `treatment="dark"` Card they
+  measured 3.38:1 and 1.00:1 — invisible · a dark surface is not the
+  dark theme; semantic tokens do not flip inside a light page, so every
+  variant needs measuring against both grounds.
+- 2026-08-27 · design migration · a class-remap script converted 34
+  surfaces faithfully and left the design language unapplied — 0
+  asymmetric grids, 2 section rules, 5 primitives built and never used ·
+  a scripted migration finishes the script's job, not the session's;
+  state which sections of the design system a UI PR actually applies,
+  and count them.
+- 2026-08-27 · E2E setup · pinning Playwright's testDir immediately
+  broke `npm test`, because vitest's default include collects
+  `*.spec.ts` and @playwright/test throws under another runner · test
+  runner exclusions are mutual; fixing one direction creates the other.
+- 2026-08-28 · audit PR1/5 · three review rounds each found the previous
+  fix one level too shallow: `search_path = ''` left pg_temp implicitly
+  first, `@v4` named a version but not a commit, and setup-cli was
+  SHA-pinned while `version: latest` left the CLI mutable · when you pin
+  something, check what it pins in turn.
+- 2026-08-28 · alignment · reported "8/8 E2E" when the run said 7, and
+  "re-validated as YAML" when the validator had thrown before the commit
+  ran; separately asserted in a code comment that two pages rendered a
+  live page for a non-member, then disproved it · never state a
+  verification that was not executed. Say per claim what was verified and
+  against what authority; if a check fails or is unavailable, say so
+  instead of describing the check intended.
