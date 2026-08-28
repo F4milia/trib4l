@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { ORG, signIn } from "./helpers";
+import { MANAGING_ROLES, ORG, roleIn, signIn } from "./helpers";
 
 /**
  * The canonical fixture, end to end. CLAUDE.md: "The dual-Family user is the
@@ -45,14 +45,39 @@ test.describe("dual-Family user", () => {
     }
   });
 
-  test("gets no Manage section in either Family -- mentor is not a managing role", async ({ page }) => {
+  /**
+   * Both Families, role-aware. Greptile flagged an earlier revision of this
+   * test for narrowing to founder-collective only: a Manage-leak regression in
+   * caregiver-circle would then have passed unnoticed. That was weakening a
+   * test to make it stable, which CLAUDE.md rule 6 forbids.
+   *
+   * The stable formulation asserts the invariant rather than the seed state:
+   * the Manage section appears in a Family **iff** the caller's role there is
+   * managing. That holds whether or not tests/isolation/invitations.test.ts has
+   * promoted alice in caregiver-circle, and it covers both Families -- strictly
+   * more than the original, which only ever checked the member case.
+   */
+  test("shows Manage in a Family only when her role there is managing", async ({ page }) => {
     await signIn(page, "alice");
+
     for (const slug of [ORG.caregiverCircle, ORG.founderCollective]) {
+      const role = await roleIn("alice", slug);
+      expect(role, `alice has no membership in ${slug}`).not.toBeNull();
+      const manages = (MANAGING_ROLES as readonly string[]).includes(role!);
+
       await page.goto(`/o/${slug}`);
       const nav = page.getByRole("navigation", { name: "Main navigation" }).first();
-      await expect(nav.getByText("Manage"), `Manage leaked in ${slug}`).toHaveCount(0);
-      const hrefs = await sidebarHrefs(page);
-      expect(hrefs.filter((h) => h.includes("/settings/")), `settings link in ${slug}`).toEqual([]);
+      const settings = (await sidebarHrefs(page)).filter((h) => h.includes("/settings/"));
+
+      if (manages) {
+        await expect(nav.getByText("Manage"), `Manage missing in ${slug} for ${role}`).toBeVisible();
+        expect(settings.length, `no settings links in ${slug} for ${role}`).toBeGreaterThan(0);
+        // Even when managing, nothing may point at the other Family.
+        for (const h of settings) expect(h).toContain(slug);
+      } else {
+        await expect(nav.getByText("Manage"), `Manage leaked in ${slug} for ${role}`).toHaveCount(0);
+        expect(settings, `settings link leaked in ${slug} for ${role}`).toEqual([]);
+      }
     }
   });
 
