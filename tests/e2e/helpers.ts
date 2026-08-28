@@ -58,12 +58,38 @@ export async function signIn(page: Page, user: keyof typeof USERS) {
  * tests/isolation/helpers.ts commits for the same reason.
  */
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
-const SUPABASE_SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ??
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
+
+/** Only 127.0.0.1 and localhost count as the local stack. */
+const IS_LOCAL_STACK = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$/.test(SUPABASE_URL);
+
+/**
+ * The committed fallbacks are the published local-dev demo keys and are only
+ * ever valid against a local stack. If NEXT_PUBLIC_SUPABASE_URL points anywhere
+ * else, refuse to fall back: silently using a demo key against a hosted project
+ * produces confusing failures at best, and invites someone to "fix" it by
+ * pasting a real service-role key into a committed file at worst.
+ */
+function keyFor(name: "NEXT_PUBLIC_SUPABASE_ANON_KEY" | "SUPABASE_SERVICE_ROLE_KEY", localFallback: string): string {
+  const fromEnv = process.env[name];
+  if (fromEnv) return fromEnv;
+  if (!IS_LOCAL_STACK) {
+    throw new Error(
+      `${name} must be set explicitly when NEXT_PUBLIC_SUPABASE_URL is not the local stack ` +
+        `(got ${SUPABASE_URL}). The fallback in tests/e2e/helpers.ts is a local-dev demo key ` +
+        `and must never be used against a hosted project.`,
+    );
+  }
+  return localFallback;
+}
+
+const SUPABASE_ANON_KEY = keyFor(
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
+);
+const SUPABASE_SERVICE_ROLE_KEY = keyFor(
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
+);
 
 export async function roleIn(user: keyof typeof USERS, slug: string): Promise<string | null> {
   const orgId = ORG_IDS[slug];
