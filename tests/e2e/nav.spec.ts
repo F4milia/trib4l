@@ -7,9 +7,18 @@ import { ORG, signIn } from "./helpers";
  * proves the server actually resolves the role and renders accordingly.
  */
 test.describe("org navigation", () => {
+  /**
+   * dave, not alice. alice is the dual-Family fixture, but
+   * tests/isolation/invitations.test.ts durably promotes her to organizer
+   * within a run -- documented in tests/isolation/helpers.ts, which works
+   * around it the same way. So "a member sees no Manage section" passed or
+   * failed here depending on whether the isolation suite had run since the
+   * last `db reset`. dave is a plain member of wellness-guild and stays one:
+   * role-escalation.test.ts attempts promotion there precisely so it fails.
+   */
   test("shows a member the community section and no manage section", async ({ page }) => {
-    await signIn(page, "alice");
-    await page.goto(`/o/${ORG.caregiverCircle}`);
+    await signIn(page, "dave");
+    await page.goto(`/o/${ORG.wellnessGuild}`);
 
     const nav = page.getByRole("navigation", { name: "Main navigation" }).first();
     await expect(nav.getByRole("link", { name: /Members/ })).toBeVisible();

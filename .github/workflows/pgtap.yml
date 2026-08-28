@@ -1,0 +1,38 @@
+name: Supabase pgTAP Tests
+
+# Unconditional on every PR, per pre-flight item 2 -- schema guarantees are not
+# scoped to the paths a PR happens to touch.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  database-tests:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # npx rather than supabase/setup-cli so it resolves the exact
+      # devDependency version npm ci installed, not "latest" -- same reasoning
+      # as ci.yml's isolation job.
+      - run: npx supabase start
+
+      # Without a reset, `supabase start` leaves a database that has never had
+      # migrations or seed.sql applied, and the suite asserts against nothing.
+      - run: npx supabase db reset
+
+      - run: npx supabase test db

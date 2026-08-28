@@ -5,13 +5,20 @@ on:
   push:
     branches: [main]
 
+# Least privilege. persist-credentials: false keeps the token out of
+# .git/config, but does nothing about what the token is allowed to do.
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -25,24 +32,38 @@ jobs:
   migrations:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: supabase/setup-cli@v1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          version: latest
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
 
       # Applies every migration plus seed.sql to a throwaway local Postgres
       # from scratch. Proves the schema builds cleanly on a fresh database,
       # not just on whatever state a dev's local instance happens to be in.
-      - run: supabase start
-      - run: supabase db reset
+      #
+      # npx, not supabase/setup-cli with `version: latest`: that pinned the
+      # action to a SHA while leaving the CLI it downloads mutable, so
+      # migration validation could change behaviour with no reviewed change
+      # here. npx resolves the `supabase` devDependency npm ci just installed,
+      # which package.json pins -- one source of truth, same as the isolation
+      # job below.
+      - run: npx supabase start
+      - run: npx supabase db reset
 
   isolation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
