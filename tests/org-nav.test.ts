@@ -89,3 +89,46 @@ describe("copy deck", () => {
     }
   });
 });
+
+/**
+ * The dual-Family fixture. CLAUDE.md names it the canonical test: "a member of
+ * Families A and B sees exactly their own scope in each, on every surface."
+ *
+ * alice is `member` in caregiver-circle and `mentor` in founder-collective, so
+ * this covers two things at once -- that nav built for one Family never carries
+ * an href into another, and that `mentor` is not a managing role even though it
+ * is a privileged-sounding one.
+ */
+describe("dual-Family scoping", () => {
+  const A = "caregiver-circle";
+  const B = "founder-collective";
+
+  it("never leaks an href from one Family into the other's nav", () => {
+    for (const [slug, other, role] of [
+      [A, B, "member"],
+      [B, A, "mentor"],
+    ] as const) {
+      const items = orgNav(slug, role).flatMap((s) => s.items);
+      expect(items.length).toBeGreaterThan(0);
+      for (const item of items) {
+        expect(item.href.startsWith(`/o/${slug}`), `${item.href} escaped /o/${slug}`).toBe(true);
+        expect(item.href).not.toContain(other);
+      }
+    }
+  });
+
+  it("treats mentor as non-managing, despite the privileged-sounding name", () => {
+    const sections = orgNav(B, "mentor");
+    expect(sections).toHaveLength(1);
+    expect(sections[0].id).toBe("community");
+    expect(sections.flatMap((s) => s.items).some((i) => i.href.includes("/settings/"))).toBe(false);
+  });
+
+  it("gives the same person different navs in each Family, keyed only by role", () => {
+    const asMember = orgNav(A, "member").flatMap((s) => s.items).map((i) => i.href);
+    const asMentor = orgNav(B, "mentor").flatMap((s) => s.items).map((i) => i.href);
+    // Same shape, entirely disjoint destinations.
+    expect(asMember).toHaveLength(asMentor.length);
+    expect(asMember.filter((h) => asMentor.includes(h))).toEqual([]);
+  });
+});
