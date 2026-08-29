@@ -17,7 +17,7 @@ create extension if not exists pgtap with schema extensions;
 -- 5 has_trigger + 1 total + 1 mode arg + 2 organizations/order_items org_id
 -- + 1 order_items count + 2 profiles + 2 no-op pair + 2 platform_staff
 -- + 1 unknown-mode raise
-select plan(17);
+select plan(21);  -- +4: deleting an organization, and its cascade
 
 -- ------------------------------------------------------------- attachment
 select has_trigger('public', t, t || '_audit', 'audit trigger on ' || t)
@@ -155,6 +155,40 @@ select throws_ok(
      insert into public._bad_mode (id) values (gen_random_uuid()); $$,
   null,
   'an unknown resolution mode raises rather than silently logging a null org'
+);
+
+-- ------------------------------------------------- deleting an organization
+-- Regression: audit_log.org_id references organizations(id), so writing the
+-- deleted id here violated the key and rolled the deletion back. Cascaded
+-- children hit the same wall in the default `row` mode.
+insert into public.cohorts (id, org_id, name)
+select gen_random_uuid(), org_id, 'cascade probe' from _ids;
+
+select lives_ok(
+  $$ delete from public.organizations where slug = 'audit-probe-org' $$,
+  'an organization can be deleted -- the audit insert must not violate its own foreign key'
+);
+
+select is(
+  (select org_id from public.audit_log
+    where action = 'organizations.delete' and target_id = (select org_id from _ids)),
+  null,
+  'the deleted org is not referenced in org_id'
+);
+
+select is(
+  (select metadata ->> 'org_id_at_delete' from public.audit_log
+    where action = 'organizations.delete' and target_id = (select org_id from _ids)),
+  (select org_id::text from _ids),
+  'attribution is preserved in metadata instead -- an id, not content'
+);
+
+select is(
+  (select count(*)::int from public.audit_log
+    where action = 'cohorts.delete'
+      and metadata ->> 'org_id_at_delete' = (select org_id::text from _ids)),
+  1,
+  'a cascaded child delete is logged too, with the same preserved attribution'
 );
 
 select * from finish();
