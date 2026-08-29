@@ -30,6 +30,47 @@ export const copy = {
     body: "The page could not be rendered. The error has been reported. Reloading may work; if it does not, the problem is on our side.",
     reload: "Reload the page",
   },
+  /**
+   * The auth surfaces (S1). Every string on the first screens anyone sees,
+   * including the ones the server actions redirect with -- an error message is
+   * UI copy wherever it is authored.
+   *
+   * The consent notice is carried over verbatim from the previous signup page
+   * rather than rewritten: it describes an actual platform behaviour
+   * (docs/data-retention-policy.md), so it is not placeholder legal text and
+   * invariant 11's "[PENDING LEGAL REVIEW]" marker does not apply to it. It
+   * must also not drift toward reading like terms -- tests/auth-screens.test.ts
+   * guards that.
+   */
+  auth: {
+    login: {
+      eyebrow: "Sign in",
+      title: "Welcome back.",
+      emailLabel: "Email",
+      passwordLabel: "Password",
+      submit: "Log in",
+      switchPrompt: "No account yet?",
+      switchAction: "Create one",
+    },
+    signup: {
+      eyebrow: "New account",
+      title: "Make your account.",
+      emailLabel: "Email",
+      passwordLabel: "Password",
+      submit: "Sign up",
+      switchPrompt: "Already have an account?",
+      switchAction: "Sign in instead",
+      consent: {
+        heading: "Before you continue",
+        body: "F4milia's support staff can access content within your communities to help resolve issues you or an organizer report, and to keep the platform safe. This access is logged and limited to what's needed to help.",
+        checkbox: "I understand platform staff may access my content for support purposes.",
+      },
+      errors: {
+        consentRequired: "You must acknowledge the platform-access notice to sign up.",
+        missingFields: "Email and password are required.",
+      },
+    },
+  },
   orgNav: {
     /** §9: <aside> nav gets an aria-label. */
     landmark: "Main navigation",
