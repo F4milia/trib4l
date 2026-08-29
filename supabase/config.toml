@@ -286,6 +286,13 @@ content_path = "./supabase/templates/magic-link.html"
 subject = "Reset your password"
 content_path = "./supabase/templates/recovery.html"
 
+# One template, sent to BOTH the old and the new address, because
+# double_confirm_changes above is true. Its copy has to read correctly in
+# either inbox -- which is why it names neither address.
+[auth.email.template.email_change]
+subject = "Confirm the change of address"
+content_path = "./supabase/templates/email-change.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true

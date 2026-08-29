@@ -15,11 +15,11 @@ import type { EmailOtpType } from "@supabase/supabase-js";
  * `string & {}`, so an unchecked cast of `searchParams.get("type")` would hand
  * an attacker-chosen string straight to verifyOtp.
  *
- * Only the types a template in this repo can actually produce are listed.
- * The remaining S1 PR adds its own: email_change (PR 6). Listing a type
- * before its template exists would be an untested door.
+ * Only the types a template in this repo can actually produce are listed. A
+ * type gets added in the PR that ships its template, never before -- listing
+ * one earlier would be an untested door.
  */
-export const CONFIRMABLE_TYPES = ["email", "signup", "magiclink", "recovery"] as const;
+export const CONFIRMABLE_TYPES = ["email", "signup", "magiclink", "recovery", "email_change"] as const;
 
 export function confirmableType(raw: string | null | undefined): EmailOtpType | null {
   return (CONFIRMABLE_TYPES as readonly string[]).includes(raw ?? "")

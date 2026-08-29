@@ -74,6 +74,43 @@ export async function sendMagicLink(formData: FormData) {
 }
 
 /**
+ * Starts a change of address.
+ *
+ * `double_confirm_changes = true` in config.toml is what makes this a
+ * re-verification rather than a rename: GoTrue emails BOTH the current address
+ * and the new one, and the change lands only when both confirm. That is also
+ * the protection against a walk-up attacker on an unlocked session -- they
+ * cannot complete it without the old inbox, which is why this action does not
+ * ask for the current password on top.
+ *
+ * Requires a session, and takes the current address from that session rather
+ * than from the form. Nothing here trusts a client-supplied identity.
+ */
+export async function requestEmailChange(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+
+  const supabase = await createClient();
+  const { data, error: sessionError } = await supabase.auth.getUser();
+  if (sessionError || !data.user) {
+    redirect("/login");
+  }
+
+  if (!email) {
+    redirect("/account/email?error=" + encodeURIComponent(copy.auth.changeEmail.errors.missingEmail));
+  }
+  if (email.toLowerCase() === (data.user.email ?? "").toLowerCase()) {
+    redirect("/account/email?error=" + encodeURIComponent(copy.auth.changeEmail.errors.unchanged));
+  }
+
+  const { error } = await supabase.auth.updateUser({ email });
+  if (error) {
+    redirect("/account/email?error=" + encodeURIComponent(error.message));
+  }
+
+  redirect("/account/email?sent=1");
+}
+
+/**
  * Emails a one-time link to choose a new password.
  *
  * Same enumeration reasoning as sendMagicLink: one destination whatever the

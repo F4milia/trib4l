@@ -190,6 +190,19 @@ export function ErrorText({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * ErrorText's counterpart for a completed action. §9: "save confirmations =
+ * role='status'" -- polite rather than assertive, so it is announced without
+ * interrupting, and drawn rather than filled so it does not read as an alarm.
+ */
+export function StatusText({ children }: { children: ReactNode }) {
+  return (
+    <p role="status" className="border-2 border-deep-slate px-4 py-3 text-sm text-deep-slate">
+      {children}
+    </p>
+  );
+}
+
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className={cn(field, "min-h-28 h-auto py-2", className)} {...props} />;
 }
