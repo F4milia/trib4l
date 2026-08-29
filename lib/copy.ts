@@ -53,6 +53,7 @@ export const copy = {
       switchAction: "Create one",
       magicLinkPrompt: "Rather not type a password?",
       magicLinkAction: "Email me a sign-in link",
+      forgotAction: "Forgotten your password?",
     },
     signup: {
       eyebrow: "New account",
@@ -125,6 +126,43 @@ export const copy = {
       errors: {
         failed: "That sign-in did not complete. Try again, or use your email address.",
         cancelled: "Sign-in was cancelled. Nothing changed.",
+      },
+    },
+    forgotPassword: {
+      eyebrow: "Password",
+      title: "Reset it.",
+      body: "We send a one-time link to your address. Opening it lets you choose a new password.",
+      emailLabel: "Email",
+      submit: "Send the link",
+      back: "Back to sign in",
+      errors: {
+        missingEmail: "An email address is required.",
+      },
+    },
+    /** Same conditional phrasing, and the same reason, as linkSent. */
+    resetSent: {
+      eyebrow: "Sent",
+      title: "Check your email.",
+      body: "If that address has an account, a link to choose a new password is on its way.",
+      note: "The link works once and expires in an hour. Your current password keeps working until you set a new one.",
+      back: "Back to sign in",
+    },
+    resetPassword: {
+      eyebrow: "Password",
+      title: "Choose a new one.",
+      body: "This link signed you in. Set a new password to finish.",
+      passwordLabel: "New password",
+      confirmLabel: "New password again",
+      submit: "Save the new password",
+      errors: {
+        /**
+         * Reached when the recovery link was never opened, has expired, or was
+         * already used -- the page is a plain URL, so it is reachable with no
+         * recovery session at all.
+         */
+        noSession: "That reset link is no longer valid. Ask for a new one.",
+        missingFields: "Enter the new password twice.",
+        mismatch: "Those two passwords do not match.",
       },
     },
     confirm: {

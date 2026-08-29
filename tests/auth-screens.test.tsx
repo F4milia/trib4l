@@ -129,6 +129,9 @@ describe("copy deck", () => {
     "app/check-email/page.tsx",
     "app/magic-link/page.tsx",
     "app/link-sent/page.tsx",
+    "app/forgot-password/page.tsx",
+    "app/reset-sent/page.tsx",
+    "app/reset-password/page.tsx",
   ] as const;
 
   function strings(node: unknown, out: string[] = []): string[] {

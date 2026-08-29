@@ -126,7 +126,7 @@ describe("confirmableType", () => {
    * through to verifyOtp. These are the types S1's later PRs introduce -- each
    * is added to the closed set in the PR that ships its template, not before.
    */
-  it.each(["recovery", "email_change", "invite", "phone_change", "", "sms"])(
+  it.each(["email_change", "invite", "phone_change", "", "sms"])(
     "rejects %s until a template in this repo produces it",
     (type) => {
       expect(confirmableType(type)).toBeNull();
