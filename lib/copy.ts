@@ -70,6 +70,28 @@ export const copy = {
         missingFields: "Email and password are required.",
       },
     },
+    /**
+     * Where signup lands now that confirmation is mandatory. Deliberately says
+     * "the address you gave" rather than printing it back: this page is
+     * reachable by URL, and the value came from an unauthenticated form.
+     */
+    checkEmail: {
+      eyebrow: "One more step",
+      title: "Check your email.",
+      body: "We sent a link to the address you gave. Open it to confirm the address and finish making your account.",
+      note: "The link works once and expires in an hour. Nothing arrived? Give it a minute, then look in the spam folder.",
+      back: "Back to sign in",
+    },
+    confirm: {
+      errors: {
+        /**
+         * One message for every failure -- expired, already used, malformed,
+         * never issued. Telling them apart would make this route an oracle,
+         * and none of the four changes what the person does next.
+         */
+        invalidLink: "That link is no longer valid. It may have expired or already been used — sign in to have a new one sent.",
+      },
+    },
   },
   orgNav: {
     /** §9: <aside> nav gets an aria-label. */

@@ -22,7 +22,12 @@ export async function signUp(formData: FormData) {
     redirect("/signup?error=" + encodeURIComponent(error.message));
   }
 
-  redirect("/");
+  // Confirmation is mandatory, so signUp returns no session and there is
+  // nothing to land on yet. This redirect is unconditional on purpose: when
+  // the address already belongs to an account, GoTrue succeeds with an
+  // obfuscated user rather than erroring, so branching here would rebuild the
+  // account-enumeration oracle Supabase is deliberately avoiding.
+  redirect("/check-email");
 }
 
 export async function signIn(formData: FormData) {
