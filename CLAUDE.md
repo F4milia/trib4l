@@ -12,7 +12,8 @@ ownership — treat every write to it accordingly.
 Supabase (Postgres, Auth, RLS, Realtime, Storage) · Inngest (jobs) ·
 Resend (email) · pgvector (semantic search) · Edge Functions for all
 AI calls · @react-pdf/renderer (Keepsake) · PostHog (names and counts
-only — see invariant 4) · pgTAP + ZeroStep/Playwright in CI.
+only — see invariant 4) · Sentry (errors only — see invariant 12) ·
+pgTAP + ZeroStep/Playwright in CI.
 Commerce is dormant-per-Tower; nothing touches Stripe until unparked.
 
 ## Hard invariants — violating any of these is a failed session
@@ -65,6 +66,13 @@ Commerce is dormant-per-Tower; nothing touches Stripe until unparked.
     session activates it.
 11. No invented legal language anywhere — placeholder text is visibly
     "[PENDING LEGAL REVIEW]", never plausible-sounding terms.
+12. Sentry receives errors ONLY — no Family content, no AI prompt or
+    suggestion text, no auth cookie. Its dataCollection defaults are
+    permissive (userInfo, httpBodies, and genAI inputs/outputs all ON),
+    so every Sentry.init sets them explicitly rather than inheriting
+    them. The DSN comes from the environment, never hardcoded, so CI
+    and staging never report into the production project. This is
+    settled BEFORE the first AI session (Wave 6 / A1), not after.
 
 ## Standing workflow — applies to every session, no paste required
 1. FIRST OUTPUT, before any code: a PR plan — ordered PRs, each under
@@ -194,3 +202,38 @@ than week one.
   order audit rows by seq. Never by id (random uuid) or created_at
   (transaction time). seq orders by assignment, not commit, so two concurrent
   transactions can still commit out of seq order.
+- 2026-08-30 · readiness check · Sentry ships in three configs with a
+  hardcoded production DSN and `dataCollection` left at its permissive
+  defaults, and CLAUDE.md named it nowhere · a dependency that transmits
+  offsite is a stack entry and an invariant, not just a config file. A
+  Wave 6 session reading only this document would have sent AI prompts to
+  a third party and passed every gate. See invariant 12.
+- 2026-08-30 · readiness check · `docs/session-notes/` is gitignored by
+  decision, so no worktree can open it — including BEFORE-WAVE-2.md, which
+  NEXT-STEPS.md marks as a ⛔ gate · anything a future session must know
+  goes in CLAUDE.md or in that session's own prompt. A note the worktree
+  cannot read is a note that does not exist. Same lesson as the 2026-08-27
+  untracked-docs entry, in a form committing the file does not fix.
+- 2026-08-30 · readiness check · both stream worktrees point at the one
+  local Supabase stack (`supabase_db_Trib4l`) and both default to port
+  3000, and `npm run test:isolation` begins with `supabase db reset` · the
+  two streams cannot run dev servers, isolation, or Playwright
+  concurrently. One stream's RLS gate destroys the other's database
+  mid-run, and it presents as flaky tests rather than as a collision.
+- 2026-08-30 · audit PR3/5 (deferred) · the DELETE branch of
+  audit_row_change() SELECTs the organization before inserting, which under
+  READ COMMITTED goes stale if the org is deleted between check and insert;
+  separately audit_log.actor_profile_id can reference a missing profiles
+  row · do not check-then-insert. Insert and catch foreign_key_violation,
+  re-inserting with null actor/org. CD-3 and CD-4 share that one fix, owed
+  in PR 4/5.
+- 2026-08-30 · audit PR3/5 (deferred) · `to_jsonb(new)` copies the entire
+  row to read two scalar fields — measured +50% write cost on a 4 KB body,
+  scaling with row width · build the row image only for UPDATE; read
+  NEW.org_id and NEW.id directly on INSERT and DELETE. PERF-1, and
+  `messages` is its worst case, so it is owed before Wave 2 creates it.
+- 2026-08-30 · audit PR3/5 (deferred) · audit_log is indexed on
+  (org_id, created_at) and (actor_profile_id) but not target_id, so "this
+  record's history" full-scans a table now fed by 30 tables — and the table
+  is append-only with no retention policy · add (target_type, target_id)
+  while it is still small. PERF-2.
