@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(7);  -- +1: the exemption list is bounded
+select plan(13);
 
 -- ---------------------------------------------------------------- N-1
 -- A text primary key is routinely a user-chosen slug. The previous fix stored
@@ -96,6 +96,68 @@ select is(
   3,
   'exactly three exemptions -- a fourth is a deliberate edit to this file, not a silent one'
 );
+
+-- ------------------------------------------- Q3-1: the guard's own output
+-- format_type() returns human-readable names, several of which contain
+-- spaces: varchar -> "character varying", timestamptz -> "timestamp with time
+-- zone". Writing those into target_key_type made the whitespace assertion
+-- above fail on data it had itself produced -- reporting a content leak where
+-- there was none. pg_type.typname is the whitespace-free identifier.
+create table public._probe_varchar (id varchar(255) primary key, org_id uuid);
+create trigger _probe_varchar_audit after insert on public._probe_varchar
+  for each row execute function public.audit_row_change();
+insert into public._probe_varchar (id, org_id)
+  values ('abc', '00000000-0000-0000-0000-00000000000a');
+
+select is(
+  (select metadata ->> 'target_key_type' from public.audit_log where target_type = '_probe_varchar'),
+  'varchar',
+  'the recorded type name is the whitespace-free identifier, not "character varying"'
+);
+
+create table public._probe_ts (id timestamptz primary key, org_id uuid);
+create trigger _probe_ts_audit after insert on public._probe_ts
+  for each row execute function public.audit_row_change();
+insert into public._probe_ts (id, org_id)
+  values (now(), '00000000-0000-0000-0000-00000000000a');
+
+select is(
+  (select metadata ->> 'target_key_type' from public.audit_log where target_type = '_probe_ts'),
+  'timestamptz',
+  'and for a type whose readable name has two spaces'
+);
+
+select ok(
+  not exists (
+    select 1 from public.audit_log a, jsonb_each(a.metadata) e
+     where a.target_type in ('_probe_varchar', '_probe_ts')
+       and jsonb_typeof(e.value) = 'string' and (e.value #>> '{}') ~ '\s'
+  ),
+  'the guard no longer fires on its own output'
+);
+
+-- ------------------------------------- Q3-1 coupling: the integer allowlist
+-- typname yields int2/int4/int8, NOT smallint/integer/bigint. Changing the
+-- lookup without changing the comparison silently breaks the surrogate-key
+-- case that N-1's fix exists to preserve. All three widths, deliberately.
+create table public._probe_i2 (id smallserial primary key, org_id uuid);
+create table public._probe_i4 (id serial primary key, org_id uuid);
+create table public._probe_i8 (id bigserial primary key, org_id uuid);
+create trigger _probe_i2_audit after insert on public._probe_i2
+  for each row execute function public.audit_row_change();
+create trigger _probe_i4_audit after insert on public._probe_i4
+  for each row execute function public.audit_row_change();
+create trigger _probe_i8_audit after insert on public._probe_i8
+  for each row execute function public.audit_row_change();
+insert into public._probe_i2 (org_id) values ('00000000-0000-0000-0000-00000000000a');
+insert into public._probe_i4 (org_id) values ('00000000-0000-0000-0000-00000000000a');
+insert into public._probe_i8 (org_id) values ('00000000-0000-0000-0000-00000000000a');
+
+select is(
+  (select metadata ->> 'target_key' from public.audit_log where target_type = t),
+  '1',
+  'an ' || t || ' surrogate key is still preserved'
+) from unnest(array['_probe_i2', '_probe_i4', '_probe_i8']) as t;
 
 select * from finish();
 rollback;
