@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { signIn } from "@/app/actions/auth";
 import { AuthShell } from "@/components/auth-shell";
-import { PasswordInput } from "@/components/password-input";
+import { LoginForm } from "@/components/auth/login-form";
 import { OAuthButtons } from "@/components/oauth-buttons";
-import { Button, Input, Label } from "@/components/ui";
 import { copy } from "@/lib/copy";
 
 const t = copy.auth.login;
@@ -19,7 +17,6 @@ export default async function LoginPage({
     <AuthShell
       eyebrow={t.eyebrow}
       title={t.title}
-      error={error}
       footer={
         <>
           {t.switchPrompt}{" "}
@@ -29,19 +26,12 @@ export default async function LoginPage({
         </>
       }
     >
-      <form action={signIn} className="space-y-5">
-        <div>
-          <Label htmlFor="email">{t.emailLabel}</Label>
-          <Input type="email" name="email" id="email" autoComplete="email" required />
-        </div>
-        <div>
-          <Label htmlFor="password">{t.passwordLabel}</Label>
-          <PasswordInput name="password" id="password" autoComplete="current-password" required />
-        </div>
-        <Button type="submit" className="w-full">
-          {t.submit}
-        </Button>
-      </form>
+      {/* The query error goes to the form, not to AuthShell. /auth/confirm and
+          /auth/callback both redirect here carrying one, and it stays in the
+          URL across a submission -- rendered separately it would sit above a
+          second, contradicting message. Seeded as the form's initial state,
+          the next submission replaces it. */}
+      <LoginForm initialError={error} />
 
       <OAuthButtons />
 

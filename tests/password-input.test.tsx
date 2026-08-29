@@ -145,17 +145,47 @@ describe("PasswordInput", () => {
   });
 });
 
-describe("the password screens use it", () => {
+describe("every password field in the product goes through it", () => {
+  /**
+   * The forms moved into components/auth/ when field-level errors landed, so
+   * this points there rather than at the pages. The obligation is unchanged
+   * and the tree-wide guard below is stronger than the per-file counts: it
+   * catches a raw password field added anywhere, including a file nobody
+   * thought to list here.
+   */
   it.each([
-    ["app/login/page.tsx", 1],
-    ["app/signup/page.tsx", 1],
-    ["app/reset-password/page.tsx", 2],
-  ])("%s renders %i PasswordInput and no raw password field", async (page, count) => {
+    ["components/auth/login-form.tsx", 1],
+    ["components/auth/signup-form.tsx", 1],
+    ["components/auth/reset-password-form.tsx", 2],
+  ])("%s renders %i", async (file, count) => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const src = readFileSync(join(process.cwd(), page), "utf8");
-
+    const src = readFileSync(join(process.cwd(), file), "utf8");
     expect(src.match(/<PasswordInput\b/g) ?? []).toHaveLength(count);
-    expect(src).not.toMatch(/type="password"/);
+  });
+
+  it("leaves no raw password field anywhere in app/ or components/", async () => {
+    const { readdirSync, readFileSync, statSync } = await import("node:fs");
+    const { join, relative } = await import("node:path");
+
+    function walk(dir: string, out: string[] = []): string[] {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) walk(full, out);
+        else if (/\.tsx$/.test(entry)) out.push(relative(process.cwd(), full));
+      }
+      return out;
+    }
+
+    const files = ["app", "components"].flatMap((r) => walk(join(process.cwd(), r)));
+    expect(files.length).toBeGreaterThan(30);
+
+    for (const file of files) {
+      // The primitive is the one place allowed to name the type.
+      if (file === "components/password-input.tsx") continue;
+      expect(readFileSync(join(process.cwd(), file), "utf8"), `${file} builds a password field by hand`).not.toMatch(
+        /type="password"/,
+      );
+    }
   });
 });

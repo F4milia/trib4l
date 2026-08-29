@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
-import { updatePassword } from "@/app/actions/auth";
 import { AuthShell } from "@/components/auth-shell";
-import { PasswordInput } from "@/components/password-input";
-import { Button, Label } from "@/components/ui";
+import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 import { copy } from "@/lib/copy";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,14 +15,11 @@ const t = copy.auth.resetPassword;
  * requireUser() is deliberately not used. It sends an unauthenticated caller
  * to /login, which is the wrong advice here -- what this person needs is a new
  * reset link, so they are sent to /forgot-password with a message saying so.
+ *
+ * No searchParams: the only thing that ever redirected here with an error was
+ * updatePassword, which now returns its failures to the form as state.
  */
-export default async function ResetPasswordPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { error } = await searchParams;
-
+export default async function ResetPasswordPage() {
   const supabase = await createClient();
   const { data, error: sessionError } = await supabase.auth.getUser();
   if (sessionError || !data.user) {
@@ -32,33 +27,8 @@ export default async function ResetPasswordPage({
   }
 
   return (
-    <AuthShell eyebrow={t.eyebrow} title={t.title} error={error}>
-      <form action={updatePassword} className="space-y-5">
-        <p className="text-sm text-deep-slate/70">{t.body}</p>
-        <div>
-          <Label htmlFor="password">{t.passwordLabel}</Label>
-          <PasswordInput
-            name="password"
-            id="password"
-            autoComplete="new-password"
-            required
-            minLength={6}
-          />
-        </div>
-        <div>
-          <Label htmlFor="password_confirmation">{t.confirmLabel}</Label>
-          <PasswordInput
-            name="password_confirmation"
-            id="password_confirmation"
-            autoComplete="new-password"
-            required
-            minLength={6}
-          />
-        </div>
-        <Button type="submit" className="w-full">
-          {t.submit}
-        </Button>
-      </form>
+    <AuthShell eyebrow={t.eyebrow} title={t.title}>
+      <ResetPasswordForm />
     </AuthShell>
   );
 }
