@@ -36,8 +36,15 @@ Commerce is dormant-per-Tower; nothing touches Stripe until unparked.
    entry text, no message content, no AI prompt or suggestion text, no
    member-identifying payloads. The scrubbing test ships before the
    first event.
-5. Every mutation writes to audit_log. Role resolves server-side from
-   the database, never from a client claim. RLS is the security model;
+5. Every mutation writes to audit_log — enforced by database trigger, not
+   by convention. public.audit_row_change() is attached to every table in
+   public except audit_log, idempotency_keys and webhook_events. A NEW TABLE
+   GETS ITS TRIGGER IN THE SAME MIGRATION THAT CREATES IT; do not add
+   app-layer audit calls, they cannot see a service-role write and are not
+   in the mutation's transaction. Pass a resolution mode when the table has
+   no org_id of its own: 'self' (the row is the org), 'order' (through the
+   parent order). metadata carries changed column NAMES only, never values.
+   Role resolves server-side from the database, never from a client claim. RLS is the security model;
    every new read path (search, embeddings, AI context, exports) goes
    THROUGH policy — never a service-role shortcut with filtering on top.
    Embedding tables carry the same RLS as their source rows.
@@ -166,3 +173,19 @@ than week one.
   verification that was not executed. Say per claim what was verified and
   against what authority; if a check fails or is unavailable, say so
   instead of describing the check intended.
+- 2026-08-29 · audit PR2/5 · test assertions counted audit rows globally by
+  action, so `count(*) = 1` passed alone and failed once the isolation suite
+  or the seed had written rows of the same kind — hit three times in one
+  session · in a suite that shares a database, scope every count to the row
+  the test itself created; a global count is an order-dependent assertion
+  wearing a precise-looking number.
+- 2026-08-29 · audit PR3/5 · `service_role` has SELECT on memberships but
+  not on organizations, so an embedded join failed with "permission denied"
+  · grants here are least-privilege per migration, each granting only what
+  its own code path needs. "The service role reads everything" is false in
+  this repo — check the grant before relying on it.
+- 2026-08-29 · audit PR3/5 · audit_log.created_at defaults to now(), which
+  is TRANSACTION time, so every row written inside one transaction shares a
+  timestamp · never `order by created_at desc limit 1` to get "the latest"
+  audit row; within a transaction the ordering is arbitrary. Count or filter
+  on content instead.

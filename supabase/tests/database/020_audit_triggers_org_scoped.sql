@@ -19,13 +19,25 @@ select has_trigger('public', t, t || '_audit', 'audit trigger on ' || t)
   ]) as t;
 
 -- --------------------------------------------------- fires on all three events
+-- Was "exactly 25 triggers exist", which was a claim about PR 2/5's world and
+-- stopped being true when PR 3/5 added five more. Not weakened: made specific,
+-- so it asserts these 25 tables are wired to THIS function rather than counting
+-- globally. The whole-database total is asserted in 030.
 select is(
-  (select count(distinct t.tgname)::int
+  (select count(*)::int
      from pg_trigger t
      join pg_proc p on p.oid = t.tgfoid
-    where p.proname = 'audit_row_change' and not t.tgisinternal),
+     join pg_class c on c.oid = t.tgrelid
+    where p.proname = 'audit_row_change' and not t.tgisinternal
+      and c.relname = any (array[
+        'cohort_members','cohorts','comments','connected_accounts','invitations',
+        'live_stream_credentials','live_streams','meetup_attendance','meetup_rsvps',
+        'meetup_series','meetups','member_blocks','member_reports','member_stages',
+        'memberships','mentor_pairings','orders','org_profiles','posts','products',
+        'reactions','reports','stage_transitions','stages','video_assets'
+      ])),
   25,
-  'exactly 25 triggers use audit_row_change -- no more, no fewer'
+  'all 25 org-scoped tables are wired to audit_row_change, one trigger each'
 );
 
 select ok(
