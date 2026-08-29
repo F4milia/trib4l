@@ -46,6 +46,16 @@ export default async function LoginPage({
           {t.submit}
         </Button>
       </form>
+
+      {/* Outside the <form>: a link inside it that looked like a second
+          submit would be a keyboard trap of the confusing kind — Enter in the
+          password field must submit the password, not navigate away. */}
+      <p className="mt-5 border-t border-deep-slate/20 pt-5 text-sm text-deep-slate/70">
+        {t.magicLinkPrompt}{" "}
+        <Link href="/magic-link" className="text-terracotta underline">
+          {t.magicLinkAction}
+        </Link>
+      </p>
     </AuthShell>
   );
 }

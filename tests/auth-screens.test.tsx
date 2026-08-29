@@ -123,7 +123,13 @@ describe("AuthShell — wordmark", () => {
  * came from.
  */
 describe("copy deck", () => {
-  const PAGES = ["app/login/page.tsx", "app/signup/page.tsx", "app/check-email/page.tsx"] as const;
+  const PAGES = [
+    "app/login/page.tsx",
+    "app/signup/page.tsx",
+    "app/check-email/page.tsx",
+    "app/magic-link/page.tsx",
+    "app/link-sent/page.tsx",
+  ] as const;
 
   function strings(node: unknown, out: string[] = []): string[] {
     if (typeof node === "string") out.push(node);

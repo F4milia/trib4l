@@ -26,11 +26,40 @@ describe("email confirmation is enforced by configuration", () => {
     expect(block).not.toMatch(/^\s*enable_confirmations\s*=\s*false\s*$/m);
   });
 
-  it("registers a confirmation template that exists on disk", () => {
-    expect(config).toMatch(/\[auth\.email\.template\.confirmation\]/);
-    const path = config.match(/\[auth\.email\.template\.confirmation\][\s\S]*?content_path\s*=\s*"([^"]+)"/)?.[1];
+  /**
+   * Data-driven over whatever is registered, so each later S1 PR's template is
+   * covered the moment it lands rather than when someone remembers to add it.
+   */
+  const registered = config
+    .split(/^\[/m)
+    .map((section) => `[${section}`)
+    .filter((section) => section.startsWith("[auth.email.template."))
+    .map((section) => ({
+      name: section.match(/^\[auth\.email\.template\.(\w+)\]/)![1],
+      path: section.match(/content_path\s*=\s*"([^"]+)"/)?.[1],
+    }));
+
+  it("registers at least the signup confirmation template", () => {
+    expect(registered.map((t) => t.name)).toContain("confirmation");
+  });
+
+  it.each(registered)("$name points at a template that exists on disk", ({ path }) => {
     expect(path).toBeTruthy();
     expect(() => readFileSync(join(root, path!.replace(/^\.\//, "")), "utf8")).not.toThrow();
+  });
+
+  /**
+   * The other direction, and the one that actually bites: a template file that
+   * nothing registers is dead, and GoTrue quietly sends its own default
+   * instead -- which is not covered by the invariant-3 content guard below.
+   * An unregistered template is indistinguishable from a working one until
+   * someone reads the mail.
+   */
+  it("registers every template file that exists", () => {
+    const referenced = registered.map((t) => t.path?.split("/").pop());
+    for (const file of templates) {
+      expect(referenced, `${file} exists but no [auth.email.template.*] block uses it`).toContain(file);
+    }
   });
 });
 
@@ -97,7 +126,7 @@ describe("confirmableType", () => {
    * through to verifyOtp. These are the types S1's later PRs introduce -- each
    * is added to the closed set in the PR that ships its template, not before.
    */
-  it.each(["magiclink", "recovery", "email_change", "invite", "phone_change", "", "sms"])(
+  it.each(["recovery", "email_change", "invite", "phone_change", "", "sms"])(
     "rejects %s until a template in this repo produces it",
     (type) => {
       expect(confirmableType(type)).toBeNull();

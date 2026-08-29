@@ -51,6 +51,8 @@ export const copy = {
       submit: "Log in",
       switchPrompt: "No account yet?",
       switchAction: "Create one",
+      magicLinkPrompt: "Rather not type a password?",
+      magicLinkAction: "Email me a sign-in link",
     },
     signup: {
       eyebrow: "New account",
@@ -81,6 +83,32 @@ export const copy = {
       body: "We sent a link to the address you gave. Open it to confirm the address and finish making your account.",
       note: "The link works once and expires in an hour. Nothing arrived? Give it a minute, then look in the spam folder.",
       back: "Back to sign in",
+    },
+    magicLink: {
+      eyebrow: "Sign-in link",
+      title: "Email me a link.",
+      emailLabel: "Email",
+      body: "We send a one-time link to your address. Opening it signs you in.",
+      submit: "Send the link",
+      back: "Back to sign in",
+      errors: {
+        missingEmail: "An email address is required.",
+      },
+    },
+    /**
+     * Deliberately conditional -- "if that address has an account". The form
+     * behind it does not create accounts, so a definite "we sent you a link"
+     * would be a claim this page cannot make, and a definite "no such account"
+     * would answer a question a stranger should not get to ask.
+     */
+    linkSent: {
+      eyebrow: "Sent",
+      title: "Check your email.",
+      body: "If that address has an account, a sign-in link is on its way.",
+      note: "The link works once and expires in an hour. It signs in an existing account only.",
+      back: "Back to sign in",
+      switchPrompt: "New here?",
+      switchAction: "Make an account",
     },
     confirm: {
       errors: {
