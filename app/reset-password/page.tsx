@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { updatePassword } from "@/app/actions/auth";
 import { AuthShell } from "@/components/auth-shell";
-import { Button, Input, Label } from "@/components/ui";
+import { PasswordInput } from "@/components/password-input";
+import { Button, Label } from "@/components/ui";
 import { copy } from "@/lib/copy";
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,8 +37,7 @@ export default async function ResetPasswordPage({
         <p className="text-sm text-deep-slate/70">{t.body}</p>
         <div>
           <Label htmlFor="password">{t.passwordLabel}</Label>
-          <Input
-            type="password"
+          <PasswordInput
             name="password"
             id="password"
             autoComplete="new-password"
@@ -47,8 +47,7 @@ export default async function ResetPasswordPage({
         </div>
         <div>
           <Label htmlFor="password_confirmation">{t.confirmLabel}</Label>
-          <Input
-            type="password"
+          <PasswordInput
             name="password_confirmation"
             id="password_confirmation"
             autoComplete="new-password"

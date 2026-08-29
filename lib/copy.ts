@@ -43,6 +43,15 @@ export const copy = {
    * guards that.
    */
   auth: {
+    /**
+     * The reveal toggle's accessible name. It flips with the state: a control
+     * still called "Show password" while the password is showing reads as a
+     * lie to anyone navigating by name alone.
+     */
+    passwordToggle: {
+      show: "Show password",
+      hide: "Hide password",
+    },
     login: {
       eyebrow: "Sign in",
       title: "Welcome back.",
