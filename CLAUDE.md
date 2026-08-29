@@ -189,3 +189,8 @@ than week one.
   timestamp · never `order by created_at desc limit 1` to get "the latest"
   audit row; within a transaction the ordering is arbitrary. Count or filter
   on content instead.
+- 2026-08-30 · audit PR3/5 · the entry above is superseded: audit_log now
+  carries `seq`, a GENERATED ALWAYS identity column, and an index on it ·
+  order audit rows by seq. Never by id (random uuid) or created_at
+  (transaction time). seq orders by assignment, not commit, so two concurrent
+  transactions can still commit out of seq order.
