@@ -160,7 +160,20 @@ site_url = "http://127.0.0.1:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+#
+# The localhost entries are what let /auth/callback receive an OAuth return in
+# local development: site_url above is the 127.0.0.1 form, and a redirectTo on
+# the localhost form is a different host as far as this allow-list is
+# concerned. `next dev` serves both, and people type either.
+#
+# This list is the reason lib/auth/providers.ts can fall back to the request's
+# own Origin without that being dangerous -- a forged Origin produces a
+# redirectTo that simply is not on this list, and Supabase refuses it.
+additional_redirect_urls = [
+  "https://127.0.0.1:3000",
+  "http://127.0.0.1:3000/**",
+  "http://localhost:3000/**",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -344,9 +357,33 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+# --- Google and Apple (S1) -------------------------------------------------
+#
+# BOTH ARE OFF, AND THAT IS NOT AN OVERSIGHT. Measured 2026-08-30: `enabled =
+# true` with an empty client_id makes the CLI refuse to parse this whole file
+# -- `supabase start` and `supabase status` both fail with
+# ProjectConfigParseError. `client_id = "env(...)"` resolves to the empty
+# string when the variable is unset, so committing these as enabled ahead of
+# real credentials takes down every local stack and all three CI jobs, each of
+# which begins with `npx supabase start`. tests/oauth.test.tsx guards this.
+#
+# TO TURN A PROVIDER ON (one change, not two):
+#   1. Put its client id and secret in the environment the CLI reads --
+#      SUPABASE_AUTH_EXTERNAL_<PROVIDER>_CLIENT_ID / _SECRET (see .env.example).
+#   2. Flip `enabled` to true in the SAME change.
+#   3. Register the callback with the provider:
+#      <SUPABASE_URL>/auth/v1/callback  (the provider talks to Supabase, not
+#      to this app -- app/auth/callback is where Supabase then sends the user).
+# The app needs no further change: components/oauth-buttons.tsx offers exactly
+# the providers whose client id is present, and nothing when none are.
+#
+# email_optional stays false on both. lib/session.ts's verification branch is
+# deliberately scoped to users who HAVE an address; a provider allowed to
+# return none would put people into a state the app has no honest answer for.
+
 [auth.external.apple]
 enabled = false
-client_id = ""
+client_id = "env(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID)"
 # DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
 secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
 # Overrides the default auth callback URL derived from auth.external_url.
@@ -357,6 +394,17 @@ url = ""
 # If enabled, the nonce check will be skipped. Required for local sign in with Google auth.
 skip_nonce_check = false
 # If enabled, it will allow the user to successfully authenticate when the provider does not return an email address.
+email_optional = false
+
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+# Required for local sign-in with Google: the local stack has no stable origin
+# for Google to bind a nonce to. Leave false in staging and production.
+skip_nonce_check = false
 email_optional = false
 
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.

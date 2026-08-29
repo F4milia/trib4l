@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signUp } from "@/app/actions/auth";
 import { AuthShell } from "@/components/auth-shell";
+import { OAuthButtons } from "@/components/oauth-buttons";
 import { Button, Input, Label } from "@/components/ui";
 import { copy } from "@/lib/copy";
 
@@ -65,6 +66,8 @@ export default async function SignupPage({
           {t.submit}
         </Button>
       </form>
+
+      <OAuthButtons />
     </AuthShell>
   );
 }
