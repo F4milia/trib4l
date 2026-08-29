@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(20);  -- +6: non-uuid keys and malformed JWT claims
 
 -- ---------------------------------------------------------------- existence
 select has_function('public', 'audit_row_change', 'audit_row_change() exists');
@@ -139,6 +139,69 @@ insert into public._audit_probe (org_id, label) values
   ((select org_id from _probe_ids), 'third');
 
 select ok(true, 'attaching the function to audit_log does not recurse');
+
+-- ===================================================================
+-- The write path must never abort the write it exists to describe.
+-- Both cases below took down every write on an audited table.
+-- ===================================================================
+
+-- CD-1: a table whose primary key is not a uuid. CLAUDE.md now tells wave
+-- sessions to attach this trigger to every new table, and a bigserial id is an
+-- ordinary choice for a high-volume append table.
+create table public._probe_bigserial (id bigserial primary key, org_id uuid);
+create trigger _probe_bigserial_audit
+  after insert or update or delete on public._probe_bigserial
+  for each row execute function public.audit_row_change();
+
+select lives_ok(
+  $$ insert into public._probe_bigserial (org_id)
+     values ('00000000-0000-0000-0000-00000000000a') $$,
+  'a non-uuid primary key does not break every write on the table'
+);
+
+select is(
+  (select count(*)::int from public.audit_log where target_type = '_probe_bigserial'),
+  1,
+  'the write is still audited'
+);
+
+select is(
+  (select target_id from public.audit_log where target_type = '_probe_bigserial'),
+  null,
+  'target_id is null when the key will not fit a uuid column'
+);
+
+select is(
+  (select metadata ->> 'target_key' from public.audit_log where target_type = '_probe_bigserial'),
+  '1',
+  'the real key is preserved in metadata -- an id, not content'
+);
+
+-- CD-2: auth.uid() casts request.jwt.claims to json. The missing_ok flag guards
+-- an absent setting, not a malformed one, so one bad value aborted writes
+-- across every audited table.
+create temporary table _claims_probe as select gen_random_uuid() as cohort_id;
+
+set local request.jwt.claims = 'not-json-at-all';
+
+select lives_ok(
+  $$ insert into public.cohorts (id, org_id, name)
+     select cohort_id, '00000000-0000-0000-0000-00000000000a', 'malformed claims probe'
+     from _claims_probe $$,
+  'a malformed request.jwt.claims does not abort the write'
+);
+
+-- Scoped to this row. audit_log.id is gen_random_uuid() and created_at is
+-- transaction time, so audit_log has NO reliable ordering column at all --
+-- `order by id desc limit 1` picks an arbitrary row.
+select is(
+  (select actor_profile_id from public.audit_log
+    where target_id = (select cohort_id from _claims_probe)),
+  null,
+  'the actor is unattributable, not the write unwritable'
+);
+
+reset request.jwt.claims;
 
 select * from finish();
 rollback;
