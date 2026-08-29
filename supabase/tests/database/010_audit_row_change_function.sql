@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(20);  -- +6: non-uuid keys and malformed JWT claims
+select plan(27);
 
 -- ---------------------------------------------------------------- existence
 select has_function('public', 'audit_row_change', 'audit_row_change() exists');
@@ -202,6 +202,31 @@ select is(
 );
 
 reset request.jwt.claims;
+
+-- ---------------------------------------------------- audit_safe_uuid
+-- The extracted validate-then-cast step. Pure and STABLE, so it tests as a
+-- bare select -- no table, no trigger, no transaction gymnastics. This is the
+-- shape the rest of this function's logic should move toward: every defect
+-- found across four review rounds lived in code reachable only through a
+-- trigger, and nothing extracted has regressed since extraction.
+select is(public.audit_safe_uuid(null), null, 'null in, null out');
+select is(public.audit_safe_uuid(''), null, 'empty string');
+select is(public.audit_safe_uuid('not-a-uuid'), null, 'plainly not a uuid');
+select is(public.audit_safe_uuid(repeat('x', 10000)), null, 'a 10k-character string');
+select is(
+  public.audit_safe_uuid('00000000-0000-0000-0000-00000000000'),
+  null,
+  'a 35-character near-miss, one short of a uuid'
+);
+select is(
+  public.audit_safe_uuid('00000000-0000-0000-0000-00000000000a'),
+  '00000000-0000-0000-0000-00000000000a'::uuid,
+  'and a real one round-trips'
+);
+select lives_ok(
+  $$ select public.audit_safe_uuid('}{ not json either') $$,
+  'it never raises, whatever it is handed -- that is the whole point'
+);
 
 select * from finish();
 rollback;
