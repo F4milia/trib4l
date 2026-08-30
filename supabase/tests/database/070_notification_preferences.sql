@@ -23,7 +23,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(26);
 
 -- ------------------------------------------------------------------- shape
 select has_table('public', 'notification_preferences',
@@ -215,6 +215,24 @@ select ok(
     'public.notification_preference_enabled(uuid,uuid,notification_type,notification_channel)',
     'execute'),
   'EXECUTE is revoked from PUBLIC'
+);
+
+-- The function answers for ANY (member, Family) pair, so granting it to
+-- authenticated would hand every signed-in member a read of anyone's mute --
+-- exactly what the select policy refuses. Members read their own rows through
+-- RLS instead.
+select ok(
+  not has_function_privilege('authenticated',
+    'public.notification_preference_enabled(uuid,uuid,notification_type,notification_channel)',
+    'execute'),
+  'authenticated cannot execute it -- a mute stays private to whoever set it'
+);
+
+select ok(
+  has_function_privilege('service_role',
+    'public.notification_preference_enabled(uuid,uuid,notification_type,notification_channel)',
+    'execute'),
+  'service_role can -- the send path has no session and needs the effective value'
 );
 
 select * from finish();

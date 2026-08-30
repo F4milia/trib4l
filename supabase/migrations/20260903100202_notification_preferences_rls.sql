@@ -19,9 +19,11 @@ alter table notification_preferences enable row level security;
 
 -- Least privilege, per the 2026-08-29 learned constraint: grants in this repo
 -- are per-migration, and "the service role reads everything" is false here.
--- service_role gets EXECUTE on notification_preference_enabled() and no table
--- privilege at all -- the send path needs one boolean about one member, not
--- the ability to enumerate who muted what.
+-- service_role gets EXECUTE on notification_preference_enabled() and no DML
+-- on the table -- the send path needs one boolean about one member, not the
+-- ability to enumerate who muted what. authenticated gets neither: it reads
+-- its own rows through the select policy below and applies the absent-row
+-- default in the UI.
 grant select, insert, update, delete on notification_preferences to authenticated;
 
 create policy notification_preferences_select on notification_preferences

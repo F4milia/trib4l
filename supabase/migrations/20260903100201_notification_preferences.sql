@@ -107,8 +107,13 @@ as $$
   );
 $$;
 
+-- service_role only, deliberately NOT authenticated. This is SECURITY DEFINER
+-- and answers for any (member, Family) pair, so granting it to authenticated
+-- would hand every signed-in member a read of anyone's mute -- contradicting
+-- the RLS decision one migration over that a mute is private to whoever set
+-- it. A member reading their OWN preferences goes through the select policy
+-- like anything else; the settings UI applies the absent-row default itself.
 revoke execute on function public.notification_preference_enabled(uuid, uuid, notification_type, notification_channel) from public;
-grant execute on function public.notification_preference_enabled(uuid, uuid, notification_type, notification_channel) to authenticated;
 grant execute on function public.notification_preference_enabled(uuid, uuid, notification_type, notification_channel) to service_role;
 
 -- E1's named edge case for the 09:30 review: "Remove a member from a Family,
