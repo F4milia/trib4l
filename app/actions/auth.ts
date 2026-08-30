@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { copy } from "@/lib/copy";
 
 export async function signUp(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -9,10 +10,10 @@ export async function signUp(formData: FormData) {
   const consent = formData.get("consent") === "on";
 
   if (!consent) {
-    redirect("/signup?error=" + encodeURIComponent("You must acknowledge the platform-access notice to sign up."));
+    redirect("/signup?error=" + encodeURIComponent(copy.auth.signup.errors.consentRequired));
   }
   if (!email || !password) {
-    redirect("/signup?error=" + encodeURIComponent("Email and password are required."));
+    redirect("/signup?error=" + encodeURIComponent(copy.auth.signup.errors.missingFields));
   }
 
   const supabase = await createClient();

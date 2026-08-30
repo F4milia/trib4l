@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { signUp } from "@/app/actions/auth";
-import { Button, Card, ErrorText, Input, Label, PageHeader } from "@/components/ui";
+import { AuthShell } from "@/components/auth-shell";
+import { Button, Input, Label } from "@/components/ui";
+import { copy } from "@/lib/copy";
+
+const t = copy.auth.signup;
 
 export default async function SignupPage({
   searchParams,
@@ -10,44 +14,57 @@ export default async function SignupPage({
   const { error } = await searchParams;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-      <PageHeader title="Sign up" />
-      {error ? <ErrorText>{error}</ErrorText> : null}
-      <Card>
-        <form action={signUp} className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input type="email" name="email" id="email" required />
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input type="password" name="password" id="password" required minLength={6} />
-          </div>
+    <AuthShell
+      eyebrow={t.eyebrow}
+      title={t.title}
+      error={error}
+      footer={
+        <>
+          {t.switchPrompt}{" "}
+          <Link href="/login" className="text-terracotta underline">
+            {t.switchAction}
+          </Link>
+        </>
+      }
+    >
+      <form action={signUp} className="space-y-5">
+        <div>
+          <Label htmlFor="email">{t.emailLabel}</Label>
+          <Input type="email" name="email" id="email" autoComplete="email" required />
+        </div>
+        <div>
+          <Label htmlFor="password">{t.passwordLabel}</Label>
+          <Input
+            type="password"
+            name="password"
+            id="password"
+            autoComplete="new-password"
+            required
+            minLength={6}
+          />
+        </div>
 
-          <div className=" bg-muted border border-terracotta/40 p-4 space-y-3">
-            <h2 className="font-serif text-lg text-baked-clay">Before you continue</h2>
-            <p className="text-sm text-deep-slate/70">
-              F4milia&apos;s support staff can access content within your communities to help
-              resolve issues you or an organizer report, and to keep the platform safe. This
-              access is logged and limited to what&apos;s needed to help.
-            </p>
-            <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" name="consent" required className="mt-1" />
-              <span>I understand platform staff may access my content for support purposes.</span>
-            </label>
-          </div>
+        {/* §2.4's tinted-fill step over a 2px object border. deep-slate/70 on
+            bg-muted measures 5.69:1 -- the composed pair, not the token, per
+            CLAUDE.md's 2026-08-27 learned constraint. */}
+        <div className="space-y-3 border-2 border-terracotta/40 bg-muted p-4">
+          <h2 className="text-lg">{t.consent.heading}</h2>
+          <p className="text-sm text-deep-slate/70">{t.consent.body}</p>
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              name="consent"
+              required
+              className="mt-0.5 size-4 shrink-0 accent-terracotta"
+            />
+            <span>{t.consent.checkbox}</span>
+          </label>
+        </div>
 
-          <Button type="submit" className="w-full">
-            Sign up
-          </Button>
-        </form>
-      </Card>
-      <p className="text-center text-sm text-deep-slate/70">
-        Already have an account?{" "}
-        <Link href="/login" className="text-terracotta underline">
-          Log in
-        </Link>
-      </p>
-    </main>
+        <Button type="submit" className="w-full">
+          {t.submit}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
