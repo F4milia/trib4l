@@ -111,9 +111,15 @@ select ok(
   'no row means subscribed -- a member who has never touched a setting gets the digest'
 );
 
+-- Fixed ids so the audit assertions below can name the exact rows this file
+-- created. Scoping them to org_id instead was an order-dependent assertion
+-- wearing a precise-looking number (CLAUDE.md, 2026-08-29): the isolation
+-- suite writes preferences in this same seeded Family, so `count(*) = 1`
+-- passed after a fresh reset and failed the moment pgTAP ran second.
 insert into public.notification_preferences
-  (org_id, profile_id, notification_type, channel, enabled)
-select org_id, profile_id, 'family_night_digest', 'email', false from _np_probe;
+  (id, org_id, profile_id, notification_type, channel, enabled)
+select '00000000-0000-0000-0000-0000000000f1', org_id, profile_id, 'family_night_digest', 'email', false
+  from _np_probe;
 
 select ok(
   not (select public.notification_preference_enabled(
@@ -133,7 +139,7 @@ select is(
   (select count(*)::int from public.audit_log
     where target_type = 'notification_preferences'
       and action = 'notification_preferences.insert'
-      and org_id = (select org_id from _np_probe)),
+      and target_id = '00000000-0000-0000-0000-0000000000f1'),
   1,
   'setting a preference writes exactly one audit row'
 );
@@ -162,11 +168,15 @@ select ok(
 -- org_id on the row, not metadata.org_id_at_delete: that key is written only
 -- when the org itself is gone (20260902100303), and here the Family outlives
 -- the membership.
-select ok(
+-- Named by target_id rather than counted by org, for the same reason as the
+-- insert assertion above: the isolation suite writes and clears preferences in
+-- this same seeded Family.
+select is(
   (select count(*)::int from public.audit_log
     where target_type = 'notification_preferences'
       and action = 'notification_preferences.delete'
-      and org_id = (select org_id from _np_probe)) >= 1,
+      and target_id = '00000000-0000-0000-0000-0000000000f1'),
+  1,
   'clearing preferences on removal is audited like any other mutation'
 );
 
@@ -187,8 +197,9 @@ select is(
 -- Hard delete: not a path the app uses today, but the trigger must not depend
 -- on that staying true.
 insert into public.notification_preferences
-  (org_id, profile_id, notification_type, channel, enabled)
-select org_id, profile_id, 'vow_notification', 'email', false from _np_probe;
+  (id, org_id, profile_id, notification_type, channel, enabled)
+select '00000000-0000-0000-0000-0000000000f2', org_id, profile_id, 'vow_notification', 'email', false
+  from _np_probe;
 
 delete from public.memberships
  where org_id = (select org_id from _np_probe)
