@@ -253,4 +253,67 @@ export const copy = {
       allCommunities: { label: "All communities", description: "Everywhere you belong" },
     },
   },
+  /**
+   * Transactional email (E1). Every string here is fixed. None of it is
+   * interpolated from a Family, a member, a Table entry or a message --
+   * CLAUDE.md invariant 3: "Emails and pushes name the event, never the
+   * content. Assume the inbox may be shared."
+   *
+   * That extends to Family and member NAMES, which the S1 prompt rules out in
+   * so many words ("Verification emails carry no Family names or content").
+   * An invitation therefore says that you have been invited; which Family, and
+   * by whom, is behind the link where only the holder of the token sees it.
+   */
+  email: {
+    invite: {
+      eyebrow: "Invitation",
+      subject: "You have been invited to a Family",
+      heading: "Someone saved you a seat",
+      body: [
+        "A Family on F4milia has invited you to join them.",
+        "The invitation names the Family once you open it. It expires in fourteen days.",
+      ],
+      action: "Open the invitation",
+      footnote: "If you were not expecting this, ignore it and nothing happens.",
+    },
+    familyNight: {
+      eyebrow: "Family Night",
+      subject: "Your Family Night digest is ready",
+      heading: "This week is written up",
+      body: ["Your Family's week has been gathered into a digest. It is waiting for you."],
+      action: "Read the digest",
+      footnote: "You can turn this off for this Family in your notification settings.",
+    },
+    vow: {
+      eyebrow: "Vow",
+      subject: {
+        assigned: "A Vow is yours this rotation",
+        due_soon: "Your Vow is due soon",
+        completed: "A Vow was completed",
+      },
+      heading: {
+        assigned: "The Vow comes to you",
+        due_soon: "Your Vow closes shortly",
+        completed: "The Vow is kept",
+      },
+      body: {
+        assigned: ["The rotation has reached you. Details are on your Vow."],
+        due_soon: ["The window on your current Vow is closing."],
+        completed: ["A Vow in your Family has been completed."],
+      },
+      action: "Open the Vow",
+      footnote: "You can turn this off for this Family in your notification settings.",
+    },
+    passwordReset: {
+      eyebrow: "Account",
+      subject: "Reset your F4milia password",
+      heading: "Set a new password",
+      body: [
+        "Use the button below to choose a new password. The link works once and expires in one hour.",
+        "If you did not ask for this, your password has not changed and no action is needed.",
+      ],
+      action: "Choose a new password",
+      footnote: "This message is about your account, not about any Family.",
+    },
+  },
 } as const;
