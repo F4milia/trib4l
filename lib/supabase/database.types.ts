@@ -42,6 +42,7 @@ export type Database = {
           id: string
           metadata: Json
           org_id: string | null
+          seq: number
           target_id: string | null
           target_type: string
         }
@@ -52,6 +53,7 @@ export type Database = {
           id?: string
           metadata?: Json
           org_id?: string | null
+          seq?: never
           target_id?: string | null
           target_type: string
         }
@@ -62,6 +64,7 @@ export type Database = {
           id?: string
           metadata?: Json
           org_id?: string | null
+          seq?: never
           target_id?: string | null
           target_type?: string
         }
@@ -1115,6 +1118,54 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          channel: Database["public"]["Enums"]["notification_channel"]
+          created_at: string
+          enabled: boolean
+          id: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          org_id: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          created_at?: string
+          enabled: boolean
+          id?: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          org_id: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notification_type?: Database["public"]["Enums"]["notification_type"]
+          org_id?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -1875,6 +1926,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      audit_safe_uuid: { Args: { p_value: string }; Returns: string }
       can_see_gated_content: {
         Args: {
           check_cohort_id: string
@@ -2031,6 +2083,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      notification_preference_enabled: {
+        Args: {
+          p_channel?: Database["public"]["Enums"]["notification_channel"]
+          p_org_id: string
+          p_profile_id: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+        }
+        Returns: boolean
+      }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
       transition_member_stage: {
         Args: {
@@ -2059,6 +2120,8 @@ export type Database = {
       meetup_rsvp_status: "going" | "maybe" | "not_going"
       membership_role: "member" | "mentor" | "organizer" | "org_owner"
       mentor_pairing_status: "proposed" | "active" | "completed" | "declined"
+      notification_channel: "email"
+      notification_type: "family_night_digest" | "vow_notification"
       order_status: "pending" | "paid" | "canceled" | "refunded"
       product_type: "digital" | "physical" | "ticket" | "cohort_seat"
       report_status: "open" | "escalated" | "resolved"
@@ -2197,6 +2260,8 @@ export const Constants = {
       meetup_rsvp_status: ["going", "maybe", "not_going"],
       membership_role: ["member", "mentor", "organizer", "org_owner"],
       mentor_pairing_status: ["proposed", "active", "completed", "declined"],
+      notification_channel: ["email"],
+      notification_type: ["family_night_digest", "vow_notification"],
       order_status: ["pending", "paid", "canceled", "refunded"],
       product_type: ["digital", "physical", "ticket", "cohort_seat"],
       report_status: ["open", "escalated", "resolved"],
