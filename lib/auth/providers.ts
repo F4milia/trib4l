@@ -64,11 +64,52 @@ export function configuredProviders(
  * Origin fails the allow-list instead of redirecting anyone. It exists so
  * local development works with no extra setup.
  */
-export function callbackUrl(
+export function siteOrigin(
   origin: string | null,
   env: Record<string, string | undefined> = process.env,
 ): string | null {
   const base = (env.NEXT_PUBLIC_SITE_URL || origin || "").trim().replace(/\/+$/, "");
-  if (!/^https?:\/\//.test(base)) return null;
-  return `${base}/auth/callback`;
+  return /^https?:\/\//.test(base) ? base : null;
+}
+
+export function callbackUrl(
+  origin: string | null,
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const base = siteOrigin(origin, env);
+  return base && `${base}/auth/callback`;
+}
+
+/**
+ * Where an emailed auth link comes back to. The FULL route, not just an origin.
+ *
+ * Passed to Supabase as `emailRedirectTo`, which the templates render as
+ * `{{ .RedirectTo }}`. That indirection is the point: `{{ .SiteURL }}` is ONE
+ * fixed value per Supabase project, so a template hardcoding it sends every
+ * preview deployment's link to production.
+ *
+ * WHY THE FULL ROUTE, measured 2026-08-31 against a real GoTrue:
+ *
+ *  - A redirect of `http://localhost:3000/auth/confirm` is honoured -- it
+ *    matches the `http://localhost:3000/**` entry in additional_redirect_urls.
+ *  - A BARE ORIGIN (`http://localhost:3000`) is NOT. It fails the allow-list
+ *    and GoTrue silently substitutes the project's SiteURL instead, with no
+ *    error to the caller. The wildcard entry does not match a pathless URL.
+ *
+ * So the route cannot live in the template: the template would then be
+ * appending a path to a value that is sometimes an origin and sometimes not.
+ *
+ * The consequence to know about: when no redirect is supplied at all, GoTrue
+ * substitutes SiteURL, a bare origin, and the link loses its path. There is no
+ * template-side guard for that -- `{{ .RedirectTo }}` is never empty, so a
+ * `{{ if }}` fallback can never fire. The safety net is instead that every
+ * emailed call site supplies one, which tests/auth-redirect.test.ts asserts
+ * for all four of them.
+ */
+export function confirmUrl(
+  origin: string | null,
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const base = siteOrigin(origin, env);
+  return base && `${base}/auth/confirm`;
 }

@@ -98,17 +98,82 @@ describe.each(templates)("%s", (file) => {
   });
 
   /**
-   * Every link resolves through {{ .SiteURL }}. A hardcoded host would mean
-   * staging's confirmation emails sending people to production -- the same
-   * class of mistake as the hardcoded Sentry DSN in invariant 12.
+   * Every link resolves through a template variable, never a literal host. A
+   * hardcoded host would mean staging's mail sending people to production --
+   * the same class of mistake as the hardcoded Sentry DSN in invariant 12.
+   *
+   * NOT a loosening of the previous rule, which required `{{ .SiteURL }}`.
+   * `{{ .RedirectTo }}` is the per-request return origin the action supplies,
+   * and GoTrue substitutes SiteURL into it when no redirect is given -- so a
+   * link may still begin with exactly one template variable, and the
+   * hardcoded-host ban below is unchanged. The route is now pinned here too,
+   * which the old rule did not check at all.
    */
-  it("links only through {{ .SiteURL }}, never a hardcoded host", () => {
+  it("links only through a template variable, never a hardcoded host", () => {
     const hrefs = [...html.matchAll(/href="([^"]*)"/g)].map((m) => m[1]);
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) {
-      expect(href).toMatch(/^\{\{\s*\.SiteURL\s*\}\}\//);
+      expect(href).toMatch(/^\{\{\s*\.RedirectTo\s*\}\}\?/);
     }
     expect(html).not.toMatch(/https?:\/\/(?!\{\{)/);
+  });
+
+  /**
+   * No `{{ if .RedirectTo }}` fallback, and that is deliberate rather than an
+   * omission: measured 2026-08-31, GoTrue never leaves `.RedirectTo` empty --
+   * it substitutes the project's SiteURL -- so the else branch could never
+   * fire. The real guard is that every emailed call site supplies a redirect,
+   * which tests/auth-redirect.test.ts asserts for all four.
+   */
+  it("carries no fallback that could never fire", () => {
+    expect(html).not.toMatch(/\{\{\s*if\s+\.RedirectTo/);
+  });
+
+  /** One `?`, then `&` -- the reason `next` lives here and not in RedirectTo. */
+  it("opens its query string with exactly one ?", () => {
+    const href = html.match(/href="([^"]*)"/)![1];
+    expect(href.split("?").length - 1).toBe(1);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* Subject lines                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Subjects live in config.toml, not in the templates, so nothing above sees
+ * them -- a gap noticed while reviewing PR #10's manual steps by hand. A
+ * subject is the one part of an outbound message a shared inbox shows without
+ * anyone opening it, which makes it the worst place for a leak.
+ */
+describe("email subjects", () => {
+  const subjects = config
+    .split(/^\[/m)
+    .map((section) => `[${section}`)
+    .filter((section) => section.startsWith("[auth.email.template."))
+    .map((section) => ({
+      name: section.match(/^\[auth\.email\.template\.(\w+)\]/)![1],
+      subject: section.match(/^\s*subject\s*=\s*"([^"]*)"/m)?.[1] ?? "",
+    }));
+
+  it("found the registered templates", () => {
+    expect(subjects.length).toBeGreaterThan(0);
+  });
+
+  it.each(subjects)("$name has a subject", ({ subject }) => {
+    expect(subject.trim()).not.toBe("");
+  });
+
+  it.each(subjects)("$name names no Family-scoped noun", ({ subject }) => {
+    for (const word of ["family", "tower", "brick", "vow", "ledger", "keepsake", "community"]) {
+      expect(subject.toLowerCase()).not.toContain(word);
+    }
+  });
+
+  it.each(subjects)("$name interpolates nothing at all", ({ subject }) => {
+    // A subject is rendered the same way a body is, so `{{ .Data }}` would
+    // work here too -- and would put user metadata on the inbox list view.
+    expect(subject).not.toMatch(/\{\{/);
   });
 });
 

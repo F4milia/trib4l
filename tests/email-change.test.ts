@@ -4,6 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const redirected = vi.hoisted(() => ({ to: null as string | null }));
 
+/**
+ * The actions now read the request origin to tell each emailed link where to
+ * come back to, so they need a request context. Supplying one rather than
+ * relaxing any assertion below.
+ */
+vi.mock("next/headers", () => ({
+  headers: async () => new Map([["origin", "http://localhost:3000"]]),
+}));
+
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {
     redirected.to = to;
@@ -93,7 +102,17 @@ describe("requestEmailChange", () => {
   it("takes the account from the session and passes only the new address", async () => {
     await expect(requestEmailChange(form("new@f4milia.test"))).rejects.toThrow();
     expect(auth.updateUser).toHaveBeenCalledTimes(1);
-    expect(auth.updateUser).toHaveBeenCalledWith({ email: "new@f4milia.test" });
+
+    // Asserted on the payload and the options separately, rather than on the
+    // whole call. updateUser gained a second argument when emailed links
+    // started carrying a per-deployment return URL; the claim this test makes
+    // is about the PAYLOAD -- that it contains the new address and nothing
+    // else -- and checking the arguments as one blob would have quietly
+    // stopped making it.
+    const [payload, options] = auth.updateUser.mock.calls[0];
+    expect(payload).toEqual({ email: "new@f4milia.test" });
+    expect(Object.keys(options)).toEqual(["emailRedirectTo"]);
+
     expect(redirected.to).toBe("/account/email?sent=1");
   });
 
