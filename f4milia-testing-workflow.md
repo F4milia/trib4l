@@ -30,7 +30,7 @@
    - **pgTAP suite** — the *stable, protected* isolation tests (member can't read another Family's rows, no role self-escalates, the dual-Family user sees exactly their own) run unchanged on every PR, plus any new pgTAP tests the PR adds for new tables or RLS policies.
    - **ZeroStep** — E2E user-flow validation, path-filtered to `app/**` and `components/**` so backend-only PRs don't wait on browser tests.
    - **CodeRabbit** — diff scan on every PR. Useful signal, not a verdict: diff-only (can't see cross-file or architectural regressions), roughly 44% catch rate per independent benchmark, low noise.
-   - **Greptile** — high-stakes PRs only (trigger globs below). Full-codebase context: indexes the whole repo and catches the cross-file breaks CodeRabbit structurally can't. Higher catch rate (~82% benchmarked), noisier — expect to triage some false positives; that's the trade being paid for on purpose.
+   - **Greptile** — **PRs carrying the `greptile` label only.** Full-codebase context: indexes the whole repo and catches the cross-file breaks CodeRabbit structurally can't. Higher catch rate (~82% benchmarked), noisier — expect to triage some false positives; that's the trade being paid for on purpose. The trigger globs below tell you *when to apply the label*; they are not read by any tool.
 
 ## The trigger globs (what makes a PR high-stakes)
 
@@ -47,11 +47,62 @@ app/admin/**
 
 Plus, always, regardless of path: anything touching money, equity math, or ownership records; any new AI-to-write path; anything Ivan marks manually in the PR description.
 
+### How this list is enforced: **by you, with a label**
+
+**Greptile has no path-based include mechanism.** Verified against its live
+reference on 2026-08-31: `greptile.json` supports `ignorePatterns` (exclusions)
+and nothing else for paths — there is no `scope` key and no include list. The
+`scope.include` block this repo shipped for ~20 commits was silently ignored,
+which looked exactly like working. See `docs/GREPTILE-CONFIG.md`.
+
+The one gate Greptile does offer is a label allowlist, so that is the
+mechanism:
+
+**`greptile.json` is `{"labels": ["greptile"]}` — Greptile reviews a PR if and
+only if it carries the `greptile` label.**
+
+So the list above is now a **checklist you apply by hand**: if a PR touches any
+of those paths, it gets the `greptile` label. Nothing enforces that for you.
+
+**Apply the label when you open the PR, not after:**
+
+```
+gh pr create --label greptile ...
+```
+
+Greptile's docs do not state whether adding a label to an already-open PR
+starts a review, and `triggerOnUpdates` describes reviews as firing on commits.
+Labelling at creation is the only path the documentation guarantees.
+
+**If you labelled late and no review appeared**, comment `@greptileai` on the
+PR. Greptile's troubleshooting page offers exactly this for the case where a
+PR "is excluded by filters":
+
+> Comment `@greptileai` to force a review.
+
+### The failure mode this accepts, stated plainly
+
+**It fails open.** Forget the label on a migration PR and it gets no deep
+review at all — silently, with nothing on the PR to say a gate was skipped.
+That is the inverse of how a safety gate should fail, and it is the deliberate
+cost of the only tiering mechanism available.
+
+Two things reduce it, neither of which is automation:
+1. Treat the glob list as part of opening the PR, not part of reviewing it.
+2. CodeRabbit still runs on **every** PR unconditionally, so no PR is
+   unreviewed — only un-*deeply*-reviewed. On this repo's measured numbers
+   (§ *Bot evaluation data*), CodeRabbit found both of the session's most
+   serious issues.
+
+If the forgotten-label case ever actually bites, the fix is a CI job that
+matches changed paths against the list above and applies the label itself —
+which would make the gate fail closed. That is deliberately not built yet.
+
 ---
 
 ## Step 1: Triage
 
-**High-stakes** — any trigger above fires → Greptile runs → the full path in Step 2b, merge only at 09:30 with Ivan present.
+**High-stakes** — any trigger above fires → **you apply the `greptile` label** → Greptile runs → the full path in Step 2b, merge only at 09:30 with Ivan present. The arrow between "a trigger fires" and "Greptile runs" is a person, not a tool; see *How this list is enforced* above.
 
 **Low-stakes** — everything else (UI components, copy, wiring to an already-existing table) → Step 2a, merge any time.
 
