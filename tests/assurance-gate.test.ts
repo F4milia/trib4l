@@ -91,12 +91,14 @@ describe("every page is behind the two-factor gate", () => {
      */
     const gatedByRequireUser =
       /requireUser\(\s*\)/.test(source) || /requirePlatformAdmin\(\s*\)/.test(source);
-    const gatedExplicitly = source.includes("assuranceOutcome");
+    // accountGate covers both refusals; assuranceOutcome alone covers only one,
+    // which is what app/page.tsx got wrong. Only the combined call counts.
+    const gatedExplicitly = source.includes("accountGate");
     const opensOut = /skipAssuranceGate/.test(source);
 
     expect(
       gatedByRequireUser || gatedExplicitly || coveredByLayout(file),
-      `${file} reads as a protected page but neither calls requireUser() nor assuranceOutcome(). ` +
+      `${file} reads as a protected page but neither calls requireUser() nor accountGate(). ` +
         "Either gate it, or add it to PUBLIC with a reason.",
     ).toBe(true);
 

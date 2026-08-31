@@ -86,3 +86,53 @@ export async function assuranceOutcome(
 
   return { ok: true };
 }
+
+/** Where a deleted account is sent. Not "/login" bare: the notice is the whole
+ *  point, since signing in appears to work. */
+export const DELETED_PATH = "/login?deleted=already";
+
+/**
+ * Both gates, together, because separating them was a bug twice.
+ *
+ * A deleted account and an unverified session are two different refusals, and
+ * app/page.tsx originally got only one of each -- it cannot call requireUser()
+ * (it renders a signed-out view too), so it invoked the assurance check by hand
+ * and silently missed the deletion check that arrived later. The second miss was
+ * found the same way as the first: by a browser spec signing in with a deleted
+ * account and landing on the home page.
+ *
+ * One function, so a caller cannot take one and forget the other.
+ *
+ * `skipAssurance` skips ONLY the two-factor half. A deleted account is refused
+ * everywhere, including on the pages the assurance gate itself redirects to --
+ * there is nothing for a deleted account to enrol or verify.
+ */
+export async function accountGate(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  options?: { skipAssurance?: boolean },
+): Promise<{ ok: true } | { ok: false; redirectTo: string }> {
+  /**
+   * One primary-key lookup. It is the only thing stopping a deleted account from
+   * being used again: profiles.id cascades from auth.users, so the retention
+   * policy requires the GoTrue user to survive -- password intact -- and GoTrue
+   * will authenticate it. Deletion revoked the sessions; it did not remove the
+   * credential.
+   */
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("deleted_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profile?.deleted_at) {
+    return { ok: false, redirectTo: DELETED_PATH };
+  }
+
+  if (options?.skipAssurance) {
+    return { ok: true };
+  }
+
+  const outcome = await assuranceOutcome(supabase);
+  return outcome.ok ? { ok: true } : { ok: false, redirectTo: outcome.redirectTo };
+}

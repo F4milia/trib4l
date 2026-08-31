@@ -36,10 +36,24 @@ const getAuthenticatorAssuranceLevel = vi.hoisted(() =>
 );
 const rpc = vi.hoisted(() => vi.fn(async () => ({ data: false, error: null })));
 
+/**
+ * S2 also made requireUser() refuse a profile carrying deleted_at, which is one
+ * primary-key lookup on profiles. This answers "a live profile", the state every
+ * assertion in this file already assumed. The refusal itself is asserted in
+ * tests/account-deletion-ui.test.tsx.
+ */
+const maybeSingle = vi.hoisted(() =>
+  vi.fn(async () => ({ data: { deleted_at: null }, error: null })),
+);
+const from = vi.hoisted(() =>
+  vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle }) }) })),
+);
+
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: { getUser, mfa: { getAuthenticatorAssuranceLevel } },
     rpc,
+    from,
   }),
 }));
 
