@@ -63,7 +63,22 @@ export async function createInvitation(formData: FormData) {
   // token in a URL would be a second, weaker acceptance path sitting beside
   // it. So the mail names no Family, no inviter and no token (invariant 3) --
   // all three are behind the sign-in.
-  const origin = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+  // NEXT_PUBLIC_SITE_URL first, and VERCEL_URL only as a fallback.
+  //
+  // VERCEL_URL is the per-DEPLOYMENT hostname (trib4l-<hash>-<team>.vercel.app),
+  // not the public one (trib4l.vercel.app). For an auth callback that is
+  // deliberate -- S1 wants an emailed link to return to the deployment that
+  // sent it. For an INVITATION it is wrong: the recipient may open it days
+  // later, has no account yet, and a deployment-specific host is at best ugly
+  // and at worst behind deployment protection or already superseded.
+  //
+  // Reads the env var directly rather than importing S1's siteOrigin() from
+  // lib/auth/providers.ts, because that file does not exist on this branch's
+  // base yet. Collapse this into that helper once these branches share a base
+  // with main -- one definition of "where is this app" is the goal.
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
   const invite = renderFamilyInvite({ acceptUrl: `${origin}/` });
 
   try {
