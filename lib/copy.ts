@@ -15,6 +15,75 @@
  * old one. Descriptions here avoid the noun where they can.
  */
 export const copy = {
+  /** ConfirmSubmit's shared control. Every destructive action reuses it. */
+  confirm: {
+    cancel: "Cancel",
+  },
+  /**
+   * The account settings index (S2).
+   *
+   * It exists because /account/email and /settings/blocked already shipped
+   * reachable ONLY by typing the URL -- grep finds no link to either from
+   * anywhere in app/ or components/. S2 adds two more surfaces of the same kind,
+   * and a session list or an account-deletion page nobody can find protects
+   * nobody. Descriptions say what each destination actually does; no invented
+   * placeholders for surfaces that do not exist yet.
+   */
+  settingsIndex: {
+    eyebrow: "Account",
+    title: "Your account.",
+    lead: "Settings that follow you across every Family you belong to.",
+    links: [
+      { href: "/account/email", label: "Email address", description: "Change it, with confirmation from both inboxes" },
+      { href: "/settings/sessions", label: "Sessions", description: "Every device signed in, and how to end one" },
+      { href: "/settings/blocked", label: "Blocked people", description: "Who you have blocked, everywhere" },
+    ],
+  },
+  /**
+   * Session management (S2).
+   *
+   * The wording on sign-out-everywhere is deliberately narrower than the
+   * feature's name, because the name over-promises. Measured 2026-09-01: after
+   * revocation GoTrue answers 403 for the old token, so every page load and
+   * every action is refused -- but PostgREST checks only a JWT's signature and
+   * expiry, so something holding the RAW access token outside the SDK can still
+   * read the Data API until it expires. "Other devices lose access the next time
+   * they load a page" is true. "You are instantly signed out everywhere" is not,
+   * and this deck does not say it.
+   */
+  sessions: {
+    eyebrow: "Security",
+    title: "Where you are signed in.",
+    lead: "Every device holding a live sign-in for this account. If you do not recognise one, end it.",
+    empty: "No other sessions. This device is the only one signed in.",
+    thisDevice: "This device",
+    signOutOne: "Sign out",
+    revokedOne: "That session was ended.",
+    revokedAlready: "That session had already ended.",
+    /** Column labels for the mono metadata rail. */
+    labels: {
+      lastActive: "Last active",
+      started: "Started",
+      unknownDevice: "Device not recorded",
+      unknownIp: "IP not recorded",
+      twoFactor: "2FA verified",
+    },
+    signOutAll: {
+      trigger: "Sign out everywhere",
+      title: "End every session?",
+      consequences: [
+        "Every device signed in to this account is signed out, including this one.",
+        "Other devices lose access the next time they load a page.",
+        "Nothing else changes: your account, your Families and your content are untouched.",
+      ],
+      confirm: "End every session",
+    },
+    errors: {
+      missingId: "That request did not name a session.",
+      revokeFailed: "That session could not be ended. Try again.",
+      signOutAllFailed: "Sessions could not be ended. Try again.",
+    },
+  },
   brand: {
     /** §3.4 sets the wordmark at text-2xl. Text, not an image -- no logo exists. */
     wordmark: "F4milia",

@@ -34,9 +34,19 @@ export function useCaptchaReset(state: AuthFormState) {
   useEffect(() => {
     const failed = Boolean(state.formError) || Boolean(state.fieldErrors);
     if (previous.current !== null && previous.current !== state && failed) {
-      // Optional at every step: the script may not have loaded, and no site key
-      // means no widget at all. A missing reset must never break the form.
-      (window as unknown as { turnstile?: Turnstile }).turnstile?.reset();
+      // Guarded three ways, and each guard is for a real case. No site key means
+      // no widget element at all; the script may not have loaded yet; and
+      // Turnstile logs "Cannot find Widget <id>" if asked to reset one whose
+      // element has since been unmounted -- seen in the browser suite's console.
+      // A reset that cannot happen must never break the form.
+      try {
+        if (document.querySelector(".cf-turnstile")) {
+          (window as unknown as { turnstile?: Turnstile }).turnstile?.reset();
+        }
+      } catch {
+        // Nothing to recover: the next submit simply carries the old token and
+        // is refused with the "security check did not finish" message.
+      }
     }
     previous.current = state;
   }, [state]);
