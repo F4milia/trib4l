@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signIn } from "@/app/actions/auth";
 import { AuthShell } from "@/components/auth-shell";
+import { PasswordInput } from "@/components/password-input";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { Button, Input, Label } from "@/components/ui";
 import { copy } from "@/lib/copy";
@@ -35,13 +36,7 @@ export default async function LoginPage({
         </div>
         <div>
           <Label htmlFor="password">{t.passwordLabel}</Label>
-          <Input
-            type="password"
-            name="password"
-            id="password"
-            autoComplete="current-password"
-            required
-          />
+          <PasswordInput name="password" id="password" autoComplete="current-password" required />
         </div>
         <Button type="submit" className="w-full">
           {t.submit}
