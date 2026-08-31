@@ -316,4 +316,70 @@ export const copy = {
       footnote: "This message is about your account, not about any Family.",
     },
   },
+  /**
+   * The help page (H1). Every answer below is a statement about behaviour that
+   * exists in this repo today, checked against the code or against
+   * docs/data-retention-policy.md before being written down -- CLAUDE.md's
+   * "honest empty states, no invented placeholders" applies at least as
+   * strongly to a page that tells people how the product works.
+   *
+   * Deliberately absent: anything about Towers, Bricks, Vows, the Table or the
+   * Ledger. None of those exist in the schema yet, and a help page that
+   * explains features nobody can use is worse than one that stays quiet about
+   * them.
+   */
+  help: {
+    eyebrow: "Support",
+    title: "Help",
+    intro: "Answers to what comes up most, and a way to reach the F4milia team directly.",
+
+    faqHeading: "Common questions",
+    faq: [
+      {
+        q: "How do I join a Family?",
+        a: "By invitation only. An organizer sends an invitation to your email address; once you sign in with that same address, the invitation appears on your home page and you accept it there. Invitations expire fourteen days after they are sent.",
+      },
+      {
+        q: "I was invited, but I cannot see the invitation.",
+        a: "An invitation is matched to the exact address it was sent to, so sign in with that address rather than another one. If it was sent more than fourteen days ago it has expired and an organizer needs to send a new one.",
+      },
+      {
+        q: "Can I turn off emails from one Family but not another?",
+        a: "Yes. Notification settings are kept per Family rather than as one switch, so muting one leaves the others exactly as they were. Muting one kind of notification also leaves the other kinds alone.",
+      },
+      {
+        q: "Who can read what I send through this form?",
+        a: "You and F4milia's platform team. The organizers of your Family cannot read support requests, on purpose — you may be writing to us about them.",
+      },
+      {
+        q: "Will you email me what people write in my Family?",
+        a: "No. Our emails name what happened and never quote it, because an inbox is often shared or read over someone's shoulder. To read anything, you sign in.",
+      },
+      {
+        q: "What happens to my things if I delete my account?",
+        a: "Your name and picture are removed and your profile is marked deleted. Things you contributed to a Family stay, attributed to a deleted member rather than to you, and records that have to outlive an account — your membership history, and anything financial — are kept.",
+      },
+    ],
+
+    formHeading: "Send us a message",
+    formIntro: "We read every message. Replies come by email to the address on your account.",
+    familyLabel: "Which Family is this about?",
+    familyNone: "Not about a specific Family",
+    subjectLabel: "Subject",
+    bodyLabel: "What is going on?",
+    submit: "Send message",
+
+    sent: "Message sent. We will reply by email to the address on your account.",
+    yoursHeading: "Your messages",
+    yoursEmpty: "You have not sent us anything yet.",
+    statusOpen: "Open",
+    statusHandled: "Handled",
+
+    errors: {
+      subjectRequired: "Please give the message a subject.",
+      bodyRequired: "Please tell us what is going on.",
+      notYourFamily: "That is not a Family you belong to.",
+      failed: "The message could not be sent. Please try again.",
+    },
+  },
 } as const;
