@@ -6,9 +6,15 @@ create. This page is the other half: exactly what to do, in what order, and
 what the application does to stop a half-finished setup from shipping quietly.
 
 Nothing here is optional before the first real member receives mail.
-`EMAIL_DELIVERY_MODE=live` refuses to start unless step 4 matches step 1, so a
-skipped step fails loudly at boot rather than as unexplained spam-foldering
-weeks later.
+In `live` mode, the first attempt to send throws unless step 4 matches step 1 —
+so a skipped step fails loudly, once, with a message naming the mismatch,
+rather than as unexplained spam-foldering weeks later.
+
+To be exact about when: the check runs inside `sendEmail()`, not at process
+start. Nothing validates the configuration at boot, so a misconfigured deploy
+comes up healthy and fails on its first invitation. Wiring a startup check is
+worth doing when there is a natural place for it; today there isn't one that
+does not belong to another session's files.
 
 ## 1. Pick a subdomain, not the apex
 
