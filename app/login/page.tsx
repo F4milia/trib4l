@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signIn } from "@/app/actions/auth";
 import { AuthShell } from "@/components/auth-shell";
+import { OAuthButtons } from "@/components/oauth-buttons";
 import { Button, Input, Label } from "@/components/ui";
 import { copy } from "@/lib/copy";
 
@@ -46,6 +47,8 @@ export default async function LoginPage({
           {t.submit}
         </Button>
       </form>
+
+      <OAuthButtons />
 
       {/* Outside the <form>: a link inside it that looked like a second
           submit would be a keyboard trap of the confusing kind — Enter in the

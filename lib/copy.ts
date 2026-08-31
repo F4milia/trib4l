@@ -110,6 +110,23 @@ export const copy = {
       switchPrompt: "New here?",
       switchAction: "Make an account",
     },
+    /**
+     * Provider names are brand names, but they are still strings on a screen,
+     * so they live here rather than in lib/auth/providers.ts -- that file
+     * carries ids and environment variable names, which are not copy.
+     */
+    oauth: {
+      dividerLabel: "or",
+      continueWith: "Continue with",
+      providers: {
+        google: "Google",
+        apple: "Apple",
+      },
+      errors: {
+        failed: "That sign-in did not complete. Try again, or use your email address.",
+        cancelled: "Sign-in was cancelled. Nothing changed.",
+      },
+    },
     confirm: {
       errors: {
         /**

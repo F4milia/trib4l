@@ -150,16 +150,32 @@ describe("copy deck", () => {
    * a string that had bypassed it. A guard that fires on the correct pattern
    * teaches people to work around it.
    */
-  function authoredText(src: string): string {
-    const quoted = (src.match(/(["'])(?:\\.|(?!\1)[^\\])*\1/g) ?? []).join("\n");
-    const jsxText = [...src.matchAll(/>([^<>{}]*)</g)].map((m) => m[1]).join("\n");
-    return `${quoted}\n${jsxText}`;
+  function authoredText(src: string): string[] {
+    const quoted = (src.match(/(["'])(?:\\.|(?!\1)[^\\])*\1/g) ?? []).map((s) => s.slice(1, -1));
+    const jsxText = [...src.matchAll(/>([^<>{}]*)</g)].map((m) => m[1]);
+    return [...quoted, ...jsxText].map((s) => s.trim());
   }
+
+  /**
+   * Short values are matched whole, longer ones by substring.
+   *
+   * Substring alone is wrong below a certain length: the OAuth divider label
+   * "or" is a substring of `border-t`, and it flagged the className on four
+   * pages that had done nothing wrong. Whole-value alone is weaker for real
+   * prose, which is often authored inside a larger JSX run. Splitting at 12
+   * characters keeps sensitivity where it is safe and drops the false
+   * positives that would otherwise teach people to route around the guard.
+   */
+  const WHOLE_MATCH_BELOW = 12;
 
   it.each(PAGES)("%s hardcodes none of the auth strings inline", (page) => {
     const authored = authoredText(readFileSync(join(process.cwd(), page), "utf8"));
     for (const s of strings(copy.auth)) {
-      expect(authored, `"${s}" is inline in ${page}; it belongs in lib/copy.ts`).not.toContain(s);
+      const inline =
+        s.length < WHOLE_MATCH_BELOW
+          ? authored.includes(s)
+          : authored.some((value) => value.includes(s));
+      expect(inline, `"${s}" is inline in ${page}; it belongs in lib/copy.ts`).toBe(false);
     }
   });
 

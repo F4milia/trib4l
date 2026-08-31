@@ -1,6 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { callbackUrl, oauthProvider } from "@/lib/auth/providers";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "@/lib/copy";
 
@@ -69,6 +71,33 @@ export async function sendMagicLink(formData: FormData) {
   await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
 
   redirect("/link-sent");
+}
+
+/**
+ * Starts an OAuth round trip. signInWithOAuth does not redirect on the server
+ * -- it returns the provider's authorize URL, and this action redirects to it,
+ * so the whole exchange stays out of the client bundle and no provider
+ * credential is ever needed in the browser.
+ *
+ * The provider name arrives in a form field, so it is narrowed against the
+ * closed set rather than passed through.
+ */
+export async function signInWithProvider(formData: FormData) {
+  const provider = oauthProvider(String(formData.get("provider") ?? ""));
+  const redirectTo = provider ? callbackUrl((await headers()).get("origin")) : null;
+
+  if (!provider || !redirectTo) {
+    redirect("/login?error=" + encodeURIComponent(copy.auth.oauth.errors.failed));
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
+
+  if (error || !data?.url) {
+    redirect("/login?error=" + encodeURIComponent(copy.auth.oauth.errors.failed));
+  }
+
+  redirect(data.url);
 }
 
 export async function signOut() {
