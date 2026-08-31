@@ -169,6 +169,23 @@ values
   ('cccccccc-0000-0000-0000-00000000cccc', '00000000-0000-0000-0000-0000000000a1', now(), now()),
   ('dddddddd-0000-0000-0000-00000000dddd', '00000000-0000-0000-0000-0000000000a1', now(), now());
 
+/**
+ * The bulk-revoke audit row is keyed on the USER, not on a unique object, so a
+ * count of (action, target_id) is not scoped to this test: tests/isolation/
+ * sessions.test.ts calls revoke_all_my_sessions as the same seeded Alice and
+ * leaves a row behind, and the count became 2 on any database where both suites
+ * had run. The per-session assertions above are safe because each targets a UUID
+ * this file invented; this one cannot be, so it measures a DELTA instead.
+ *
+ * Third time this residue trap has appeared in one session -- see the 2026-08-29
+ * entry in CLAUDE.md, and the note further up this file.
+ */
+create temporary table audit_before as
+select count(*)::int as revoked_all
+  from public.audit_log
+ where action = 'sessions.revoked_all'
+   and target_id = '00000000-0000-0000-0000-0000000000a1';
+
 select ok(
   (select public.revoke_all_my_sessions()) >= 2,
   'revoke_all_my_sessions removes the caller''s remaining sessions'
@@ -189,8 +206,9 @@ select ok(
 
 select is(
   (select count(*)::int from public.audit_log
-    where action = 'sessions.revoked_all'
-      and target_id = '00000000-0000-0000-0000-0000000000a1'),
+     where action = 'sessions.revoked_all'
+       and target_id = '00000000-0000-0000-0000-0000000000a1')
+  - (select revoked_all from audit_before),
   1,
   'a bulk revoke writes exactly ONE audit row, not one per session'
 );
