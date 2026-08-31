@@ -21,8 +21,26 @@ vi.mock("next/navigation", () => ({
 }));
 
 const getUser = vi.hoisted(() => vi.fn());
+/**
+ * S2 put a two-factor gate inside requireUser(), after the getUser() call these
+ * tests are about. So the client now needs the two things the gate reads.
+ *
+ * Both answer "nothing to enforce here": no verified factor, and not staff --
+ * which is the state every assertion in this file already assumed. Nothing is
+ * weakened; the collaborator simply did not exist when the file was written. The
+ * gate has its own coverage in tests/assurance-gate.test.ts and in
+ * tests/e2e/staff-2fa.spec.ts.
+ */
+const getAuthenticatorAssuranceLevel = vi.hoisted(() =>
+  vi.fn(async () => ({ data: { currentLevel: "aal1", nextLevel: "aal1" }, error: null })),
+);
+const rpc = vi.hoisted(() => vi.fn(async () => ({ data: false, error: null })));
+
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser } }),
+  createClient: async () => ({
+    auth: { getUser, mfa: { getAuthenticatorAssuranceLevel } },
+    rpc,
+  }),
 }));
 
 const { requireUser } = await import("@/lib/session");

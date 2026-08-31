@@ -20,6 +20,31 @@ export const copy = {
     cancel: "Cancel",
   },
   /**
+   * The sign-in code screen (S2).
+   *
+   * Says "the app on your phone", not "your TOTP factor". A person arriving here
+   * has just typed a correct password and is being asked for more; the copy's job
+   * is to make that feel expected rather than like a failure. It does not say
+   * "verification required", which reads as an accusation.
+   */
+  assurance: {
+    eyebrow: "One more step",
+    title: "Enter your code.",
+    body: "Open the app on your phone and type the six digits it shows.",
+    codeLabel: "Six-digit code",
+    submit: "Continue",
+    signOut: "Sign out instead",
+    /** Shown to staff who have no authenticator at all. Not a scolding: it says
+     *  what is true and what to do, and does not pretend this is optional. */
+    staffMustEnrol:
+      "Two-factor is required for platform staff. Set up an authenticator to continue.",
+    errors: {
+      codeRequired: "Enter the six-digit code.",
+      wrongCode: "That code was not accepted. Codes expire every 30 seconds — try the current one.",
+      challengeFailed: "The code could not be checked. Try again.",
+    },
+  },
+  /**
    * Two-factor authentication (S2).
    *
    * Says "authenticator app", not "TOTP" or "2FA" in body copy: the person is
@@ -38,6 +63,16 @@ export const copy = {
     staffRequiredNote:
       "Your account is platform staff, so two-factor is required. Until it is set up, you can reach this page and nothing else.",
     none: "No authenticator is set up on this account.",
+    /**
+     * Shown when this account already has an authenticator but has not used it
+     * in this session. Measured 2026-09-01: GoTrue REFUSES to enrol another
+     * factor from an aal1 session, and refuses to remove one, so offering either
+     * here would be offering an action that cannot succeed -- which is how this
+     * was found: the page said "Setup could not be started. Try again." and
+     * trying again would never have worked.
+     */
+    needsCodeFirst: "Enter a code from your authenticator to change these settings.",
+    enterCode: "Enter a code",
     activeHeading: "Authenticators",
     added: "Added",
     remove: "Remove",
