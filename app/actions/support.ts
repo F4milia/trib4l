@@ -7,6 +7,7 @@ import { copy } from "@/lib/copy";
 import { SupportRateLimitExceeded, assertSupportRateLimitNotExceeded } from "@/lib/support";
 
 const HELP = "/help";
+const STAFF_INBOX = "/admin/support";
 
 function backWithError(message: string): never {
   redirect(`${HELP}?error=${encodeURIComponent(message)}`);
@@ -72,4 +73,29 @@ export async function submitSupportRequest(formData: FormData) {
 
   revalidatePath(HELP);
   redirect(`${HELP}?sent=1`);
+}
+
+/**
+ * Staff-only. Marks a request handled.
+ *
+ * No role check here, deliberately: the update policy is `is_platform_admin()`
+ * and the grant is column-scoped to `status`, so a non-staff caller changes
+ * nothing and a staff caller cannot touch the subject or body. Re-checking the
+ * role in the action would add a second place to keep in sync with the first,
+ * and would still not be the thing Postgres enforces.
+ *
+ * Nothing writes to audit_log by hand -- support_requests carries the trigger,
+ * so the status change is logged with the acting staff member as the actor.
+ */
+export async function markSupportRequestHandled(formData: FormData) {
+  const requestId = String(formData.get("request_id") ?? "").trim();
+
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) redirect("/login");
+
+  await supabase.from("support_requests").update({ status: "handled" }).eq("id", requestId);
+
+  revalidatePath(STAFF_INBOX);
+  redirect(STAFF_INBOX);
 }
