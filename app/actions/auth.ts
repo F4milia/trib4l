@@ -9,6 +9,7 @@ import {
   type AuthFormState,
 } from "@/lib/auth/form-errors";
 import { callbackUrl, confirmUrl, oauthProvider } from "@/lib/auth/providers";
+import { withinAuthRateLimit } from "@/lib/auth/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "@/lib/copy";
 
@@ -41,6 +42,13 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
   if (!email) return fieldError("email", copy.auth.signup.errors.emailRequired, values);
   if (!password) return fieldError("password", copy.auth.signup.errors.passwordRequired, values);
   if (!consent) return fieldError("consent", copy.auth.signup.errors.consentRequired, values);
+
+  // After the field checks, before GoTrue: a person's own typo should not burn
+  // their allowance, and the abusable call is the one below. Form-level, like
+  // every other message that must not confirm whether the address exists.
+  if (!(await withinAuthRateLimit("sign-up", email))) {
+    return formError(copy.auth.rateLimit.tooManyAttempts, values);
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
@@ -92,6 +100,16 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
   if (!email) return fieldError("email", copy.auth.login.errors.emailRequired, values);
   if (!password) return fieldError("password", copy.auth.login.errors.passwordRequired, values);
 
+  // The endpoint the acceptance criterion is about: the sixth rapid attempt
+  // against one address is refused here, before GoTrue is asked to check a
+  // password. Note the refusal is a DIFFERENT message from invalid_credentials
+  // -- that is unavoidable and safe, because reaching it requires already
+  // having made five attempts on that address, which tells a prober nothing
+  // they did not just do themselves.
+  if (!(await withinAuthRateLimit("sign-in", email))) {
+    return formError(copy.auth.rateLimit.tooManyAttempts, values);
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -127,6 +145,15 @@ export async function sendMagicLink(formData: FormData) {
 
   if (!email) {
     redirect("/magic-link?error=" + encodeURIComponent(copy.auth.magicLink.errors.missingEmail));
+  }
+
+  // Mail costs money and lands in somebody's inbox, so this endpoint is limited
+  // whether or not the address has an account. The refusal is the same for both
+  // -- it is reached by counting attempts, which is a fact about the request,
+  // not about the account, so it does not reopen the enumeration oracle this
+  // action's single redirect exists to close.
+  if (!(await withinAuthRateLimit("magic-link", email))) {
+    redirect("/magic-link?error=" + encodeURIComponent(copy.auth.rateLimit.tooManyAttempts));
   }
 
   const supabase = await createClient();
@@ -167,6 +194,15 @@ export async function requestEmailChange(formData: FormData) {
     redirect("/account/email?error=" + encodeURIComponent(copy.auth.changeEmail.errors.unchanged));
   }
 
+  // Keyed on the signed-in user, not on the address being requested: the abuse
+  // here is one session walking through many addresses (each of which gets
+  // mail), so the allowance has to belong to the account doing it. Two messages
+  // go out per attempt, to the old address and the new one, which makes this the
+  // most expensive auth endpoint per call.
+  if (!(await withinAuthRateLimit("email-change", data.user.id))) {
+    redirect("/account/email?error=" + encodeURIComponent(copy.auth.rateLimit.tooManyAttempts));
+  }
+
   const { error } = await supabase.auth.updateUser(
     { email },
     { emailRedirectTo: await emailReturnUrl() },
@@ -195,6 +231,13 @@ export async function requestPasswordReset(formData: FormData) {
 
   if (!email) {
     redirect("/forgot-password?error=" + encodeURIComponent(copy.auth.forgotPassword.errors.missingEmail));
+  }
+
+  // Same reasoning as the magic link: this one sends mail to an address the
+  // requester does not have to own, which is exactly the endpoint somebody uses
+  // to bury a person in reset mail.
+  if (!(await withinAuthRateLimit("password-reset", email))) {
+    redirect("/forgot-password?error=" + encodeURIComponent(copy.auth.rateLimit.tooManyAttempts));
   }
 
   const supabase = await createClient();
@@ -243,6 +286,16 @@ export async function updatePassword(
   // meant, the second is the one that disagrees with it.
   if (password !== confirmation) {
     return fieldError("passwordConfirmation", copy.auth.resetPassword.errors.mismatch);
+  }
+
+  // Keyed on the recovery session's own user, and placed after the field checks
+  // like every other call site -- a mistyped confirmation is not an attempt.
+  // Limited even though the caller already proved control of the address: a
+  // weak-password rejection loop is otherwise a free unbounded call, and a
+  // recovery session that outlives its use should not be an unbounded
+  // password-setting endpoint.
+  if (!(await withinAuthRateLimit("password-update", data.user.id))) {
+    return formError(copy.auth.rateLimit.tooManyAttempts);
   }
 
   const { error } = await supabase.auth.updateUser({ password });

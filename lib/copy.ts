@@ -52,6 +52,21 @@ export const copy = {
       show: "Show password",
       hide: "Hide password",
     },
+    /**
+     * One string for every rate-limited auth endpoint (S2), and one for a
+     * reason: it must be true on all of them and reveal nothing on any.
+     *
+     * It does not say which limit was hit, whether the address has an account,
+     * or how long is left. "Five attempts per fifteen minutes for this address"
+     * would tell a prober exactly how to pace themselves, and a countdown on
+     * the address bucket would confirm the address exists. It says what
+     * happened and what to do, which is all a legitimate person needs -- the
+     * same reasoning as the deliberately indistinguishable magic-link and
+     * password-reset copy.
+     */
+    rateLimit: {
+      tooManyAttempts: "Too many attempts. Wait a few minutes and try again.",
+    },
     login: {
       eyebrow: "Sign in",
       title: "Welcome back.",
