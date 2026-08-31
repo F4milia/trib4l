@@ -187,18 +187,34 @@ describe("forwarding the token to GoTrue", () => {
   });
 });
 
-describe("supabase/config.toml at this PR", () => {
+describe("[auth.captcha] in supabase/config.toml", () => {
   const config = readFileSync(join(process.cwd(), "supabase/config.toml"), "utf8");
+  const section = config.split(/^\[/m).find((s) => s.startsWith("auth.captcha]")) ?? "";
 
   /**
-   * This PR is deliberately inert. If [auth.captcha] were enabled here, every
-   * form without a token -- which is all of them locally and in CI -- would
-   * start failing, and this PR would not be green on its own. PR 4 flips it and
-   * replaces this assertion with the enforcement one.
+   * PR 3 asserted this block was DISABLED, because that PR was deliberately
+   * inert. PR 4 flips it, so the assertion is replaced by the stronger claim
+   * rather than deleted -- the weak version would now pass on a config that
+   * enforces nothing.
+   *
+   * Enforcement itself is asserted against a running GoTrue in
+   * tests/isolation/captcha.test.ts. A config file agreeing with itself proves
+   * nothing; this block only guards the shape of the file.
    */
-  it("leaves captcha disabled, so this PR is green without any key", () => {
-    const section = config.split(/^\[/m).find((s) => s.startsWith("auth.captcha]"));
-    const enabled = section ? /^\s*enabled\s*=\s*true\s*$/m.test(section) : false;
-    expect(enabled).toBe(false);
+  it("is enabled, and points at turnstile", () => {
+    expect(/^\s*enabled\s*=\s*true\s*$/m.test(section)).toBe(true);
+    expect(/^\s*provider\s*=\s*"turnstile"\s*$/m.test(section)).toBe(true);
+  });
+
+  /**
+   * The secret must come from the environment, never as a literal. `supabase
+   * config push` sends this file to whatever project is linked, so a literal
+   * test secret here could reach a hosted project and turn its captcha into a
+   * rubber stamp that still reads as "enabled" -- the S1 hosted-config lesson,
+   * in a form that fails silently instead of loudly.
+   */
+  it("reads its secret from the environment, with no literal in the file", () => {
+    const secret = section.match(/^\s*secret\s*=\s*"([^"]*)"/m)?.[1] ?? "";
+    expect(secret).toMatch(/^env\(\w+\)$/);
   });
 });

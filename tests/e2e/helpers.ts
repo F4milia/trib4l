@@ -33,10 +33,36 @@ export const ORG_IDS: Record<string, string> = {
  * no Origin header, so driving the actual form is the only honest way to do
  * this -- see docs/SESSION-LOG.md.
  */
+/**
+ * Waits for Turnstile to put a token in the form (S2).
+ *
+ * Not a workaround for a slow test -- it is what a human's typing time supplies
+ * for free. Measured in this browser on 2026-09-01: the token appears 2.7
+ * seconds after /login loads, while these specs fill both fields and submit in
+ * milliseconds. Submitting first is a real failure (GoTrue answers 400
+ * captcha_failed), so waiting is the honest fix rather than a relaxed
+ * assertion.
+ *
+ * A no-op where no site key is configured: no widget renders, so there is no
+ * input to wait for and nothing to wait on.
+ */
+async function waitForCaptcha(page: Page) {
+  if ((await page.locator(".cf-turnstile").count()) === 0) return;
+  await expect
+    .poll(
+      async () =>
+        (await page.locator('input[name="cf-turnstile-response"]').inputValue().catch(() => ""))
+          .length,
+      { timeout: 30_000, intervals: [100] },
+    )
+    .toBeGreaterThan(0);
+}
+
 export async function signIn(page: Page, user: keyof typeof USERS) {
   await page.goto("/login");
   await page.fill("#email", USERS[user].email);
   await page.fill("#password", USERS[user].password);
+  await waitForCaptcha(page);
   await Promise.all([
     page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 20_000 }),
     page.click('button[type="submit"]'),
@@ -96,7 +122,14 @@ export async function roleIn(user: keyof typeof USERS, slug: string): Promise<st
   if (!orgId) throw new Error(`roleIn: no seeded org id for ${slug}`);
 
   const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { data: auth, error } = await anon.auth.signInWithPassword(USERS[user]);
+  // Straight to GoTrue rather than through a form, so there is no widget to
+  // supply a token -- and [auth.captcha] is enabled. Cloudflare's always-passes
+  // TEST secret verifies any non-empty string; same constant and same reasoning
+  // as TEST_CAPTCHA in tests/isolation/helpers.ts.
+  const { data: auth, error } = await anon.auth.signInWithPassword({
+    ...USERS[user],
+    options: { captchaToken: "cloudflare-test-secret-accepts-any-token" },
+  });
   if (error || !auth.user) throw new Error(`roleIn: sign-in failed for ${user}`);
 
   const service = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

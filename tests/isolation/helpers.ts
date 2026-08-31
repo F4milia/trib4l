@@ -38,13 +38,29 @@ export const ORG_IDS = {
  * playback_id, moderation_state) -- tests should never reach for this to
  * shortcut around RLS they mean to be testing.
  */
+/**
+ * The captcha token every guarded call has to carry now that S2 enabled
+ * [auth.captcha].
+ *
+ * ANY non-empty string satisfies GoTrue while the secret is Cloudflare's
+ * published always-passes TEST secret. Measured 2026-09-01 against this stack:
+ * a token of "dummy" returns 200, and no token at all returns 400
+ * `captcha_failed` / "no captcha_token found". Named rather than inlined so the
+ * reason travels with it, and so pointing the config at the always-BLOCKS
+ * secret to exercise the negative path is a one-line edit.
+ *
+ * GoTrue's ADMIN API is not captcha-guarded, which is why signUpNewUser's
+ * createUser call below needs no token and only its sign-in does.
+ */
+export const TEST_CAPTCHA = { captchaToken: "cloudflare-test-secret-accepts-any-token" } as const;
+
 export function createServiceRoleClient(): SupabaseClient<Database> {
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
 
 export async function signInAs(user: { email: string; password: string }): Promise<SupabaseClient<Database>> {
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { error } = await client.auth.signInWithPassword(user);
+  const { error } = await client.auth.signInWithPassword({ ...user, options: TEST_CAPTCHA });
   if (error) throw new Error(`Failed to sign in as ${user.email}: ${error.message}`);
   return client;
 }
@@ -80,7 +96,11 @@ export async function signUpNewUser(email: string): Promise<SupabaseClient<Datab
   if (createError) throw new Error(`createUser failed for ${email}: ${createError.message}`);
 
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { error } = await client.auth.signInWithPassword({ email, password });
+  const { error } = await client.auth.signInWithPassword({
+    email,
+    password,
+    options: TEST_CAPTCHA,
+  });
   if (error) throw new Error(`sign-in failed for new user ${email}: ${error.message}`);
   return client;
 }

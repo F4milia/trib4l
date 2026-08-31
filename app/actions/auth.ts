@@ -80,6 +80,16 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
    * person who genuinely owns the address is unaffected: they have an account
    * already, and can sign in or reset. The person probing learns nothing.
    */
+  /**
+   * Checked BEFORE the enumeration guard below, and that order is the point. A
+   * captcha failure is a fact about the request, not about the address, so
+   * treating it as "signup succeeded, check your email" would tell somebody
+   * their account was created when nothing happened.
+   */
+  if (error?.code === "captcha_failed") {
+    return formError(copy.auth.captcha.notCompleted, values);
+  }
+
   if (error && error.code !== "user_already_exists") {
     const field = signupFieldForCode(error.code);
     if (field === "password") return fieldError("password", copy.auth.signup.errors.weakPassword, values);
@@ -129,6 +139,16 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
    * attribute, and finding out would mean first asking whether the address has
    * an account.
    */
+  /**
+   * Before the credential message, because saying "that email and password do
+   * not match an account" for a CORRECT password -- which is what a submit
+   * inside the widget's 2.7-second window produces -- is the app lying about
+   * the person's credentials to cover its own timing.
+   */
+  if (error?.code === "captcha_failed") {
+    return formError(copy.auth.captcha.notCompleted, values);
+  }
+
   if (error) return formError(copy.auth.login.errors.invalidCredentials, values);
 
   redirect("/");
@@ -166,7 +186,7 @@ export async function sendMagicLink(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       shouldCreateUser: false,
@@ -174,6 +194,20 @@ export async function sendMagicLink(formData: FormData) {
       captchaToken: captchaToken(formData),
     },
   });
+
+  /**
+   * The ONE error this action surfaces, and it does not reopen the enumeration
+   * oracle: a captcha outcome is a fact about the request, identical for an
+   * address with an account and one without. Every other error stays swallowed.
+   *
+   * Without this branch the person is sent to /link-sent -- told to check their
+   * inbox for a message that was never sent, then to check their spam folder,
+   * with nothing they can do. A silent failure is worse here than on /login,
+   * because there is no second attempt that would reveal the problem.
+   */
+  if (error?.code === "captcha_failed") {
+    redirect("/magic-link?error=" + encodeURIComponent(copy.auth.captcha.notCompleted));
+  }
 
   redirect("/link-sent");
 }
@@ -256,10 +290,16 @@ export async function requestPasswordReset(formData: FormData) {
   const supabase = await createClient();
   // resetPasswordForEmail names the option `redirectTo`, not `emailRedirectTo`
   // -- it reaches the template as {{ .RedirectTo }} either way.
-  await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: await emailReturnUrl(),
     captchaToken: captchaToken(formData),
   });
+
+  // Same single exception, same reasoning as sendMagicLink: otherwise somebody
+  // locked out of their account waits for a reset mail that was never sent.
+  if (error?.code === "captcha_failed") {
+    redirect("/forgot-password?error=" + encodeURIComponent(copy.auth.captcha.notCompleted));
+  }
 
   redirect("/reset-sent");
 }

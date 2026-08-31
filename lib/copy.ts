@@ -67,6 +67,25 @@ export const copy = {
     rateLimit: {
       tooManyAttempts: "Too many attempts. Wait a few minutes and try again.",
     },
+    /**
+     * When Turnstile's check has not completed (S2). One string, all four
+     * captcha-guarded forms.
+     *
+     * This exists because the failure is REACHABLE by an ordinary person, not
+     * only by a bot. Measured in a real browser 2026-09-01: the token arrives
+     * 2.7 SECONDS after /login loads, and a returning visitor whose password
+     * manager fills both fields can submit inside that window. Without this
+     * message they would get "that email and password do not match an account"
+     * for a correct password -- a lie the app would be telling about their
+     * credentials because of its own timing.
+     *
+     * Says nothing about captchas, Cloudflare, or tokens: none of those are
+     * the person's problem, and "the check" is what they can act on. Naming the
+     * vendor would also tell a prober which service to study.
+     */
+    captcha: {
+      notCompleted: "The security check did not finish. Try again in a moment.",
+    },
     login: {
       eyebrow: "Sign in",
       title: "Welcome back.",
