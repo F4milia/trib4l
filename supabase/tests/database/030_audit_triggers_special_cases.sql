@@ -27,8 +27,8 @@ select is(
   (select count(distinct t.tgname)::int
      from pg_trigger t join pg_proc p on p.oid = t.tgfoid
     where p.proname = 'audit_row_change' and not t.tgisinternal),
-  30,
-  '30 triggers total -- 25 org-scoped from PR 2/5 plus these five'
+  31,
+  '31 triggers total -- 25 org-scoped from PR 2/5, these five, and notification_preferences (E1)'
 );
 
 -- Filter by trigger name: organizations and profiles each already carry an
