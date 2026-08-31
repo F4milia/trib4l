@@ -130,11 +130,57 @@ begin
 end;
 $$;
 
+/**
+ * Ends every session the caller has, including the one asking. Returns how many
+ * were removed.
+ *
+ * WHY THIS EXISTS RATHER THAN supabase.auth.signOut({ scope: 'global' }).
+ * GoTrue's global logout does the same deletion, and using it would be less
+ * code -- but it deletes the rows itself, so nothing in this database sees the
+ * mutation and no audit row can be written in its transaction. Auditing it from
+ * a server action instead is precisely what invariant 5 rules out: an app-layer
+ * audit call is not in the mutation's transaction, so a failure between the two
+ * leaves either a logged event that did not happen or an unlogged sign-out.
+ *
+ * One DELETE, so it also cannot race. Revoking a list read a moment earlier
+ * would silently miss a device that signed in in between.
+ *
+ * ONE audit row for the act, not one per session. "This person ended every
+ * session" is the event; enumerating them would put a device and IP per row into
+ * an append-only log, which is content invariant 5 keeps out of it.
+ */
+create function public.revoke_all_my_sessions()
+returns integer
+language plpgsql
+security definer
+set search_path = pg_catalog, pg_temp
+as $$
+declare
+  v_deleted integer;
+begin
+  if auth.uid() is null then
+    return 0;
+  end if;
+
+  delete from auth.sessions where user_id = auth.uid();
+  get diagnostics v_deleted = row_count;
+
+  if v_deleted > 0 then
+    insert into public.audit_log (actor_profile_id, org_id, action, target_type, target_id)
+    values (auth.uid(), null, 'sessions.revoked_all', 'auth.user', auth.uid());
+  end if;
+
+  return v_deleted;
+end;
+$$;
+
 -- Functions are EXECUTE-to-PUBLIC on creation, so these revokes are the access
--- control. `anon` gets nothing: with no session auth.uid() is null and both
+-- control. `anon` gets nothing: with no session auth.uid() is null and all three
 -- functions are inert anyway, but an anonymous caller has no business reaching
 -- into the auth schema even to be told "no rows".
 revoke all on function public.my_sessions() from public;
 revoke all on function public.revoke_my_session(uuid) from public;
+revoke all on function public.revoke_all_my_sessions() from public;
 grant execute on function public.my_sessions() to authenticated;
 grant execute on function public.revoke_my_session(uuid) to authenticated;
+grant execute on function public.revoke_all_my_sessions() to authenticated;

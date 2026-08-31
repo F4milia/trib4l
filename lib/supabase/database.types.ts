@@ -2047,6 +2047,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      revoke_all_my_sessions: { Args: never; Returns: number }
       revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
       transition_member_stage: {

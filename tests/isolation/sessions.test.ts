@@ -178,3 +178,30 @@ describe("what revocation does not do", () => {
     expect(error).not.toBeNull();
   });
 });
+
+describe("revoke_all_my_sessions", () => {
+  /**
+   * The other half of S2's named edge case: sign-out-everywhere, seen from the
+   * devices it ends. Both of this member's devices die, and nobody else's does.
+   */
+  it("ends every one of the caller's sessions and none of anyone else's", async () => {
+    const deviceA = await signInAs(SEEDED_USERS.alice);
+    const deviceB = await signInAs(SEEDED_USERS.alice);
+    const bob = await signInAs(SEEDED_USERS.bob);
+
+    const { data: count, error } = await deviceA.rpc("revoke_all_my_sessions");
+    expect(error).toBeNull();
+    expect(count as number).toBeGreaterThanOrEqual(2);
+
+    expect((await deviceA.auth.getUser()).error).not.toBeNull();
+    expect((await deviceB.auth.getUser()).error).not.toBeNull();
+    // A bulk revoke is the easiest place to delete too much.
+    expect((await bob.auth.getUser()).error).toBeNull();
+  });
+
+  it("is unreachable without a session", async () => {
+    const anon = createAnonClient();
+    const { error } = await anon.rpc("revoke_all_my_sessions");
+    expect(error).not.toBeNull();
+  });
+});

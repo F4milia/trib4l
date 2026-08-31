@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(22);
+select plan(30);
 
 -- ------------------------------------------------------------------ existence
 select has_function('public', 'my_sessions', 'my_sessions() exists');
@@ -146,6 +146,53 @@ select is(
       and target_id = 'aaaaaaaa-0000-0000-0000-00000000aaaa'),
   '{}'::jsonb,
   'metadata carries no user agent, no IP, no content'
+);
+
+-- ------------------------------------------------------ revoke_all_my_sessions
+select has_function('public', 'revoke_all_my_sessions',
+  'revoke_all_my_sessions() exists');
+select ok(not has_function_privilege('anon', 'public.revoke_all_my_sessions()', 'execute'),
+  'revoke_all_my_sessions: anon cannot execute');
+select ok(has_function_privilege('authenticated', 'public.revoke_all_my_sessions()', 'execute'),
+  'revoke_all_my_sessions: authenticated can execute');
+select is(
+  (select array_to_string(p.proconfig, ',') from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'revoke_all_my_sessions'),
+  'search_path=pg_catalog, pg_temp',
+  'revoke_all_my_sessions pins search_path with pg_temp last');
+
+-- Two more of Alice's, plus Bob's, which must survive. Bob's is the assertion
+-- that matters: a bulk revoke is the easiest place to delete too much.
+insert into auth.sessions (id, user_id, created_at, updated_at)
+values
+  ('cccccccc-0000-0000-0000-00000000cccc', '00000000-0000-0000-0000-0000000000a1', now(), now()),
+  ('dddddddd-0000-0000-0000-00000000dddd', '00000000-0000-0000-0000-0000000000a1', now(), now());
+
+select ok(
+  (select public.revoke_all_my_sessions()) >= 2,
+  'revoke_all_my_sessions removes the caller''s remaining sessions'
+);
+
+select ok(
+  not exists (
+    select 1 from auth.sessions
+     where user_id = '00000000-0000-0000-0000-0000000000a1'
+  ),
+  'the caller has no sessions left at all'
+);
+
+select ok(
+  exists (select 1 from auth.sessions where id = 'bbbbbbbb-0000-0000-0000-00000000bbbb'),
+  'the other member''s session is untouched by a bulk revoke'
+);
+
+select is(
+  (select count(*)::int from public.audit_log
+    where action = 'sessions.revoked_all'
+      and target_id = '00000000-0000-0000-0000-0000000000a1'),
+  1,
+  'a bulk revoke writes exactly ONE audit row, not one per session'
 );
 
 select * from finish();
