@@ -1902,6 +1902,7 @@ export type Database = {
         Returns: boolean
       }
       current_user_email: { Args: never; Returns: string }
+      delete_my_account: { Args: never; Returns: boolean }
       designate_mentor: {
         Args: { target_org_id: string; target_profile_id: string }
         Returns: {
