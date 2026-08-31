@@ -58,6 +58,10 @@ export default async function LoginPage({
         <Link href="/magic-link" className="text-terracotta underline">
           {t.magicLinkAction}
         </Link>
+        {" · "}
+        <Link href="/forgot-password" className="text-terracotta underline">
+          {t.forgotAction}
+        </Link>
       </p>
     </AuthShell>
   );

@@ -74,6 +74,69 @@ export async function sendMagicLink(formData: FormData) {
 }
 
 /**
+ * Emails a one-time link to choose a new password.
+ *
+ * Same enumeration reasoning as sendMagicLink: one destination whatever the
+ * outcome. resetPasswordForEmail is already non-committal on its own -- it
+ * succeeds for an unknown address -- but the redirect is unconditional here so
+ * a future change to that behaviour cannot quietly open an oracle.
+ *
+ * The link's destination lives in the template, not in `redirectTo`: the
+ * template pins `next=/reset-password`, and app/auth/confirm/route.ts narrows
+ * that through safeNext like any other value arriving from a URL.
+ */
+export async function requestPasswordReset(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+
+  if (!email) {
+    redirect("/forgot-password?error=" + encodeURIComponent(copy.auth.forgotPassword.errors.missingEmail));
+  }
+
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email);
+
+  redirect("/reset-sent");
+}
+
+/**
+ * Sets a new password on the session the recovery link created.
+ *
+ * There is no "current password" field, and there should not be: the caller
+ * proved control of the address by opening a single-use emailed link, which is
+ * the whole point of a reset. What it does require is a live session -- this
+ * page is a plain URL, so it must not offer a password field to someone who
+ * never opened one.
+ *
+ * updateUser is the authorisation boundary itself, not this check: it applies
+ * to the session's own user and nobody else's, so there is no id to tamper
+ * with in the form.
+ */
+export async function updatePassword(formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const confirmation = String(formData.get("password_confirmation") ?? "");
+
+  const supabase = await createClient();
+  const { data, error: sessionError } = await supabase.auth.getUser();
+  if (sessionError || !data.user) {
+    redirect("/forgot-password?error=" + encodeURIComponent(copy.auth.resetPassword.errors.noSession));
+  }
+
+  if (!password || !confirmation) {
+    redirect("/reset-password?error=" + encodeURIComponent(copy.auth.resetPassword.errors.missingFields));
+  }
+  if (password !== confirmation) {
+    redirect("/reset-password?error=" + encodeURIComponent(copy.auth.resetPassword.errors.mismatch));
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    redirect("/reset-password?error=" + encodeURIComponent(error.message));
+  }
+
+  redirect("/");
+}
+
+/**
  * Starts an OAuth round trip. signInWithOAuth does not redirect on the server
  * -- it returns the provider's authorize URL, and this action redirects to it,
  * so the whole exchange stays out of the client bundle and no provider
