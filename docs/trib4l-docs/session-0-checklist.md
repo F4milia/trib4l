@@ -1,7 +1,7 @@
 # Session 0 — Operational Baseline
 
 Tracks progress against the Session 0 acceptance criteria in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#session-0--operational-baseline):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#session-0--operational-baseline):
 
 > *Done means:* a deliberately broken build fails CI, an exception in staging
 > appears in Sentry, and someone has restored a backup and written down how

@@ -1,7 +1,7 @@
 # Session 14 — Catalog and Checkout
 
 Tracks progress against the Session 14 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md): "`products`
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md): "`products`
 (org_id, type, price, currency, active), type ∈ digital | physical |
 ticket | cohort_seat. Cart, direct charge with `application_fee_amount`,
 `orders` and `order_items`. Idempotency keys on checkout. Rate limiting."

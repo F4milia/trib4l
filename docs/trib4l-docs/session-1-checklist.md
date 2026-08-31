@@ -1,7 +1,7 @@
 # Session 1 — Schema, Auth, Identity, and the Role Model
 
 Tracks progress against the Session 1 acceptance criteria in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-0--foundation-sessions-12):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-0--foundation-sessions-12):
 
 > *Done means:* three orgs seeded with an overlapping user, two
 > `platform_staff` rows, migrations clean forward and back.

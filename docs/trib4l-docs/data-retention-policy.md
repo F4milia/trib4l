@@ -1,7 +1,7 @@
 # Data retention: anonymize vs. purge
 
 Written per the Session 1 requirement in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#session-1--schema-auth-identity-and-the-role-model):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#session-1--schema-auth-identity-and-the-role-model):
 decide this now, before the tables that need it exist, because "hard deletes
 cascading through forty tables at month eight is a genuinely bad week."
 

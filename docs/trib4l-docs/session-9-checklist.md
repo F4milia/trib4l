@@ -1,7 +1,7 @@
 # Session 9 — Mentorship
 
 Tracks progress against the Session 9 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
 "Mentor designation, pairing model, lifecycle (proposed → active →
 completed). Build the member → mentor transition as an explicit,
 first-class action with its own record and UI moment. In the caregiver

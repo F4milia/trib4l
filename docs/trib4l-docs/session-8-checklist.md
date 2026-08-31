@@ -1,7 +1,7 @@
 # Session 8 — Stages and Content Gating
 
 Tracks progress against the Session 8 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
 an ordered progression (stages), distinct from cohorts (a point-in-time
 grouping); transitions logged for HQ/org dashboards; content optionally
 gated behind a stage. No explicit "done means" line for this session — same

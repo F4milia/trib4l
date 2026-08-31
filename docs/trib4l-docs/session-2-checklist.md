@@ -1,7 +1,7 @@
 # Session 2 — RLS, Isolation Suite, and Platform Access Control
 
 Tracks progress against the Session 2 acceptance criteria in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#session-2--rls-isolation-suite-and-platform-access-control):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#session-2--rls-isolation-suite-and-platform-access-control):
 
 > *Done means:* isolation tests pass in CI and the escalation test fails
 > loudly if the bypass policy is loosened.

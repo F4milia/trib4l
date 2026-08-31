@@ -1,7 +1,7 @@
 # Session 11 — Video Foundation and Member Uploads
 
 Tracks progress against the Session 11 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-2--video-via-mux-sessions-11-12):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-2--video-via-mux-sessions-11-12):
 "`video_assets` (org_id, uploader, mux_asset_id, playback_id, policy,
 status, duration, moderation_state). Signed direct uploads, Mux webhooks
 through the idempotent handler, signed playback JWTs behind a membership

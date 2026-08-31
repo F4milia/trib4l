@@ -1,7 +1,7 @@
 # Session 13 — Connect Onboarding
 
 Tracks progress against the Session 13 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md): "Standard
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md): "Standard
 account creation, hosted onboarding, `account.updated` webhooks.
 `connected_accounts` with charges_enabled / payouts_enabled /
 requirements state. Commerce hard-gated on `charges_enabled` — an

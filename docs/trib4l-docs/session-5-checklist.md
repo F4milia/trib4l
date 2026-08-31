@@ -1,7 +1,7 @@
 # Session 5 — Cohorts
 
 Tracks progress against the Session 5 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
 "Cohorts. `cohorts`, `cohort_members`. Cohort-scoped visibility layered
 under org scoping. A member sees org-wide content plus their own cohort's,
 nothing from sibling cohorts." No explicit "done means" line for this

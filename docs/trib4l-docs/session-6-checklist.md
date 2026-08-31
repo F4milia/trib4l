@@ -1,7 +1,7 @@
 # Session 6 — Posts and Feed
 
 Tracks progress against the Session 6 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
 "Threads, comments, reactions. Organizer moderation with `audit_log`
 writes. Index `(org_id, cohort_id, created_at)` now — this is where the
 first performance wall appears." No explicit "done means" line for this
