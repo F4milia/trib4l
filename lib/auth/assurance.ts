@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
+import { memorialSignInBlocked } from "./memorial-lock";
 
 /**
  * The two-factor gate (S2).
@@ -91,6 +92,11 @@ export async function assuranceOutcome(
  *  point, since signing in appears to work. */
 export const DELETED_PATH = "/login?deleted=already";
 
+/** Where a memorial-locked account is sent. A different message from DELETED_PATH
+ *  because it is a different fact: nothing was erased, and nobody did anything
+ *  wrong. */
+export const MEMORIAL_PATH = "/login?memorial=1";
+
 /**
  * Both gates, together, because separating them was a bug twice.
  *
@@ -121,9 +127,22 @@ export async function accountGate(
    */
   const { data: profile } = await supabase
     .from("profiles")
-    .select("deleted_at")
+    .select("deleted_at, memorialized_at")
     .eq("id", userId)
     .maybeSingle();
+
+  /**
+   * Memorial-lock first, and the order is a copy decision rather than a security
+   * one: an account can be both memorialised and previously self-deleted, and
+   * "this account has been memorialised" is the truer thing to say to whoever is
+   * holding the password. Both refuse.
+   *
+   * The rule itself lives in lib/auth/memorial-lock.ts -- if signInAllowed ever
+   * becomes true, this stops blocking without an edit here.
+   */
+  if (profile && memorialSignInBlocked(profile)) {
+    return { ok: false, redirectTo: MEMORIAL_PATH };
+  }
 
   if (profile?.deleted_at) {
     return { ok: false, redirectTo: DELETED_PATH };

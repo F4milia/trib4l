@@ -20,6 +20,22 @@ export const copy = {
     cancel: "Cancel",
   },
   /**
+   * Memorial-lock.
+   *
+   * Says what is true and nothing more. It does not say "deceased", because the
+   * person reading it is likely someone close to them and does not need to be
+   * told; it does not apologise, because nothing went wrong; and it does not
+   * invite them to try again, because they cannot. "Memorialised" is the word
+   * the Family will have used when they asked for it.
+   *
+   * No legal wording: whether a family or an executor has any say after death
+   * varies by country, and that is for counsel rather than for this deck.
+   */
+  memorial: {
+    signInRefused:
+      "This account has been memorialised. It cannot be signed in to, and everything on it stays as it is.",
+  },
+  /**
    * Account deletion (S2).
    *
    * The consequences list is the honest one, which means it is longer than a

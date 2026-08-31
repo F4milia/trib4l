@@ -10,9 +10,9 @@ const t = copy.auth.login;
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; deleted?: string }>;
+  searchParams: Promise<{ error?: string; deleted?: string; memorial?: string }>;
 }) {
-  const { error, deleted } = await searchParams;
+  const { error, deleted, memorial } = await searchParams;
 
   return (
     <AuthShell
@@ -41,6 +41,14 @@ export default async function LoginPage({
       {deleted ? (
         <div className="mb-5">
           <StatusText>{copy.deleteAccount.signedOutNotice}</StatusText>
+        </div>
+      ) : null}
+
+      {/* A status, like the deletion notice, and for a stronger reason: nothing
+          went wrong and nobody did anything they should not have. */}
+      {memorial ? (
+        <div className="mb-5">
+          <StatusText>{copy.memorial.signInRefused}</StatusText>
         </div>
       ) : null}
 

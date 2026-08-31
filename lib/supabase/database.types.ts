@@ -1453,6 +1453,8 @@ export type Database = {
           deleted_at: string | null
           display_name: string
           id: string
+          memorialized_at: string | null
+          memorialized_by: string | null
           timezone: string
           updated_at: string
         }
@@ -1462,6 +1464,8 @@ export type Database = {
           deleted_at?: string | null
           display_name: string
           id: string
+          memorialized_at?: string | null
+          memorialized_by?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -1471,6 +1475,8 @@ export type Database = {
           deleted_at?: string | null
           display_name?: string
           id?: string
+          memorialized_at?: string | null
+          memorialized_by?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -1978,6 +1984,7 @@ export type Database = {
           user_agent: string
         }[]
       }
+      memorialize_profile: { Args: { p_profile_id: string }; Returns: boolean }
       moderate_comment: {
         Args: { reason?: string; target_comment_id: string }
         Returns: {
@@ -2048,6 +2055,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      unmemorialize_profile: { Args: { p_profile_id: string }; Returns: boolean }
       revoke_all_my_sessions: { Args: never; Returns: number }
       revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
