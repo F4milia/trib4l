@@ -43,6 +43,34 @@ export async function signIn(formData: FormData) {
   redirect("/");
 }
 
+/**
+ * Emails a one-time sign-in link.
+ *
+ * `shouldCreateUser: false` is the load-bearing option. Left at its default,
+ * signInWithOtp CREATES an account for an unknown address -- which would be a
+ * second signup path that never shows, and never records, the platform-access
+ * acknowledgement the /signup form requires. New accounts go through /signup.
+ *
+ * The redirect is the same whether the address has an account or not. GoTrue
+ * returns a distinguishable error for an unknown address once creation is
+ * off, and passing that through would turn this form into an account
+ * enumeration oracle: submit an address, learn from the response whether that
+ * person is on the platform. The message is deliberately phrased so it is
+ * true either way -- it says what was done, not what will arrive.
+ */
+export async function sendMagicLink(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+
+  if (!email) {
+    redirect("/magic-link?error=" + encodeURIComponent(copy.auth.magicLink.errors.missingEmail));
+  }
+
+  const supabase = await createClient();
+  await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+
+  redirect("/link-sent");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
