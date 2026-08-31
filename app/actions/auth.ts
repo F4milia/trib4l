@@ -8,9 +8,25 @@ import {
   signupFieldForCode,
   type AuthFormState,
 } from "@/lib/auth/form-errors";
-import { callbackUrl, oauthProvider } from "@/lib/auth/providers";
+import { callbackUrl, confirmUrl, oauthProvider } from "@/lib/auth/providers";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "@/lib/copy";
+
+/**
+ * The URL every emailed auth link should return to, for THIS request.
+ *
+ * Read from the request rather than from configuration so a preview
+ * deployment's mail comes back to that preview. `NEXT_PUBLIC_SITE_URL` still
+ * wins where it is set, which is what production and staging should do.
+ *
+ * Every emailed flow must call this. GoTrue substitutes a bare SiteURL when
+ * no redirect is supplied, which produces a link with no path -- and there is
+ * no template-side guard for that, because `{{ .RedirectTo }}` is never empty.
+ * tests/auth-redirect.test.ts asserts all four call sites pass it.
+ */
+async function emailReturnUrl(): Promise<string | undefined> {
+  return confirmUrl((await headers()).get("origin")) ?? undefined;
+}
 
 export async function signUp(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const email = String(formData.get("email") ?? "").trim();
@@ -27,7 +43,13 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
   if (!consent) return fieldError("consent", copy.auth.signup.errors.consentRequired, values);
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    // Renders as {{ .RedirectTo }} in the template, so the link comes back to
+    // the deployment that sent it rather than to the project's one site_url.
+    options: { emailRedirectTo: await emailReturnUrl() },
+  });
 
   /**
    * `user_already_exists` is swallowed on purpose, and this is the only place
@@ -108,7 +130,10 @@ export async function sendMagicLink(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+  await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false, emailRedirectTo: await emailReturnUrl() },
+  });
 
   redirect("/link-sent");
 }
@@ -142,7 +167,10 @@ export async function requestEmailChange(formData: FormData) {
     redirect("/account/email?error=" + encodeURIComponent(copy.auth.changeEmail.errors.unchanged));
   }
 
-  const { error } = await supabase.auth.updateUser({ email });
+  const { error } = await supabase.auth.updateUser(
+    { email },
+    { emailRedirectTo: await emailReturnUrl() },
+  );
   if (error) {
     redirect("/account/email?error=" + encodeURIComponent(error.message));
   }
@@ -170,7 +198,9 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(email);
+  // resetPasswordForEmail names the option `redirectTo`, not `emailRedirectTo`
+  // -- it reaches the template as {{ .RedirectTo }} either way.
+  await supabase.auth.resetPasswordForEmail(email, { redirectTo: await emailReturnUrl() });
 
   redirect("/reset-sent");
 }

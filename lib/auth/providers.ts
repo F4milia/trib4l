@@ -2,14 +2,24 @@
  * The OAuth providers S1 asks for, and the rule for when each one is offered.
  *
  * WHY PRESENCE OF THE CLIENT ID IS THE TEST
- * Measured on 2026-08-30, not assumed: `[auth.external.<p>] enabled = true`
- * with an empty `client_id` makes the Supabase CLI refuse to parse
- * config.toml at all -- `supabase start` and even `supabase status` fail with
- * ProjectConfigParseError. With a non-empty client_id it parses, even when the
- * secret is unset. So "a client id exists in the environment" is exactly the
- * condition under which the provider CAN be enabled, which makes it the honest
- * thing to gate the button on. A button for a provider the project has not
- * configured is a button that sends people to an error.
+ * Measured 2026-08-30, then CORRECTED 2026-08-31 after testing the case the
+ * first measurement had only inferred:
+ *
+ *  - `enabled = true` with a LITERAL empty client_id (`client_id = ""`) makes
+ *    the CLI refuse to parse config.toml -- `supabase start` and `status` both
+ *    fail with ProjectConfigParseError.
+ *  - `enabled = true` with `client_id = "env(SOMETHING_UNSET)"` parses fine
+ *    AND the stack boots, auth container healthy. Verified with a variable
+ *    guaranteed not to exist.
+ *
+ * The earlier note here claimed the second case broke every local stack and
+ * all three CI jobs. It does not. The real failure is quieter and worse: the
+ * provider is enabled with no credentials, so the config is valid, CI is
+ * green, and Google sign-in fails only when somebody clicks the button.
+ *
+ * That is what this gate is for. A provider whose client id is absent from the
+ * environment gets no button, so the broken path is unreachable rather than
+ * merely untested.
  *
  * The client id is public by design (it ships in every OAuth authorize URL);
  * only the secret is sensitive, and the secret is read by the Supabase
@@ -64,11 +74,52 @@ export function configuredProviders(
  * Origin fails the allow-list instead of redirecting anyone. It exists so
  * local development works with no extra setup.
  */
-export function callbackUrl(
+export function siteOrigin(
   origin: string | null,
   env: Record<string, string | undefined> = process.env,
 ): string | null {
   const base = (env.NEXT_PUBLIC_SITE_URL || origin || "").trim().replace(/\/+$/, "");
-  if (!/^https?:\/\//.test(base)) return null;
-  return `${base}/auth/callback`;
+  return /^https?:\/\//.test(base) ? base : null;
+}
+
+export function callbackUrl(
+  origin: string | null,
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const base = siteOrigin(origin, env);
+  return base && `${base}/auth/callback`;
+}
+
+/**
+ * Where an emailed auth link comes back to. The FULL route, not just an origin.
+ *
+ * Passed to Supabase as `emailRedirectTo`, which the templates render as
+ * `{{ .RedirectTo }}`. That indirection is the point: `{{ .SiteURL }}` is ONE
+ * fixed value per Supabase project, so a template hardcoding it sends every
+ * preview deployment's link to production.
+ *
+ * WHY THE FULL ROUTE, measured 2026-08-31 against a real GoTrue:
+ *
+ *  - A redirect of `http://localhost:3000/auth/confirm` is honoured -- it
+ *    matches the `http://localhost:3000/**` entry in additional_redirect_urls.
+ *  - A BARE ORIGIN (`http://localhost:3000`) is NOT. It fails the allow-list
+ *    and GoTrue silently substitutes the project's SiteURL instead, with no
+ *    error to the caller. The wildcard entry does not match a pathless URL.
+ *
+ * So the route cannot live in the template: the template would then be
+ * appending a path to a value that is sometimes an origin and sometimes not.
+ *
+ * The consequence to know about: when no redirect is supplied at all, GoTrue
+ * substitutes SiteURL, a bare origin, and the link loses its path. There is no
+ * template-side guard for that -- `{{ .RedirectTo }}` is never empty, so a
+ * `{{ if }}` fallback can never fire. The safety net is instead that every
+ * emailed call site supplies one, which tests/auth-redirect.test.ts asserts
+ * for all four of them.
+ */
+export function confirmUrl(
+  origin: string | null,
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const base = siteOrigin(origin, env);
+  return base && `${base}/auth/confirm`;
 }

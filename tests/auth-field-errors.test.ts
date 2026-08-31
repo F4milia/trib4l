@@ -6,6 +6,15 @@ import { copy } from "@/lib/copy";
 
 const redirected = vi.hoisted(() => ({ to: null as string | null }));
 
+/**
+ * The actions now read the request origin to tell each emailed link where to
+ * come back to, so they need a request context. Supplying one rather than
+ * relaxing any assertion below.
+ */
+vi.mock("next/headers", () => ({
+  headers: async () => new Map([["origin", "http://localhost:3000"]]),
+}));
+
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {
     redirected.to = to;
