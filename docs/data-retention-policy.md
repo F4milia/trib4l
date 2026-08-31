@@ -41,6 +41,21 @@ Content stays, the identifying link to the person is severed. Applies to:
 - **mentor pairing history** (Session 9) — a completed pairing belongs to
   the mentorship program's track record, not just to the two people in
   it. It survives either party's deletion request, same as orders.
+- **`support_requests`** (H1) — a request is a record of a *staff* interaction,
+  not only of the member who sent it: staff acted on it, may have replied
+  outside the product, and may need to answer for that later. It is therefore
+  never deleted by a deletion request. `submitted_by_profile_id` is
+  `on delete set null`, but in practice that FK does not fire — deletion here
+  is a soft delete, so the row stays attributed to the anonymized profile id
+  exactly as `audit_log` entries do (see §"What a 'delete my account' request
+  actually does today", step 4).
+
+  **What this does mean:** the `subject` and `body` a member typed are free
+  text that survives their anonymization. That is the deliberate trade, and it
+  is the one place in this policy where anonymizing the *account* does not
+  anonymize the *content*. If that becomes unacceptable, the fix is scrubbing
+  those two columns on the deletion path — a fourth category, added here
+  first, not a migration that quietly changes the rule.
 
 ### 4. Storage-cost-driven retention (Session 11)
 

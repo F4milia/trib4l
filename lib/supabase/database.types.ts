@@ -1777,6 +1777,54 @@ export type Database = {
           },
         ]
       }
+      support_requests: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          org_id: string | null
+          status: Database["public"]["Enums"]["support_request_status"]
+          subject: string
+          submitted_by_profile_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          org_id?: string | null
+          status?: Database["public"]["Enums"]["support_request_status"]
+          subject: string
+          submitted_by_profile_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          org_id?: string | null
+          status?: Database["public"]["Enums"]["support_request_status"]
+          subject?: string
+          submitted_by_profile_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_requests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_requests_submitted_by_profile_id_fkey"
+            columns: ["submitted_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_assets: {
         Row: {
           cohort_id: string | null
@@ -2132,6 +2180,7 @@ export type Database = {
       product_type: "digital" | "physical" | "ticket" | "cohort_seat"
       report_status: "open" | "escalated" | "resolved"
       report_target_type: "post" | "comment" | "member"
+      support_request_status: "open" | "handled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2272,6 +2321,7 @@ export const Constants = {
       product_type: ["digital", "physical", "ticket", "cohort_seat"],
       report_status: ["open", "escalated", "resolved"],
       report_target_type: ["post", "comment", "member"],
+      support_request_status: ["open", "handled"],
     },
   },
 } as const
