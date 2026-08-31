@@ -6,22 +6,22 @@ Stripe Connect for commerce, Mux for video, Sentry for errors.
 - Build plan: [`docs/trib4l-build-from-zero.md`](./docs/trib4l-build-from-zero.md)
   (kept under its original filename — a historical planning doc, written
   before the rename; content unchanged)
-- Revenue model & mentor compensation: [`docs/revenue-model-and-mentor-compensation.md`](./docs/revenue-model-and-mentor-compensation.md)
-- Session status: [`docs/session-0-checklist.md`](./docs/session-0-checklist.md),
-  [`docs/session-1-checklist.md`](./docs/session-1-checklist.md),
-  [`docs/session-2-checklist.md`](./docs/session-2-checklist.md),
-  [`docs/session-3-checklist.md`](./docs/session-3-checklist.md),
-  [`docs/session-4-checklist.md`](./docs/session-4-checklist.md) (skipped
+- Revenue model & mentor compensation: [`docs/trib4l-docs/revenue-model-and-mentor-compensation.md`](./docs/trib4l-docs/revenue-model-and-mentor-compensation.md)
+- Session status: [`docs/trib4l-docs/session-0-checklist.md`](./docs/trib4l-docs/session-0-checklist.md),
+  [`docs/trib4l-docs/session-1-checklist.md`](./docs/trib4l-docs/session-1-checklist.md),
+  [`docs/trib4l-docs/session-2-checklist.md`](./docs/trib4l-docs/session-2-checklist.md),
+  [`docs/trib4l-docs/session-3-checklist.md`](./docs/trib4l-docs/session-3-checklist.md),
+  [`docs/trib4l-docs/session-4-checklist.md`](./docs/trib4l-docs/session-4-checklist.md) (skipped
   per direct instruction — see that file),
-  [`docs/session-5-checklist.md`](./docs/session-5-checklist.md),
-  [`docs/session-6-checklist.md`](./docs/session-6-checklist.md),
-  [`docs/session-7-checklist.md`](./docs/session-7-checklist.md),
-  [`docs/session-8-checklist.md`](./docs/session-8-checklist.md),
-  [`docs/session-9-checklist.md`](./docs/session-9-checklist.md),
-  [`docs/session-10-checklist.md`](./docs/session-10-checklist.md),
-  [`docs/session-11-checklist.md`](./docs/session-11-checklist.md),
-  [`docs/session-12-checklist.md`](./docs/session-12-checklist.md)
-- Data retention policy: [`docs/data-retention-policy.md`](./docs/data-retention-policy.md)
+  [`docs/trib4l-docs/session-5-checklist.md`](./docs/trib4l-docs/session-5-checklist.md),
+  [`docs/trib4l-docs/session-6-checklist.md`](./docs/trib4l-docs/session-6-checklist.md),
+  [`docs/trib4l-docs/session-7-checklist.md`](./docs/trib4l-docs/session-7-checklist.md),
+  [`docs/trib4l-docs/session-8-checklist.md`](./docs/trib4l-docs/session-8-checklist.md),
+  [`docs/trib4l-docs/session-9-checklist.md`](./docs/trib4l-docs/session-9-checklist.md),
+  [`docs/trib4l-docs/session-10-checklist.md`](./docs/trib4l-docs/session-10-checklist.md),
+  [`docs/trib4l-docs/session-11-checklist.md`](./docs/trib4l-docs/session-11-checklist.md),
+  [`docs/trib4l-docs/session-12-checklist.md`](./docs/trib4l-docs/session-12-checklist.md)
+- Data retention policy: [`docs/trib4l-docs/data-retention-policy.md`](./docs/trib4l-docs/data-retention-policy.md)
 - Design system: [`docs/design-system.md`](./docs/design-system.md)
 
 Renamed Trib4l → **F4milia** as of Session 3: package name, seed data, and
