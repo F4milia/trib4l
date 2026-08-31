@@ -22,10 +22,10 @@ These get conflated constantly, so before anything else:
 
 | | Value | What it is |
 |---|---|---|
-| **App origin** — `NEXT_PUBLIC_SITE_URL` | `https://trib4l.vercel.app` | Where the app is served, and where a link inside an email points back to. |
+| **App origin** — `NEXT_PUBLIC_SITE_URL` | `https://f4milia.vercel.app` | Where the app is served, and where a link inside an email points back to. |
 | **Sending domain** — `EMAIL_SENDING_DOMAIN` | `f4milia.brandlamb.com` | What appears after the `@` in the `From:` header, and what SPF/DKIM are published for. |
 
-**The sending domain cannot be `trib4l.vercel.app`,** and that is a constraint
+**The sending domain cannot be `f4milia.vercel.app`,** and that is a constraint
 rather than a preference. SPF and DKIM are DNS records published on the sending
 domain itself, and `*.vercel.app` is Vercel's zone — there is nowhere to put a
 `TXT` record for a hostname you do not control. Resend verifies a domain by
@@ -33,7 +33,7 @@ reading exactly those records, so it would never verify, and mail claiming to
 come from a vercel.app address fails alignment at every receiver.
 
 Nothing is lost by the two differing: members click links on
-`trib4l.vercel.app` and receive mail from `f4milia.brandlamb.com`. That is how
+`f4milia.vercel.app` and receive mail from `f4milia.brandlamb.com`. That is how
 nearly every product hosted on a platform domain works.
 
 ## 1. The sending domain is already decided
@@ -107,11 +107,11 @@ EMAIL_FROM_ADDRESS=F4milia <hello@f4milia.brandlamb.com>
 EMAIL_DELIVERY_MODE=live
 RESEND_API_KEY=re_...
 
-# Not an email setting, but the reason links inside that mail resolve. S1's
-# .env.example calls it REQUIRED in staging and production. It is currently
-# UNSET on the Vercel project, so the app falls back to the request's own
-# Origin and an invitation falls back to the per-deployment hostname.
-NEXT_PUBLIC_SITE_URL=https://trib4l.vercel.app
+# Not an email setting, but the reason links inside that mail resolve. Set on
+# the Vercel project (f4milia_production) for Production. Deliberately NOT set
+# for Preview, so a preview deployment's links resolve to that preview rather
+# than to production -- which is what S1's PR #28 wanted for auth callbacks.
+NEXT_PUBLIC_SITE_URL=https://f4milia.vercel.app
 ```
 
 `lib/email/config.ts` asserts that the From address's domain **is**
