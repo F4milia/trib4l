@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { signUp } from "@/app/actions/auth";
 import { PasswordInput } from "@/components/password-input";
+import { Turnstile } from "@/components/turnstile";
 import { Button, ErrorText, FieldError, Input, Label } from "@/components/ui";
 import { NO_ERRORS } from "@/lib/auth/form-errors";
 import { copy } from "@/lib/copy";
@@ -78,6 +79,7 @@ export function SignupForm() {
         {consentError ? <FieldError id="consent-error">{consentError}</FieldError> : null}
       </div>
 
+      <Turnstile action="signup" />
       <Button type="submit" className="w-full" disabled={pending}>
         {t.submit}
       </Button>
