@@ -1897,6 +1897,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      consume_rate_limit: {
+        Args: { p_bucket: string; p_limit: number; p_window_seconds: number }
+        Returns: boolean
+      }
       current_user_email: { Args: never; Returns: string }
       designate_mentor: {
         Args: { target_org_id: string; target_profile_id: string }
