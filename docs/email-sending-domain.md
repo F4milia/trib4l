@@ -16,27 +16,48 @@ comes up healthy and fails on its first invitation. Wiring a startup check is
 worth doing when there is a natural place for it; today there isn't one that
 does not belong to another session's files.
 
-## 1. Pick a subdomain, not the apex
+## 1. The sending domain is already decided
 
-Send from `mail.f4milia.com`, not `f4milia.com`.
+**`f4milia.brandlamb.com`.**
 
-A subdomain keeps the sending reputation of transactional mail separate from
-whatever else the apex is used for, and a future deliverability problem stays
-contained to one name. It also means Resend's DKIM and return-path records do
-not compete with records the apex already carries.
+Not a fresh choice — `docs/session-4-checklist.md` recorded it on 22 August
+2026, before this session existed: *"chosen to match the existing per-project
+subdomain convention already used on this Resend account/Vercel team (e.g.
+`signalpath.brandlamb.com`)."* An earlier draft of this page invented
+`mail.f4milia.com` instead, which would have sent whoever followed it to
+configure a domain nobody had agreed on.
+
+The convention is also the right shape for its own reasons: a subdomain keeps
+the sending reputation of transactional mail separate from whatever else the
+apex is used for, a future deliverability problem stays contained to one name,
+and Resend's DKIM and return-path records do not compete with records the apex
+already carries.
+
+**Also from that checklist, and worth knowing before you trust anything:** the
+`RESEND_API_KEY` and `EMAIL_FROM_ADDRESS` values already sitting in the Vercel
+project *predate this decision and do not correspond to it*. They are not a
+working configuration for this domain. Treat the Resend side as unconfigured
+until step 3 verifies.
 
 ## 2. Add the domain in Resend
 
-Resend dashboard → **Domains** → **Add Domain** → enter the subdomain, pick the
-region closest to the Supabase project.
+If S1's setup has already been done, **this is done — skip to step 4.**
+`docs/HOSTED-EMAIL-SETUP.md` covers creating the Resend account and verifying
+the domain for Supabase Auth's own mail, and says plainly that E1 "should
+inherit the SMTP setup rather than redo it." One verified domain and one API
+key serve both: Auth sends through Resend's SMTP endpoint, this module sends
+through Resend's API.
+
+Otherwise: Resend dashboard → **Domains** → **Add Domain** → enter
+`f4milia.brandlamb.com`, pick the region closest to the Supabase project.
 
 Resend then shows three records. Add all three at the registrar:
 
 | Type | Host | Purpose |
 |---|---|---|
-| `TXT` | `send.mail.f4milia.com` | **SPF** — names Resend as allowed to send for this domain |
-| `TXT` | `resend._domainkey.mail.f4milia.com` | **DKIM** — the public key mail is signed with |
-| `MX` | `send.mail.f4milia.com` | return-path, so bounces come back to Resend |
+| `TXT` | `send.f4milia.brandlamb.com` | **SPF** — names Resend as allowed to send for this domain |
+| `TXT` | `resend._domainkey.f4milia.brandlamb.com` | **DKIM** — the public key mail is signed with |
+| `MX` | `send.f4milia.brandlamb.com` | return-path, so bounces come back to Resend |
 
 Copy the values from the dashboard verbatim. Do not merge the SPF record into
 an existing apex SPF record — it belongs on the subdomain, and an apex SPF with
@@ -53,16 +74,16 @@ the zone name to an already-qualified host produces a record that looks right
 in the UI and does not resolve:
 
 ```
-dig +short TXT send.mail.f4milia.com
-dig +short TXT resend._domainkey.mail.f4milia.com
-dig +short MX  send.mail.f4milia.com
+dig +short TXT send.f4milia.brandlamb.com
+dig +short TXT resend._domainkey.f4milia.brandlamb.com
+dig +short MX  send.f4milia.brandlamb.com
 ```
 
 ## 4. Configure the application
 
 ```
-EMAIL_SENDING_DOMAIN=mail.f4milia.com
-EMAIL_FROM_ADDRESS=F4milia <hello@mail.f4milia.com>
+EMAIL_SENDING_DOMAIN=f4milia.brandlamb.com
+EMAIL_FROM_ADDRESS=F4milia <hello@f4milia.brandlamb.com>
 EMAIL_DELIVERY_MODE=live
 RESEND_API_KEY=re_...
 ```
@@ -79,7 +100,7 @@ DMARC tells receivers what to do when alignment fails, and gives you reports.
 Start at `p=none` so nothing is rejected while you watch:
 
 ```
-TXT  _dmarc.mail.f4milia.com  "v=DMARC1; p=none; rua=mailto:dmarc@f4milia.com"
+TXT  _dmarc.f4milia.brandlamb.com  "v=DMARC1; p=none; rua=mailto:dmarc@brandlamb.com"
 ```
 
 Move to `p=quarantine` after the reports come back clean for a couple of weeks.
@@ -110,12 +131,28 @@ and nothing downstream to strip. A subject may say that there is a new Table
 entry; it may not say what the entry said. Someone else may be reading over the
 member's shoulder, or sharing the mailbox.
 
-## Supabase Auth's own mail
+## Supabase Auth's own mail — and one redundancy to settle
 
 The password-reset and email-verification messages Supabase Auth sends are
 **not** routed through this module. They come from the Auth service directly,
-configured in `supabase/config.toml` under `[auth.email.smtp]`, which is Stream
-A's surface (S1 built those flows, S2 hardens them). Pointing Auth at the same
-verified domain is a one-time config change owed there; the reset template in
-`lib/email/templates` renders the same content for parity but is not wired to
-Auth by this session.
+and S1 now owns them end to end: `supabase/templates/recovery.html`,
+`confirmation.html`, `magic-link.html` and `email-change.html`, with the SMTP
+setup documented in `docs/HOSTED-EMAIL-SETUP.md`.
+
+**So `renderPasswordReset()` in `lib/email/templates` is redundant.** It was
+written when S1's templates did not exist yet, on the reasoning that E1's
+prompt names "password reset" as one of its four templates and that touching
+`[auth.email.smtp]` was another session's file. Both halves were right at the
+time; S1 has since filled the gap from its own side, which is the better place
+for it — Auth sends that mail, so Auth should own its wording.
+
+Two ways to settle it, and it is a review decision rather than a defect:
+
+- **Delete `renderPasswordReset()`** and let `supabase/templates/recovery.html`
+  be the only password-reset copy in the repo. One source of truth, and E1's
+  prompt is satisfied in substance by S1 having built it.
+- **Keep it** as the template for a future app-sent reset that does not go
+  through Supabase Auth. Nothing needs that today.
+
+Whichever way it goes, do not leave both as live copy for the same message —
+two templates for one email is how they drift.
