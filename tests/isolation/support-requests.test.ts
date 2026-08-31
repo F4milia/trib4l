@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import type { Database } from "../../lib/supabase/database.types";
 import { ORG_IDS, SEEDED_USERS, createServiceRoleClient, elevateToAal2, signInAs } from "./helpers";
 
@@ -20,6 +20,32 @@ const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://127.0.0.1:54321";
 const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+
+/** Every staff account this file elevated, so it can put them back afterwards. */
+const staffElevated = new Set<string>();
+
+/**
+ * Leaves the seeded staff accounts as this file found them: with no MFA factor.
+ *
+ * Without this, the file is self-healing at everyone else's expense. It clears
+ * a stale factor before enrolling its own, so IT always passes -- and then
+ * leaves a verified factor behind, so tests/isolation/platform-admin.test.ts
+ * fails with "AAL2 required to enroll a new factor" on three cases that have
+ * nothing to do with support requests. Reproduced deliberately: this file
+ * green at 13/13, then that one red at 3.
+ *
+ * Cleaning up before yourself is not the same as cleaning up after yourself,
+ * and in a suite that shares one database only the second one is neighbourly.
+ */
+afterAll(async () => {
+  const service = createServiceRoleClient();
+  for (const profileId of staffElevated) {
+    const { data } = await service.auth.admin.getUserById(profileId);
+    for (const factor of data?.user?.factors ?? []) {
+      await service.auth.admin.mfa.deleteFactor({ id: factor.id, userId: profileId });
+    }
+  }
+});
 
 /**
  * Signs in a seeded platform_staff account and gets it to aal2, clearing any
@@ -49,6 +75,7 @@ async function signInAsStaffWithMfa(user: { email: string; password: string }) {
   }
 
   await elevateToAal2(client);
+  staffElevated.add(profileId);
   return client;
 }
 
