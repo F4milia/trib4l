@@ -100,6 +100,32 @@ begin
      and user_id = auth.uid();
 
   get diagnostics v_deleted = row_count;
+
+  /**
+   * Invariant 5 wants every mutation in audit_log, enforced by trigger rather
+   * than convention -- and this is the one shape where a trigger cannot do it:
+   * auth.sessions lives outside `public`, so audit_row_change() is neither
+   * attached to it nor able to resolve an org from it.
+   *
+   * The write goes HERE rather than in a server action for exactly the reason
+   * the invariant gives for distrusting app-layer audit calls: this runs inside
+   * the deleting transaction, so it cannot be skipped by another caller and
+   * cannot commit without the delete. A server action could do neither.
+   *
+   * Only on an actual deletion, so a probe for somebody else's session id
+   * writes nothing -- otherwise the log becomes a place to record that a
+   * stranger guessed at an id, which is noise, not history.
+   *
+   * org_id is null: a session belongs to a person, not to a Family. metadata
+   * stays empty, per the invariant's "column NAMES only, never values" -- there
+   * is nothing here that is not already in the columns, and a user agent or IP
+   * would be content.
+   */
+  if v_deleted > 0 then
+    insert into public.audit_log (actor_profile_id, org_id, action, target_type, target_id)
+    values (auth.uid(), null, 'session.revoked', 'auth.session', p_session_id);
+  end if;
+
   return v_deleted > 0;
 end;
 $$;

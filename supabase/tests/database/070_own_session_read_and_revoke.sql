@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(22);
 
 -- ------------------------------------------------------------------ existence
 select has_function('public', 'my_sessions', 'my_sessions() exists');
@@ -105,10 +105,47 @@ select ok(
   'the other user''s session is still there afterwards'
 );
 
+-- A probe for somebody else's session must leave no audit row. Scoped to this
+-- test's own target_id, never a global count by action -- the 2026-08-29 lesson.
+select is(
+  (select count(*)::int from public.audit_log
+    where action = 'session.revoked'
+      and target_id = 'bbbbbbbb-0000-0000-0000-00000000bbbb'),
+  0,
+  'a refused revoke writes no audit row'
+);
+
 select is(
   public.revoke_my_session('aaaaaaaa-0000-0000-0000-00000000aaaa'),
   true,
   'revoking the caller''s own session removes it'
+);
+
+-- Invariant 5, for the one mutation a trigger cannot reach: auth.sessions is
+-- outside `public`, so the audit write lives inside the function's own
+-- transaction instead.
+select is(
+  (select count(*)::int from public.audit_log
+    where action = 'session.revoked'
+      and target_id = 'aaaaaaaa-0000-0000-0000-00000000aaaa'),
+  1,
+  'a successful revoke writes exactly one audit row for that session'
+);
+
+select is(
+  (select actor_profile_id from public.audit_log
+    where action = 'session.revoked'
+      and target_id = 'aaaaaaaa-0000-0000-0000-00000000aaaa'),
+  '00000000-0000-0000-0000-0000000000a1'::uuid,
+  'the audit row is attributed to the caller, resolved server-side from auth.uid()'
+);
+
+select is(
+  (select metadata from public.audit_log
+    where action = 'session.revoked'
+      and target_id = 'aaaaaaaa-0000-0000-0000-00000000aaaa'),
+  '{}'::jsonb,
+  'metadata carries no user agent, no IP, no content'
 );
 
 select * from finish();
