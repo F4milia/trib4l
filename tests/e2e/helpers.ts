@@ -60,15 +60,28 @@ async function waitForCaptcha(page: Page) {
     .toBeGreaterThan(0);
 }
 
-export async function signIn(page: Page, user: keyof typeof USERS) {
+/**
+ * Signs in with arbitrary credentials, for specs that create their own
+ * disposable accounts rather than using a seeded one.
+ *
+ * Exported so those specs do not hand-roll a second copy of this: my first
+ * version in the account-deletion spec omitted the navigation wait, so it moved
+ * on while the POST was still in flight and every assertion after it saw
+ * /login. The captcha wait and the navigation wait are both load-bearing.
+ */
+export async function signInWithCredentials(page: Page, email: string, password: string) {
   await page.goto("/login");
-  await page.fill("#email", USERS[user].email);
-  await page.fill("#password", USERS[user].password);
+  await page.fill("#email", email);
+  await page.fill("#password", password);
   await waitForCaptcha(page);
   await Promise.all([
     page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 20_000 }),
     page.click('button[type="submit"]'),
   ]);
+}
+
+export async function signIn(page: Page, user: keyof typeof USERS) {
+  await signInWithCredentials(page, USERS[user].email, USERS[user].password);
   /**
    * Deliberately "not /login" rather than "is /": S2's two-factor gate sends a
    * staff account with no authenticator to /settings/security instead of home,

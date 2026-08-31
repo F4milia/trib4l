@@ -38,7 +38,13 @@ export default async function SessionsPage({
   const { error, revoked } = await searchParams;
   const { supabase } = await requireUser();
 
-  const { data: sessions } = await supabase.rpc("my_sessions");
+  /**
+   * `error` is captured, not discarded, and the difference is load-bearing: a
+   * failed read used to fall through to `rows = []` and render "This device is
+   * the only one signed in" -- a false statement, on the page whose whole purpose
+   * is telling someone where they are signed in. An empty state must mean empty.
+   */
+  const { data: sessions, error: readError } = await supabase.rpc("my_sessions");
   const rows = sessions ?? [];
 
   return (
@@ -55,10 +61,12 @@ export default async function SessionsPage({
 
       <section className="mt-10">
         <Card>
-          {rows.length === 0 ? (
-            /* An honest empty state. It cannot normally happen -- reading this
-               page requires a session, so at least one row exists -- so it says
-               what is true rather than inventing a reason. */
+          {readError ? (
+            <p className="text-deep-slate/70">{t.unavailable}</p>
+          ) : rows.length === 0 ? (
+            /* A genuine empty state, and it cannot normally happen: reading this
+               page requires a session, so at least one row exists. It says what
+               is true rather than inventing a reason. */
             <p className="text-deep-slate/70">{t.empty}</p>
           ) : (
             <ul className="divide-y divide-deep-slate/15">

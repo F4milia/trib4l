@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { LoginForm } from "@/components/auth/login-form";
 import { OAuthButtons } from "@/components/oauth-buttons";
+import { StatusText } from "@/components/ui";
 import { copy } from "@/lib/copy";
 
 const t = copy.auth.login;
@@ -9,9 +10,9 @@ const t = copy.auth.login;
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; deleted?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, deleted } = await searchParams;
 
   return (
     <AuthShell
@@ -26,6 +27,23 @@ export default async function LoginPage({
         </>
       }
     >
+      {/**
+       * The deletion notice (S2), and deliberately a STATUS rather than an
+       * error: the person asked for this, and colouring their own successful
+       * request in terracotta would read as something having gone wrong. It sits
+       * above the form because it explains why they are looking at a sign-in
+       * page they cannot use.
+       *
+       * Rendered separately from `error` rather than through the form's initial
+       * state, because the two are different kinds of message and can legitimately
+       * both be absent -- but never usefully both present.
+       */}
+      {deleted ? (
+        <div className="mb-5">
+          <StatusText>{copy.deleteAccount.signedOutNotice}</StatusText>
+        </div>
+      ) : null}
+
       {/* The query error goes to the form, not to AuthShell. /auth/confirm and
           /auth/callback both redirect here carrying one, and it stays in the
           URL across a submission -- rendered separately it would sit above a

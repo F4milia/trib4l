@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { assuranceOutcome } from "@/lib/auth/assurance";
+import { accountGate } from "@/lib/auth/assurance";
 import { createClient } from "@/lib/supabase/server";
 import { getPendingInvitations, getUserOrgs } from "@/lib/session";
 import { acceptInvitation } from "@/app/actions/invitations";
@@ -43,10 +43,16 @@ export default async function Home() {
    * tests/assurance-gate.test.ts now walks app/ and fails if any page reads user
    * data without either requireUser() or this call, so the next page written like
    * this one is caught by a test rather than by a browser.
+   *
+   * accountGate rather than assuranceOutcome, and that distinction is the whole
+   * reason the combined function exists: the first version of this line called
+   * the assurance check alone, so when the deleted-account refusal arrived in
+   * PR 10 this page silently did not get it, and a deleted account signing in
+   * landed here. The same hole, in the same file, twice.
    */
-  const outcome = await assuranceOutcome(supabase);
-  if (!outcome.ok) {
-    redirect(outcome.redirectTo);
+  const gate = await accountGate(supabase, user.id);
+  if (!gate.ok) {
+    redirect(gate.redirectTo);
   }
 
   const orgs = await getUserOrgs(supabase, user.id);

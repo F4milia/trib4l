@@ -20,6 +20,41 @@ export const copy = {
     cancel: "Cancel",
   },
   /**
+   * Account deletion (S2).
+   *
+   * The consequences list is the honest one, which means it is longer than a
+   * marketing version would be. It says what goes, what STAYS, and that there is
+   * no undo -- because docs/trib4l-docs/data-retention-policy.md deliberately
+   * keeps content and severs the person from it, and someone who expects "delete"
+   * to mean "erase everything I wrote" would be misled by a shorter list.
+   *
+   * It does not use the word "anonymize": that is our vocabulary for the policy,
+   * not a description anyone can act on. "Your name is removed from them" is the
+   * same fact in words that mean something to the person reading it.
+   */
+  deleteAccount: {
+    eyebrow: "Account",
+    title: "Delete your account.",
+    lead: "This cannot be undone. Read what happens before you decide.",
+    trigger: "Delete my account",
+    dialogTitle: "Delete this account?",
+    consequences: [
+      "You are signed out of every device and cannot sign in again.",
+      "Your name and picture are removed from everything you have written.",
+      "What you wrote stays where it is, without your name on it — a conversation with the middle torn out is worse for the people still in it.",
+      "Your Families keep their records of who did what, and when.",
+      "There is no undo, and no way for us to put your name back.",
+    ],
+    confirm: "Delete my account",
+    /** Shown on /login after the deletion completes. Deliberately does not
+     *  invite them to sign in again, because they cannot. */
+    signedOutNotice: "That account has been deleted. You cannot sign in with it again.",
+    errors: {
+      failed: "The account could not be deleted. Nothing has changed. Try again.",
+      alreadyDeleted: "That account is already deleted.",
+    },
+  },
+  /**
    * The sign-in code screen (S2).
    *
    * Says "the app on your phone", not "your TOTP factor". A person arriving here
@@ -116,6 +151,7 @@ export const copy = {
       { href: "/settings/security", label: "Two-factor sign-in", description: "A code from an authenticator app, on top of your password" },
       { href: "/settings/sessions", label: "Sessions", description: "Every device signed in, and how to end one" },
       { href: "/settings/blocked", label: "Blocked people", description: "Who you have blocked, everywhere" },
+      { href: "/settings/account", label: "Delete your account", description: "What happens, and what stays, before you decide" },
     ],
   },
   /**
@@ -135,6 +171,18 @@ export const copy = {
     title: "Where you are signed in.",
     lead: "Every device holding a live sign-in for this account. If you do not recognise one, end it.",
     empty: "No other sessions. This device is the only one signed in.",
+    /**
+     * When the list could not be read at all.
+     *
+     * Separate from `empty` because conflating them makes the page lie. Found the
+     * hard way: a stale PostgREST schema cache made the RPC fail, the page
+     * rendered `empty`, and it told someone with live sessions elsewhere that
+     * this device was the only one signed in -- on a security page, where that is
+     * exactly the fact they came to check. CLAUDE.md's honest-empty-states rule
+     * covers this precisely: an empty state must mean empty.
+     */
+    unavailable:
+      "Your sessions could not be read just now. Reload the page. Signing out everywhere still works.",
     thisDevice: "This device",
     signOutOne: "Sign out",
     revokedOne: "That session was ended.",

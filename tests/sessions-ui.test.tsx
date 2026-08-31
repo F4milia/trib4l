@@ -208,3 +208,25 @@ describe("the copy does not over-promise", () => {
     expect(consequences).toContain("nothing else changes");
   });
 });
+
+describe("an unreadable session list is not an empty one", () => {
+  /**
+   * Found by a stale PostgREST schema cache making the RPC fail: the page
+   * rendered its empty state and told a person with live sessions elsewhere that
+   * this device was the only one signed in -- on the page they came to check that
+   * exact fact. CLAUDE.md's honest-empty-states rule, and the two strings must
+   * stay distinct.
+   */
+  it("has a separate message for a failed read", () => {
+    expect(copy.sessions.unavailable).not.toBe(copy.sessions.empty);
+    // The empty state asserts a fact about their account; the error must not.
+    expect(copy.sessions.empty.toLowerCase()).toContain("only one signed in");
+    expect(copy.sessions.unavailable.toLowerCase()).not.toContain("only one signed in");
+  });
+
+  it("says what still works, so the page is not a dead end", () => {
+    expect(copy.sessions.unavailable.toLowerCase()).toContain(
+      "signing out everywhere still works",
+    );
+  });
+});
