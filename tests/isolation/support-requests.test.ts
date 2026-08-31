@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { afterAll, describe, expect, it } from "vitest";
 import type { Database } from "../../lib/supabase/database.types";
+import { withAdminAudit } from "../../lib/audit";
 import { ORG_IDS, SEEDED_USERS, createServiceRoleClient, elevateToAal2, signInAs } from "./helpers";
 
 // H1's named edge case for the 09:30 review:
@@ -343,6 +344,67 @@ describe("support_requests -- the staff view", () => {
       .eq("id", created!.id)
       .single();
     expect(after!.status).toBe("handled");
+  });
+
+  it("the staff view's joined shape resolves under RLS", async () => {
+    // The inbox reads support_requests with organizations(name) and
+    // profiles(display_name) embedded. Embedded joins are evaluated under the
+    // caller's own policies, and this repo has already been bitten once by
+    // assuming a role could read through a join it had no grant for
+    // (CLAUDE.md, 2026-08-29). So the shape the page actually asks for is
+    // exercised here rather than trusted.
+    const alice = await signInAs(SEEDED_USERS.alice);
+    const { data: aliceUser } = await alice.auth.getUser();
+    await alice.from("support_requests").insert({
+      submitted_by_profile_id: aliceUser.user!.id,
+      org_id: FAMILY_A,
+      subject: "Joined shape probe",
+      body: "Filed against a real Family so both joins have something to find.",
+    });
+
+    const erin = await signInAsStaffWithMfa(SEEDED_USERS.erin);
+    const { data, error } = await erin
+      .from("support_requests")
+      .select("id, subject, status, org_id, organizations(name), profiles(display_name)")
+      .eq("submitted_by_profile_id", aliceUser.user!.id)
+      .not("org_id", "is", null)
+      .limit(1);
+
+    expect(error).toBeNull();
+    expect((data ?? []).length).toBeGreaterThan(0);
+    expect(data![0].organizations?.name).toBeTruthy();
+    expect(data![0].profiles?.display_name).toBeTruthy();
+  });
+
+  it("a staff read of the whole queue is itself recorded", async () => {
+    // Postgres has no hook to log a SELECT, so lib/audit.ts makes the log write
+    // a required step in the calling code. The staff inbox is its first caller;
+    // this asserts the mechanism works for a platform_admin reading across
+    // every Family, which is the case it exists for.
+    const erin = await signInAsStaffWithMfa(SEEDED_USERS.erin);
+    const { data: erinUser } = await erin.auth.getUser();
+
+    const returned = await withAdminAudit(
+      erin,
+      "support_requests.staff_list",
+      { type: "support_requests" },
+      async () => {
+        const { data } = await erin.from("support_requests").select("id").limit(5);
+        return data ?? [];
+      },
+    );
+
+    expect(Array.isArray(returned)).toBe(true);
+
+    const { data: logged } = await erin
+      .from("audit_log")
+      .select("action, actor_profile_id, org_id")
+      .eq("action", "support_requests.staff_list")
+      .eq("actor_profile_id", erinUser.user!.id);
+
+    expect((logged ?? []).length).toBeGreaterThan(0);
+    // No single Family owns a cross-Family read.
+    expect(logged![0].org_id).toBeNull();
   });
 
   it("nobody can delete a request, staff included", async () => {
