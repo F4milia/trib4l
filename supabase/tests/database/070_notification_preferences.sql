@@ -92,12 +92,26 @@ select has_trigger('public', 'notification_preferences', 'notification_preferenc
 -- ----------------------------------------------------------------- probes
 -- A real seeded org and a real seeded member of it (alice in caregiver-circle,
 -- per supabase/seed.sql and tests/isolation/helpers.ts).
+-- order by profile_id, NOT created_at. The seed inserts every membership in one
+-- transaction, so their created_at values all tie and `order by created_at
+-- limit 1` picks an arbitrary one of them -- Alice on some runs, Bob on others.
+-- That is the 2026-08-30 learned constraint about transaction-time ordering,
+-- and it made this file pass or fail depending on which member came back: the
+-- isolation suite leaves a preference row on Alice, so the insert below hit a
+-- unique violation only on the runs that happened to select her.
 create temporary table _np_probe as
   select '00000000-0000-0000-0000-00000000000a'::uuid as org_id,
          (select profile_id from public.memberships
            where org_id = '00000000-0000-0000-0000-00000000000a'
              and deleted_at is null
-           order by created_at limit 1) as profile_id;
+           order by profile_id limit 1) as profile_id;
+
+-- And clear whatever any earlier suite left on that member, so this file is
+-- green against a database the isolation tests have already run on. Local to
+-- this transaction, which rolls back at the end -- it removes nothing real.
+delete from public.notification_preferences
+ where org_id = (select org_id from _np_probe)
+   and profile_id = (select profile_id from _np_probe);
 
 select isnt(
   (select profile_id from _np_probe), null,
