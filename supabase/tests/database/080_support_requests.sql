@@ -15,7 +15,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(22);
+select plan(23);
 
 -- ------------------------------------------------------------------- shape
 select has_table('public', 'support_requests', 'support_requests exists');
@@ -180,6 +180,22 @@ select throws_ok(
   '23514',
   null,
   'a whitespace-only body is rejected'
+);
+
+-- ------------------------------------------- a named Family must be your own
+-- org_id arrives from a form field. A null Family is always allowed -- that is
+-- the pre-Family path -- but a NAMED one has to be a Family the submitter
+-- belongs to, or anyone could bury a Family in requests addressed to staff and
+-- make triage lie about where problems are coming from. The policy carries
+-- this; asserted here at the policy layer rather than only through a client.
+select is(
+  (select count(*)::int from pg_policies
+    where schemaname = 'public' and tablename = 'support_requests'
+      and policyname = 'support_requests_insert'
+      and with_check like '%org_id IS NULL%'
+      and with_check like '%is_org_member%'),
+  1,
+  'the insert policy allows a null Family but checks membership on a named one'
 );
 
 select * from finish();

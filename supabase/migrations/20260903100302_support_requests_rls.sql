@@ -35,18 +35,32 @@ create policy support_requests_select on support_requests
     or is_platform_admin()
   );
 
--- submitted_by_profile_id = auth.uid() and NOTHING about membership.
+-- Two clauses, and the difference between them is the whole design.
 --
--- This clause is H1's named edge case expressed as a policy: there is
--- deliberately no is_org_member() test, so a member of no Family can submit.
--- Adding one would read as tidy and would silently close the pre-Family
--- support path -- the single thing this session exists to keep open.
+-- `org_id is null or is_org_member(org_id)` -- NOT a bare is_org_member().
+--
+-- A bare membership test would read as tidy and would silently close the
+-- pre-Family support path, which is the single thing this session exists to
+-- keep open: H1's named edge case is "a user in no Family submits the form."
+-- So a null Family is always allowed.
+--
+-- But a NAMED Family has to be one the submitter actually belongs to. org_id
+-- arrives from a form field, and "role is resolved server-side from the
+-- database, never from a client claim" applies to any org a client names, not
+-- only to roles. Without this, anyone could file requests tagged as any
+-- Family -- they still could not read anyone else's, so nothing leaks, but
+-- they could bury a Family in noise addressed to staff and make triage lie.
+-- Enforced here rather than in the server action because the action is not the
+-- only thing that can insert.
 --
 -- Still authenticated-only: an anonymous contact form on a platform whose
 -- Families are invite-only is a spam intake with no rate-limit handle.
 create policy support_requests_insert on support_requests
   for insert to authenticated
-  with check (submitted_by_profile_id = auth.uid());
+  with check (
+    submitted_by_profile_id = auth.uid()
+    and (org_id is null or is_org_member(org_id))
+  );
 
 -- Only staff, and the column grant above already limits them to `status`.
 -- The submitter cannot edit a request after sending it: staff may have acted
