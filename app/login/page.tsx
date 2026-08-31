@@ -1,6 +1,10 @@
 import Link from "next/link";
-import { signIn } from "@/app/actions/auth";
-import { Button, Card, ErrorText, Input, Label, PageHeader } from "@/components/ui";
+import { AuthShell } from "@/components/auth-shell";
+import { LoginForm } from "@/components/auth/login-form";
+import { OAuthButtons } from "@/components/oauth-buttons";
+import { copy } from "@/lib/copy";
+
+const t = copy.auth.login;
 
 export default async function LoginPage({
   searchParams,
@@ -10,30 +14,40 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-      <PageHeader title="Log in" />
-      {error ? <ErrorText>{error}</ErrorText> : null}
-      <Card>
-        <form action={signIn} className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input type="email" name="email" id="email" required />
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input type="password" name="password" id="password" required />
-          </div>
-          <Button type="submit" className="w-full">
-            Log in
-          </Button>
-        </form>
-      </Card>
-      <p className="text-center text-sm text-deep-slate/70">
-        No account?{" "}
-        <Link href="/signup" className="text-terracotta underline">
-          Sign up
+    <AuthShell
+      eyebrow={t.eyebrow}
+      title={t.title}
+      footer={
+        <>
+          {t.switchPrompt}{" "}
+          <Link href="/signup" className="text-terracotta underline">
+            {t.switchAction}
+          </Link>
+        </>
+      }
+    >
+      {/* The query error goes to the form, not to AuthShell. /auth/confirm and
+          /auth/callback both redirect here carrying one, and it stays in the
+          URL across a submission -- rendered separately it would sit above a
+          second, contradicting message. Seeded as the form's initial state,
+          the next submission replaces it. */}
+      <LoginForm initialError={error} />
+
+      <OAuthButtons />
+
+      {/* Outside the <form>: a link inside it that looked like a second
+          submit would be a keyboard trap of the confusing kind — Enter in the
+          password field must submit the password, not navigate away. */}
+      <p className="mt-5 border-t border-deep-slate/20 pt-5 text-sm text-deep-slate/70">
+        {t.magicLinkPrompt}{" "}
+        <Link href="/magic-link" className="text-terracotta underline">
+          {t.magicLinkAction}
+        </Link>
+        {" · "}
+        <Link href="/forgot-password" className="text-terracotta underline">
+          {t.forgotAction}
         </Link>
       </p>
-    </main>
+    </AuthShell>
   );
 }

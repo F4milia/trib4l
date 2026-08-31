@@ -45,6 +45,10 @@ export default async function Home() {
       />
       <p className="text-deep-slate/70">
         Signed in as {user.email}.{" "}
+        <Link href="/account/email" className="text-terracotta underline">
+          Change address
+        </Link>
+        {" · "}
         <Link href="/settings/blocked" className="text-terracotta underline">
           Blocked people
         </Link>

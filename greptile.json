@@ -1,24 +1,4 @@
 {
-  "scope": {
-    "include": [
-      "supabase/migrations/**",
-      "**/rls*",
-      "lib/auth/**",
-      "lib/session.ts",
-      "lib/supabase/**",
-      "lib/audit.ts",
-      "lib/idempotency.ts",
-      "lib/family-cap.ts",
-      "app/actions/**",
-      "app/api/webhooks/**",
-      "app/login/**",
-      "app/signup/**",
-      "app/admin/**",
-      "**/conversations/**",
-      "**/messages/**",
-      "**/contribution/**",
-      "**/ai/**",
-      "**/storage/**"
-    ]
-  }
+  "labels": ["greptile"],
+  "ignorePatterns": "lib/supabase/database.types.ts\npackage-lock.json\nnext-env.d.ts\ntsconfig.tsbuildinfo"
 }

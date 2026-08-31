@@ -9,12 +9,31 @@ type OrgMembership = {
   role: Database["public"]["Enums"]["membership_role"];
 };
 
-/** Redirects to /login if there's no signed-in user. */
+/** Redirects to /login if there's no signed-in user, and to /check-email if
+ *  that user's address is not confirmed.
+ *
+ *  The verification check is defence in depth, not the gate. The gate is
+ *  upstream and structural: `[auth.email] enable_confirmations = true` means
+ *  GoTrue mints no session for an unconfirmed address, so this branch is
+ *  unreachable through the password path -- tests/isolation/
+ *  email-verification.test.ts proves that against a real GoTrue. It exists
+ *  because a provider path could later hand back a session whose address was
+ *  never confirmed, and the session is the ONLY signal the app layer can
+ *  trust here: GoTrue keeps `email_verified` in user_metadata, which the user
+ *  can rewrite themselves via auth.updateUser({ data }).
+ *
+ *  Scoped to users who actually have an address. A session with no email at
+ *  all is a different state with a different answer, and `email_optional =
+ *  false` on every configured provider keeps it unreachable; sending someone
+ *  with no address to "check your email" would be advice they cannot act on. */
 export async function requireUser() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
     redirect("/login");
+  }
+  if (data.user.email && !data.user.email_confirmed_at) {
+    redirect("/check-email");
   }
   return { supabase, user: data.user };
 }

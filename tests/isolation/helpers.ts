@@ -58,10 +58,37 @@ export async function signInAs(user: { email: string; password: string }): Promi
  * test files share one database within a single `db reset`.
  */
 export async function signUpNewUser(email: string): Promise<SupabaseClient<Database>> {
+  const password = "password123";
+
+  // Created pre-confirmed through the admin API rather than through
+  // auth.signUp. S1 turned on `[auth.email] enable_confirmations`, so signUp
+  // now returns `session: null` and every caller below would be holding an
+  // unauthenticated client -- which is exactly the behaviour
+  // tests/isolation/email-verification.test.ts asserts on purpose.
+  //
+  // The intent of this helper is unchanged and no assertion anywhere is
+  // weakened: callers want a real user with real credentials and no
+  // memberships, not an unverified one. Verification is now a separate
+  // concern with its own test file, so it is settled here rather than
+  // silently entangled with every other suite.
+  const service = createServiceRoleClient();
+  const { error: createError } = await service.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (createError) throw new Error(`createUser failed for ${email}: ${createError.message}`);
+
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { error } = await client.auth.signUp({ email, password: "password123" });
-  if (error) throw new Error(`signUp failed for ${email}: ${error.message}`);
+  const { error } = await client.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(`sign-in failed for new user ${email}: ${error.message}`);
   return client;
+}
+
+/** An unauthenticated client on the anon key -- the credential a signed-out
+ *  or unverified visitor holds. */
+export function createAnonClient(): SupabaseClient<Database> {
+  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
 /**

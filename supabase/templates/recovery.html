@@ -1,0 +1,18 @@
+<!-- Rules this file must satisfy, and why: tests/auth-confirm.test.ts. -->
+<h2>Reset your password</h2>
+
+<p>
+  Someone asked to reset the password for this address. Use the link below
+  to choose a new one.
+</p>
+
+<p>
+  <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=recovery&amp;next=/reset-password">Choose a new password</a>
+</p>
+
+<p>
+  If that was not you, ignore this message. Your password does not change
+  until someone opens this link and sets a new one.
+</p>
+
+<p>The link works once, and expires in an hour.</p>
