@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { assertFamilyMemberCapNotExceeded, FamilyMemberCapExceeded } from "@/lib/family-cap";
+import { assertInviteRateLimitNotExceeded, InviteRateLimitExceeded } from "@/lib/email/rate-limit";
+import { renderFamilyInvite } from "@/lib/email/templates";
+import { sendEmail } from "@/lib/email/transport";
 import type { Database } from "@/lib/supabase/database.types";
 
 type MembershipRole = Database["public"]["Enums"]["membership_role"];
@@ -24,8 +27,11 @@ export async function createInvitation(formData: FormData) {
 
   try {
     await assertFamilyMemberCapNotExceeded(supabase, orgId, role);
+    // Invariant 7 -- this action sends mail now, so it needs a limit before it
+    // writes the row, not after.
+    await assertInviteRateLimitNotExceeded(supabase, userData.user!.id);
   } catch (err) {
-    if (err instanceof FamilyMemberCapExceeded) {
+    if (err instanceof FamilyMemberCapExceeded || err instanceof InviteRateLimitExceeded) {
       redirect(`/o/${orgSlug}/settings/members?error=${encodeURIComponent(err.message)}`);
     }
     throw err;
@@ -40,6 +46,59 @@ export async function createInvitation(formData: FormData) {
 
   if (error) {
     redirect(`/o/${orgSlug}/settings/members?error=${encodeURIComponent(error.message)}`);
+  }
+
+  // Delivery. Until now an invitee found out because somebody told them --
+  // docs/session-3-checklist.md says it plainly: "Actual email delivery for
+  // invitations... Session 4 adds the transactional email that would send the
+  // invite link automatically."
+  //
+  // Deliberately AFTER the insert and outside its error path: the invitation
+  // is a real row whether or not mail goes out, and rolling it back because
+  // Resend had a bad minute would leave the organizer worse off than the
+  // status quo this replaces.
+  //
+  // No token in the link. Acceptance happens on the signed-in home page, which
+  // matches pending invitations against the caller's own verified email; a
+  // token in a URL would be a second, weaker acceptance path sitting beside
+  // it. So the mail names no Family, no inviter and no token (invariant 3) --
+  // all three are behind the sign-in.
+  // NEXT_PUBLIC_SITE_URL first, and VERCEL_URL only as a fallback.
+  //
+  // VERCEL_URL is the per-DEPLOYMENT hostname (trib4l-<hash>-<team>.vercel.app),
+  // not the public one (trib4l.vercel.app). For an auth callback that is
+  // deliberate -- S1 wants an emailed link to return to the deployment that
+  // sent it. For an INVITATION it is wrong: the recipient may open it days
+  // later, has no account yet, and a deployment-specific host is at best ugly
+  // and at worst behind deployment protection or already superseded.
+  //
+  // Reads the env var directly rather than importing S1's siteOrigin() from
+  // lib/auth/providers.ts, because that file does not exist on this branch's
+  // base yet. Collapse this into that helper once these branches share a base
+  // with main -- one definition of "where is this app" is the goal.
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  const invite = renderFamilyInvite({ acceptUrl: `${origin}/` });
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: invite.subject,
+      html: invite.html,
+      text: invite.text,
+      kind: invite.kind,
+    });
+  } catch {
+    // The row exists; say so, rather than reporting a failure that did not
+    // happen. The error is already on its way to Sentry, and its message is
+    // Resend's own -- never the mail body (invariant 12).
+    revalidatePath(`/o/${orgSlug}/settings/members`);
+    redirect(
+      `/o/${orgSlug}/settings/members?error=${encodeURIComponent(
+        "The invitation was created, but the email could not be sent. Send them the link yourself, or revoke and re-invite.",
+      )}`,
+    );
   }
 
   revalidatePath(`/o/${orgSlug}/settings/members`);
