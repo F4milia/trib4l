@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { signIn } from "@/app/actions/auth";
 import { PasswordInput } from "@/components/password-input";
+import { Turnstile } from "@/components/turnstile";
 import { Button, ErrorText, FieldError, Input, Label } from "@/components/ui";
 import { NO_ERRORS, formError } from "@/lib/auth/form-errors";
 import { copy } from "@/lib/copy";
@@ -71,6 +72,7 @@ export function LoginForm({ initialError }: { initialError?: string }) {
       {/* Disabled while in flight rather than relabelled: the design system
           has no loading choreography, and a second submission here is a second
           sign-in attempt against the rate limit. */}
+      <Turnstile action="signin" />
       <Button type="submit" className="w-full" disabled={pending}>
         {t.submit}
       </Button>

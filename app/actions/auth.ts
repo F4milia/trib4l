@@ -9,6 +9,7 @@ import {
   type AuthFormState,
 } from "@/lib/auth/form-errors";
 import { callbackUrl, confirmUrl, oauthProvider } from "@/lib/auth/providers";
+import { captchaToken } from "@/lib/auth/captcha";
 import { withinAuthRateLimit } from "@/lib/auth/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "@/lib/copy";
@@ -56,7 +57,11 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
     password,
     // Renders as {{ .RedirectTo }} in the template, so the link comes back to
     // the deployment that sent it rather than to the project's one site_url.
-    options: { emailRedirectTo: await emailReturnUrl() },
+    //
+    // The captcha token is forwarded, never verified here: GoTrue is what makes
+    // it mandatory, because the public anon key means /auth/v1/signup can be
+    // called without this action existing. See lib/auth/captcha.ts.
+    options: { emailRedirectTo: await emailReturnUrl(), captchaToken: captchaToken(formData) },
   });
 
   /**
@@ -111,7 +116,11 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: { captchaToken: captchaToken(formData) },
+  });
 
   /**
    * Form-level, always. GoTrue returns one identical `invalid_credentials` for
@@ -159,7 +168,11 @@ export async function sendMagicLink(formData: FormData) {
   const supabase = await createClient();
   await supabase.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: false, emailRedirectTo: await emailReturnUrl() },
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: await emailReturnUrl(),
+      captchaToken: captchaToken(formData),
+    },
   });
 
   redirect("/link-sent");
@@ -243,7 +256,10 @@ export async function requestPasswordReset(formData: FormData) {
   const supabase = await createClient();
   // resetPasswordForEmail names the option `redirectTo`, not `emailRedirectTo`
   // -- it reaches the template as {{ .RedirectTo }} either way.
-  await supabase.auth.resetPasswordForEmail(email, { redirectTo: await emailReturnUrl() });
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: await emailReturnUrl(),
+    captchaToken: captchaToken(formData),
+  });
 
   redirect("/reset-sent");
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requestPasswordReset } from "@/app/actions/auth";
 import { AuthShell } from "@/components/auth-shell";
+import { Turnstile } from "@/components/turnstile";
 import { Button, Input, Label } from "@/components/ui";
 import { copy } from "@/lib/copy";
 
@@ -30,6 +31,7 @@ export default async function ForgotPasswordPage({
           <Label htmlFor="email">{t.emailLabel}</Label>
           <Input type="email" name="email" id="email" autoComplete="email" required />
         </div>
+        <Turnstile action="reset" />
         <Button type="submit" className="w-full">
           {t.submit}
         </Button>
