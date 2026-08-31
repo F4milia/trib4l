@@ -20,6 +20,49 @@ export const copy = {
     cancel: "Cancel",
   },
   /**
+   * Two-factor authentication (S2).
+   *
+   * Says "authenticator app", not "TOTP" or "2FA" in body copy: the person is
+   * looking for the thing on their phone, not the acronym. The heading keeps
+   * "Two-factor" because that is what every other service calls the setting, and
+   * a novel name for a standard feature is its own obstacle.
+   *
+   * The staff line is stated as a fact about the account, not as a warning, and
+   * it is honest that this is not optional for them.
+   */
+  mfa: {
+    eyebrow: "Security",
+    title: "Two-factor sign-in.",
+    lead: "A six-digit code from an authenticator app, on top of your password.",
+    optionalNote: "Optional for members. Required for platform staff.",
+    staffRequiredNote:
+      "Your account is platform staff, so two-factor is required. Until it is set up, you can reach this page and nothing else.",
+    none: "No authenticator is set up on this account.",
+    activeHeading: "Authenticators",
+    added: "Added",
+    remove: "Remove",
+    removed: "That authenticator was removed.",
+    start: "Set up an authenticator",
+    scan: {
+      heading: "Scan this",
+      body: "Open your authenticator app and scan the square. If you cannot scan, enter the key below by hand.",
+      secretLabel: "Setup key",
+      codeLabel: "Six-digit code from the app",
+      submit: "Turn on two-factor",
+      cancel: "Start again",
+    },
+    done: "Two-factor is on. You will be asked for a code when you sign in.",
+    errors: {
+      enrollFailed: "Setup could not be started. Try again.",
+      setupExpired: "That setup is no longer valid. Start again.",
+      wrongCode: "That code was not accepted. Codes expire every 30 seconds — try the current one.",
+      verifyFailed: "The code could not be checked. Try again.",
+      removeFailed: "That request did not name an authenticator.",
+      removeNeedsVerify:
+        "Removing an authenticator needs a verified sign-in. Sign out, sign in with a code, then remove it.",
+    },
+  },
+  /**
    * The account settings index (S2).
    *
    * It exists because /account/email and /settings/blocked already shipped
@@ -35,6 +78,7 @@ export const copy = {
     lead: "Settings that follow you across every Family you belong to.",
     links: [
       { href: "/account/email", label: "Email address", description: "Change it, with confirmation from both inboxes" },
+      { href: "/settings/security", label: "Two-factor sign-in", description: "A code from an authenticator app, on top of your password" },
       { href: "/settings/sessions", label: "Sessions", description: "Every device signed in, and how to end one" },
       { href: "/settings/blocked", label: "Blocked people", description: "Who you have blocked, everywhere" },
     ],
