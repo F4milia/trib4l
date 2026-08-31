@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { assuranceOutcome } from "./auth/assurance";
 import { createClient } from "./supabase/server";
 import type { Database } from "./supabase/database.types";
 
@@ -26,7 +27,7 @@ type OrgMembership = {
  *  all is a different state with a different answer, and `email_optional =
  *  false` on every configured provider keeps it unreachable; sending someone
  *  with no address to "check your email" would be advice they cannot act on. */
-export async function requireUser() {
+export async function requireUser(options?: { skipAssuranceGate?: boolean }) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
@@ -35,6 +36,31 @@ export async function requireUser() {
   if (data.user.email && !data.user.email_confirmed_at) {
     redirect("/check-email");
   }
+
+  /**
+   * The two-factor gate (S2, invariant 7). Placed AFTER getUser() on purpose:
+   * that call validates the session against GoTrue, so everything the gate then
+   * reads from it is GoTrue's word rather than a client's.
+   *
+   * `skipAssuranceGate` is passed by exactly three surfaces, and each is a page
+   * the gate itself sends people to or must not strand them on:
+   *   - /settings/security -- where a staff member enrols; gating it would be a
+   *     redirect loop with no way out.
+   *   - /auth/verify -- where a code is presented.
+   *   - /reset-password -- a recovery session is aal1 by nature. Gating it would
+   *     lock out anyone who lost their authenticator, and it opens nothing:
+   *     changing a password does not bypass the gate, because the next sign-in
+   *     meets it again.
+   * Everything else is gated by default, so a new page is protected by omission
+   * rather than by remembering to add something.
+   */
+  if (!options?.skipAssuranceGate) {
+    const outcome = await assuranceOutcome(supabase);
+    if (!outcome.ok) {
+      redirect(outcome.redirectTo);
+    }
+  }
+
   return { supabase, user: data.user };
 }
 

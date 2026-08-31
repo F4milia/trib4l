@@ -1,6 +1,5 @@
-import { createHmac } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { signIn } from "./helpers";
+import { USER_IDS, clearMfaFactors, signIn, totp } from "./helpers";
 
 /**
  * TOTP enrollment through the real UI (S2, PR 7).
@@ -11,34 +10,18 @@ import { signIn } from "./helpers";
  * the displayed secret satisfies a real GoTrue.
  */
 
-/** RFC 6238 TOTP, 6 digits, SHA-1, 30s — the parameters in GoTrue's own otpauth
- *  URI (measured: `algorithm=SHA1&digits=6`). Written out rather than pulling in
- *  a dependency for one function in one spec. */
-function totp(base32Secret: string): string {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  let bits = "";
-  for (const char of base32Secret.replace(/=+$/, "").toUpperCase()) {
-    const index = alphabet.indexOf(char);
-    if (index === -1) continue;
-    bits += index.toString(2).padStart(5, "0");
-  }
-  const bytes = Buffer.from(
-    (bits.match(/.{8}/g) ?? []).map((byte) => parseInt(byte, 2)),
-  );
-
-  const counter = Math.floor(Date.now() / 1000 / 30);
-  const counterBytes = Buffer.alloc(8);
-  counterBytes.writeBigUInt64BE(BigInt(counter));
-
-  const digest = createHmac("sha1", bytes).update(counterBytes).digest();
-  const offset = digest[digest.length - 1] & 0x0f;
-  const binary =
-    ((digest[offset] & 0x7f) << 24) |
-    (digest[offset + 1] << 16) |
-    (digest[offset + 2] << 8) |
-    digest[offset + 3];
-  return String(binary % 1_000_000).padStart(6, "0");
-}
+/**
+ * Preconditions established rather than assumed. The isolation suite enrols real
+ * factors on bob and erin (elevateToAal2), and this spec's own earlier version
+ * left one on dave -- so on a shared local database these specs were testing a
+ * different starting state than they described, and reporting product bugs that
+ * were not there.
+ */
+test.beforeEach(async () => {
+  await clearMfaFactors(USER_IDS.dave);
+  await clearMfaFactors(USER_IDS.bob);
+  await clearMfaFactors(USER_IDS.carol);
+});
 
 test("a member can turn on two-factor with a real authenticator code", async ({ page }) => {
   await signIn(page, "dave");
@@ -137,4 +120,45 @@ test("starting again during setup issues a fresh key", async ({ page }) => {
   // A new factor, not the old one resumed: the previous secret is unrecoverable
   // by design, so reusing it would be impossible anyway.
   expect(second).not.toBe(first);
+});
+
+/**
+ * The state that exposed a real defect: an account that HAS an authenticator but
+ * has not used it this session.
+ *
+ * GoTrue refuses both enrol and unenrol from an aal1 session, so the page used to
+ * offer a "Set up an authenticator" button whose only possible answer was "Setup
+ * could not be started. Try again." Found by this suite, on bob, because the
+ * isolation run had left him a factor.
+ */
+test("an authenticator already set up, unused this session, offers a code instead of a broken setup", async ({
+  browser,
+}) => {
+  const enrolling = await browser.newContext();
+  const enrolPage = await enrolling.newPage();
+  await signIn(enrolPage, "carol");
+  await enrolPage.goto("/settings/security");
+  await enrolPage.getByRole("button", { name: "Set up an authenticator" }).click();
+  const secret = await enrolPage.locator("#totp-secret").inputValue();
+  await enrolPage.fill("#totp-code", totp(secret));
+  await enrolPage.getByRole("button", { name: "Turn on two-factor" }).click();
+  await expect(enrolPage.getByText("Two-factor is on.", { exact: false })).toBeVisible();
+  await enrolling.close();
+
+  const returning = await browser.newContext();
+  const page = await returning.newPage();
+  await signIn(page, "carol");
+  await page.goto("/settings/security");
+
+  await expect(
+    page.getByText("Enter a code from your authenticator to change these settings."),
+  ).toBeVisible();
+  // Neither impossible action is offered.
+  await expect(page.getByRole("button", { name: "Set up an authenticator" })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Remove" })).toBeHidden();
+  // And the way forward is a link, not a dead end.
+  await expect(page.getByRole("link", { name: "Enter a code" })).toBeVisible();
+
+  await returning.close();
+  await clearMfaFactors(USER_IDS.carol);
 });
