@@ -2,14 +2,24 @@
  * The OAuth providers S1 asks for, and the rule for when each one is offered.
  *
  * WHY PRESENCE OF THE CLIENT ID IS THE TEST
- * Measured on 2026-08-30, not assumed: `[auth.external.<p>] enabled = true`
- * with an empty `client_id` makes the Supabase CLI refuse to parse
- * config.toml at all -- `supabase start` and even `supabase status` fail with
- * ProjectConfigParseError. With a non-empty client_id it parses, even when the
- * secret is unset. So "a client id exists in the environment" is exactly the
- * condition under which the provider CAN be enabled, which makes it the honest
- * thing to gate the button on. A button for a provider the project has not
- * configured is a button that sends people to an error.
+ * Measured 2026-08-30, then CORRECTED 2026-08-31 after testing the case the
+ * first measurement had only inferred:
+ *
+ *  - `enabled = true` with a LITERAL empty client_id (`client_id = ""`) makes
+ *    the CLI refuse to parse config.toml -- `supabase start` and `status` both
+ *    fail with ProjectConfigParseError.
+ *  - `enabled = true` with `client_id = "env(SOMETHING_UNSET)"` parses fine
+ *    AND the stack boots, auth container healthy. Verified with a variable
+ *    guaranteed not to exist.
+ *
+ * The earlier note here claimed the second case broke every local stack and
+ * all three CI jobs. It does not. The real failure is quieter and worse: the
+ * provider is enabled with no credentials, so the config is valid, CI is
+ * green, and Google sign-in fails only when somebody clicks the button.
+ *
+ * That is what this gate is for. A provider whose client id is absent from the
+ * environment gets no button, so the broken path is unreachable rather than
+ * merely untested.
  *
  * The client id is public by design (it ships in every OAuth authorize URL);
  * only the secret is sensitive, and the secret is read by the Supabase

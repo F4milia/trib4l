@@ -26,21 +26,36 @@ describe("[auth.external.*] blocks", () => {
   });
 
   /**
-   * Measured on 2026-08-30, not assumed: `enabled = true` with an empty
-   * client_id makes the Supabase CLI refuse to parse this file at all --
-   * `supabase start` AND `supabase status` fail with ProjectConfigParseError.
-   * That is not a provider that quietly does not work; it is every developer's
-   * local stack and all three CI jobs (migrations, pgtap, isolation), each of
-   * which begins with `npx supabase start`.
-   *
-   * `client_id = "env(...)"` resolves to the empty string when the variable is
-   * unset, so committing an enabled provider ahead of its credentials is
-   * exactly the shape that breaks. Enable a provider in the same change that
-   * gives it a client id.
+   * A LITERAL empty client_id on an enabled provider makes the CLI refuse to
+   * parse this file -- `supabase start` and `status` both fail with
+   * ProjectConfigParseError, which takes out every local stack and all three
+   * CI jobs.
    */
-  it.each(blocks)("$name is not enabled without a client id", ({ enabled, clientId }) => {
+  it.each(blocks)("$name is not enabled with a literal empty client id", ({ enabled, clientId }) => {
     if (!enabled) return;
     expect(clientId.trim()).not.toBe("");
+  });
+
+  /**
+   * The `env(...)` form is a different story, and the first version of this
+   * file got it wrong. CORRECTED 2026-08-31, by testing rather than inferring:
+   * `enabled = true` with `client_id = "env(SOMETHING_UNSET)"` parses fine and
+   * the stack boots healthy. So this guard cannot catch a missing credential
+   * -- nothing here can, because the value lives outside the repo.
+   *
+   * What it can do is make sure the variable is DOCUMENTED, so whoever deploys
+   * knows it has to be set. An enabled provider reading an undocumented
+   * variable is one whose sign-in fails silently in an environment nobody
+   * thought to configure.
+   */
+  it.each(blocks)("$name documents any environment variable it reads", ({ enabled, clientId }) => {
+    if (!enabled) return;
+    const variable = clientId.match(/^env\(([A-Z0-9_]+)\)$/)?.[1];
+    if (!variable) return; // a literal id, covered above
+    const example = readFileSync(join(process.cwd(), ".env.example"), "utf8");
+    expect(example, `${variable} is read by config.toml but absent from .env.example`).toContain(
+      variable,
+    );
   });
 });
 
