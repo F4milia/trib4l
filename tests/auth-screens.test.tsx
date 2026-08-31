@@ -133,6 +133,12 @@ describe("copy deck", () => {
     "app/reset-sent/page.tsx",
     "app/reset-password/page.tsx",
     "app/account/email/page.tsx",
+    // The three forms moved out of their pages when field-level errors
+    // landed. Without these the guard would still pass on the pages -- which
+    // now contain no strings at all -- while quietly covering nothing.
+    "components/auth/login-form.tsx",
+    "components/auth/signup-form.tsx",
+    "components/auth/reset-password-form.tsx",
   ] as const;
 
   function strings(node: unknown, out: string[] = []): string[] {

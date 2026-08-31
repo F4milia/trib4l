@@ -182,6 +182,25 @@ export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElem
   );
 }
 
+/**
+ * The message under a field, as opposed to ErrorText's message above a form.
+ *
+ * Carries no role of its own: it is wired to its field through
+ * aria-describedby, so it is read out as part of that field rather than
+ * announced on its own. A page with three role="alert" regions announces three
+ * times and tells you where none of them are.
+ *
+ * terracotta on parchment measures 4.70:1 -- the value globals.css already
+ * darkened to clear AA (§13).
+ */
+export function FieldError({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <p id={id} className="mt-2 text-sm text-terracotta">
+      {children}
+    </p>
+  );
+}
+
 export function ErrorText({ children }: { children: ReactNode }) {
   return (
     <p role="alert" className="border-2 border-terracotta bg-terracotta/10 px-4 py-3 text-sm text-terracotta">

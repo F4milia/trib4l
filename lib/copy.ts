@@ -60,6 +60,18 @@ export const copy = {
       submit: "Log in",
       switchPrompt: "No account yet?",
       switchAction: "Create one",
+      errors: {
+        emailRequired: "Enter your email address.",
+        passwordRequired: "Enter your password.",
+        /**
+         * One message, above the form, for every credential failure. GoTrue
+         * returns the same `invalid_credentials` whether the password was
+         * wrong or the address has no account -- so this must not hint at
+         * either. Phrased as the PAIR not matching, which is the only thing
+         * that is actually known.
+         */
+        invalidCredentials: "That email and password do not match an account.",
+      },
       magicLinkPrompt: "Rather not type a password?",
       magicLinkAction: "Email me a sign-in link",
       forgotAction: "Forgotten your password?",
@@ -79,7 +91,13 @@ export const copy = {
       },
       errors: {
         consentRequired: "You must acknowledge the platform-access notice to sign up.",
-        missingFields: "Email and password are required.",
+        emailRequired: "Enter an email address.",
+        passwordRequired: "Choose a password.",
+        invalidEmail: "Enter a valid email address.",
+        /** The number here is asserted against minimum_password_length in
+         *  supabase/config.toml, so the two cannot drift apart. */
+        weakPassword: "Use at least 6 characters.",
+        failed: "That did not work. Check the details and try again.",
       },
     },
     /**
@@ -90,7 +108,7 @@ export const copy = {
     checkEmail: {
       eyebrow: "One more step",
       title: "Check your email.",
-      body: "We sent a link to the address you gave. Open it to confirm the address and finish making your account.",
+      body: "If that address can be used, a confirmation link is on its way. Open it to confirm the address and finish making your account.",
       note: "The link works once and expires in an hour. Nothing arrived? Give it a minute, then look in the spam folder.",
       back: "Back to sign in",
     },
@@ -170,8 +188,11 @@ export const copy = {
          * recovery session at all.
          */
         noSession: "That reset link is no longer valid. Ask for a new one.",
-        missingFields: "Enter the new password twice.",
-        mismatch: "Those two passwords do not match.",
+        passwordRequired: "Choose a new password.",
+        confirmationRequired: "Enter the new password again.",
+        mismatch: "This does not match the password above.",
+        weakPassword: "Use at least 6 characters.",
+        failed: "That did not work. Try again.",
       },
     },
     changeEmail: {

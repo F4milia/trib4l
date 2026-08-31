@@ -2,45 +2,85 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  fieldError,
+  formError,
+  signupFieldForCode,
+  type AuthFormState,
+} from "@/lib/auth/form-errors";
 import { callbackUrl, oauthProvider } from "@/lib/auth/providers";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "@/lib/copy";
 
-export async function signUp(formData: FormData) {
-  const email = String(formData.get("email") ?? "");
+export async function signUp(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const consent = formData.get("consent") === "on";
 
-  if (!consent) {
-    redirect("/signup?error=" + encodeURIComponent(copy.auth.signup.errors.consentRequired));
-  }
-  if (!email || !password) {
-    redirect("/signup?error=" + encodeURIComponent(copy.auth.signup.errors.missingFields));
-  }
+  // Echoed back so React's post-action form reset restores them. Never the
+  // password -- see AuthFormValues.
+  const values = { email, consent };
+
+  // Ours to attribute, so attributed: each names the field at fault.
+  if (!email) return fieldError("email", copy.auth.signup.errors.emailRequired, values);
+  if (!password) return fieldError("password", copy.auth.signup.errors.passwordRequired, values);
+  if (!consent) return fieldError("consent", copy.auth.signup.errors.consentRequired, values);
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({ email, password });
-  if (error) {
-    redirect("/signup?error=" + encodeURIComponent(error.message));
+
+  /**
+   * `user_already_exists` is swallowed on purpose, and this is the only place
+   * in the app that treats a GoTrue error as a success.
+   *
+   * Measured 2026-08-30 against a real GoTrue with confirmations on: an
+   * address that already has a CONFIRMED account returns `user_already_exists`
+   * / "User already registered". The previous version of this action passed
+   * error.message straight to the screen, so /signup told any visitor whether
+   * a given address was on the platform -- the exact oracle /magic-link and
+   * /forgot-password are built to avoid, left open on the form most likely to
+   * be probed.
+   *
+   * Falling through to the same destination as a real signup closes it. The
+   * person who genuinely owns the address is unaffected: they have an account
+   * already, and can sign in or reset. The person probing learns nothing.
+   */
+  if (error && error.code !== "user_already_exists") {
+    const field = signupFieldForCode(error.code);
+    if (field === "password") return fieldError("password", copy.auth.signup.errors.weakPassword, values);
+    if (field === "email") return fieldError("email", copy.auth.signup.errors.invalidEmail, values);
+    return formError(copy.auth.signup.errors.failed, values);
   }
 
   // Confirmation is mandatory, so signUp returns no session and there is
-  // nothing to land on yet. This redirect is unconditional on purpose: when
-  // the address already belongs to an account, GoTrue succeeds with an
-  // obfuscated user rather than erroring, so branching here would rebuild the
-  // account-enumeration oracle Supabase is deliberately avoiding.
+  // nothing to land on yet. /check-email's copy is conditional ("if that
+  // address can be used") precisely because this path is also reached by an
+  // address that already has an account, where no mail was sent.
   redirect("/check-email");
 }
 
-export async function signIn(formData: FormData) {
-  const email = String(formData.get("email") ?? "");
+export async function signIn(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+
+  // Echoed back so React's post-action form reset restores it. Never the
+  // password -- see AuthFormValues.
+  const values = { email };
+
+  if (!email) return fieldError("email", copy.auth.login.errors.emailRequired, values);
+  if (!password) return fieldError("password", copy.auth.login.errors.passwordRequired, values);
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    redirect("/login?error=" + encodeURIComponent(error.message));
-  }
+
+  /**
+   * Form-level, always. GoTrue returns one identical `invalid_credentials` for
+   * a wrong password, an unknown address, a malformed address and an empty
+   * one -- measured, see lib/auth/form-errors.ts. There is nothing to
+   * attribute, and finding out would mean first asking whether the address has
+   * an account.
+   */
+  if (error) return formError(copy.auth.login.errors.invalidCredentials, values);
 
   redirect("/");
 }
@@ -148,26 +188,38 @@ export async function requestPasswordReset(formData: FormData) {
  * to the session's own user and nobody else's, so there is no id to tamper
  * with in the form.
  */
-export async function updatePassword(formData: FormData) {
+export async function updatePassword(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
   const password = String(formData.get("password") ?? "");
   const confirmation = String(formData.get("password_confirmation") ?? "");
 
+  // Still checked before the fields are: a signed-out caller is turned away
+  // for being signed out, not told which of their two passwords was wrong.
+  // This one redirects rather than returning state, because the answer is a
+  // different page -- they need a new link, not a corrected field.
   const supabase = await createClient();
   const { data, error: sessionError } = await supabase.auth.getUser();
   if (sessionError || !data.user) {
     redirect("/forgot-password?error=" + encodeURIComponent(copy.auth.resetPassword.errors.noSession));
   }
 
-  if (!password || !confirmation) {
-    redirect("/reset-password?error=" + encodeURIComponent(copy.auth.resetPassword.errors.missingFields));
+  if (!password) return fieldError("password", copy.auth.resetPassword.errors.passwordRequired);
+  if (!confirmation) {
+    return fieldError("passwordConfirmation", copy.auth.resetPassword.errors.confirmationRequired);
   }
+  // Under the confirmation field, not the first one: the first is what they
+  // meant, the second is the one that disagrees with it.
   if (password !== confirmation) {
-    redirect("/reset-password?error=" + encodeURIComponent(copy.auth.resetPassword.errors.mismatch));
+    return fieldError("passwordConfirmation", copy.auth.resetPassword.errors.mismatch);
   }
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {
-    redirect("/reset-password?error=" + encodeURIComponent(error.message));
+    const field = signupFieldForCode(error.code);
+    if (field === "password") return fieldError("password", copy.auth.resetPassword.errors.weakPassword);
+    return formError(copy.auth.resetPassword.errors.failed);
   }
 
   redirect("/");
