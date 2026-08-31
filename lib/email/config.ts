@@ -13,9 +13,14 @@
  * 2. Sending from a domain that has no SPF/DKIM. Resend will accept a From
  *    address on an unverified domain and the mail will land in spam or be
  *    rejected downstream, which looks like "email is flaky" rather than like
- *    a misconfiguration. `live` mode refuses to start unless the From
- *    address's domain is the domain that was actually verified.
- *    See docs/email-sending-domain.md.
+ *    a misconfiguration. In `live` mode this throws unless the From address's
+ *    domain is the domain that was actually verified.
+ *
+ *    On when: callers reach this through sendEmail(), so the throw lands on
+ *    the first send attempt, not at process start. A misconfigured deploy
+ *    comes up healthy and fails on its first invitation -- loudly and once,
+ *    with a message naming the mismatch, which is the point, but it is not a
+ *    boot check. See docs/email-sending-domain.md.
  */
 
 export type EmailDeliveryMode = "live" | "redirect" | "dry-run";
