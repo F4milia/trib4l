@@ -123,7 +123,7 @@ describe("AuthShell — wordmark", () => {
  * came from.
  */
 describe("copy deck", () => {
-  const PAGES = ["app/login/page.tsx", "app/signup/page.tsx"] as const;
+  const PAGES = ["app/login/page.tsx", "app/signup/page.tsx", "app/check-email/page.tsx"] as const;
 
   function strings(node: unknown, out: string[] = []): string[] {
     if (typeof node === "string") out.push(node);
@@ -136,10 +136,24 @@ describe("copy deck", () => {
     expect(src).toMatch(/from "@\/lib\/copy"/);
   });
 
+  /**
+   * Scanned over authored text only -- quoted literals and JSX text nodes --
+   * not raw source, for the same reason tests/surface-migration.test.ts scans
+   * string literals only: `copy.auth.checkEmail` contains "Email", and a
+   * whole-source scan flagged the identifier that reads the deck as if it were
+   * a string that had bypassed it. A guard that fires on the correct pattern
+   * teaches people to work around it.
+   */
+  function authoredText(src: string): string {
+    const quoted = (src.match(/(["'])(?:\\.|(?!\1)[^\\])*\1/g) ?? []).join("\n");
+    const jsxText = [...src.matchAll(/>([^<>{}]*)</g)].map((m) => m[1]).join("\n");
+    return `${quoted}\n${jsxText}`;
+  }
+
   it.each(PAGES)("%s hardcodes none of the auth strings inline", (page) => {
-    const src = readFileSync(join(process.cwd(), page), "utf8");
+    const authored = authoredText(readFileSync(join(process.cwd(), page), "utf8"));
     for (const s of strings(copy.auth)) {
-      expect(src, `"${s}" is inline in ${page}; it belongs in lib/copy.ts`).not.toContain(s);
+      expect(authored, `"${s}" is inline in ${page}; it belongs in lib/copy.ts`).not.toContain(s);
     }
   });
 
