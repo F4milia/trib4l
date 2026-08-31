@@ -1965,6 +1965,18 @@ export type Database = {
         Args: { local_date: string; local_time: string; tz: string }
         Returns: string
       }
+      my_sessions: {
+        Args: never
+        Returns: {
+          aal: string
+          created_at: string
+          id: string
+          ip: unknown
+          is_current: boolean
+          last_active_at: string
+          user_agent: string
+        }[]
+      }
       moderate_comment: {
         Args: { reason?: string; target_comment_id: string }
         Returns: {
@@ -2035,6 +2047,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
       transition_member_stage: {
         Args: {
