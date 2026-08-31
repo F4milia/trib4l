@@ -1,0 +1,19 @@
+<!-- Rules this file must satisfy, and why: tests/auth-confirm.test.ts. -->
+<h2>Confirm the change of address</h2>
+
+<p>
+  Someone asked to change the address on this account. Confirm it with the
+  link below.
+</p>
+
+<p>
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email_change">Confirm the change</a>
+</p>
+
+<p>
+  Both the old and the new address have to confirm before anything changes.
+  If you did not ask for this, ignore this message and the address stays as
+  it is.
+</p>
+
+<p>The link works once, and expires in an hour.</p>

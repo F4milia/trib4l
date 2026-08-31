@@ -165,6 +165,21 @@ export const copy = {
         mismatch: "Those two passwords do not match.",
       },
     },
+    changeEmail: {
+      eyebrow: "Account",
+      title: "Change your address.",
+      currentLabel: "Current address",
+      newLabel: "New address",
+      body: "Both addresses have to confirm before anything changes. Until they both do, the current one keeps working.",
+      submit: "Send the confirmations",
+      back: "Back",
+      /** §9: a save confirmation is announced through role="status". */
+      sent: "Sent. Open the link in both inboxes — the old address and the new one. Nothing changes until both are confirmed.",
+      errors: {
+        missingEmail: "A new email address is required.",
+        unchanged: "That is already the address on this account.",
+      },
+    },
     confirm: {
       errors: {
         /**
