@@ -35,5 +35,18 @@ export default defineConfig({
     url: "http://localhost:3000/login",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    /**
+     * S2's auth rate limiter allows five attempts per address per fifteen
+     * minutes. These specs sign in as the same seeded users once per spec, so
+     * from the sixth spec onward every sign-in is refused with "Too many
+     * attempts" -- the limiter working correctly against a workload no human
+     * produces. Discovered by the suite going red, not predicted.
+     *
+     * This is the ONLY place the escape is set, and lib/auth/rate-limit.ts
+     * ignores it unless NODE_ENV is not "production" -- which `next build` and
+     * `next start` pin, so it cannot open on a deployment. The limiter keeps its
+     * coverage in pgTAP, the isolation suite and the unit suite.
+     */
+    env: { AUTH_RATE_LIMIT_DISABLED: "1" },
   },
 });

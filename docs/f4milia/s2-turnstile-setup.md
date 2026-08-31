@@ -43,16 +43,35 @@ that it is a rare path rather than the default screen.
 
 ## Keys
 
-**Local and CI: Cloudflare's published test keys.** They need no account and no
-network round trip to a real site key. From Cloudflare's Turnstile
-documentation — **verify against their current page before relying on them**,
-and see the note below on which pair has actually been exercised here:
+**Local and CI: Cloudflare's published test keys.** They need no account.
 
-| Purpose | Site key | Secret key |
-|---|---|---|
-| Always passes, invisible | `1x00000000000000000000BB` | `1x0000000000000000000000000000000AA` |
-| Always blocks | `2x00000000000000000000AB` | `2x0000000000000000000000000000000AA` |
-| Forces an interactive challenge | `3x00000000000000000000FF` | — |
+| Purpose | Site key | Secret key | Exercised here |
+|---|---|---|---|
+| Always passes, invisible | `1x00000000000000000000BB` | `1x0000000000000000000000000000000AA` | **Yes** — see below |
+| Always blocks | `2x00000000000000000000AB` | `2x0000000000000000000000000000000AA` | Secret only |
+| Forces an interactive challenge | `3x00000000000000000000FF` | — | No |
+
+### What was actually measured, 2026-09-01
+
+Against this stack, with `[auth.captcha]` enabled and the always-passes secret:
+
+| Check | Result |
+|---|---|
+| `POST /auth/v1/token` with **no** token | `400` `captcha_failed` — "no captcha_token found" |
+| Same call with a token of `"dummy"` | `200`, session issued — the always-passes secret verifies any non-empty string |
+| Always-**blocks** secret against siteverify | `success: false`, `metadata.result_with_testing_key: true` |
+| siteverify latency from this host | ~95–108 ms cold, ~58 ms on a warm connection |
+| Isolation suite, 101 tests, captcha enforced | 28.7 s |
+| Browser suite, 17 specs | 47 s |
+| **Token arrival in a real browser after `/login` loads** | **2 659 ms** |
+
+That last number is the one with consequences, and it is why
+`copy.auth.captcha.notCompleted` exists: a returning visitor whose password
+manager fills both fields can submit inside that window and would otherwise be
+told their correct password "does not match an account".
+
+I have **no captcha-off baseline from the same stack**, so the isolation and
+browser figures above are absolute, not deltas.
 
 **Staging and production: real keys**, one widget per environment, with the
 hostname allowlist covering the deployment's own origin. A widget whose allowlist
@@ -83,6 +102,50 @@ docker exec supabase_auth_Trib4l env | grep -i captcha
 
 Separate commands, not chained — chaining raced during S1 and the stack came up
 with the previous configuration.
+
+## Two traps the token creates, and what handles them
+
+**A token is single-use.** Once GoTrue redeems it, it is spent. `/login` and
+`/signup` are client components held in place by `useActionState`, so a failed
+submit leaves the same spent token in the form and every retry fails until
+reload — wrong password once, stuck until refresh. `useCaptchaReset` calls
+`turnstile.reset()` after a failed action for exactly this. `/magic-link` and
+`/forgot-password` need nothing: their actions redirect, so the widget is
+rebuilt.
+
+This one **cannot be reproduced locally or in CI**: the always-passes test
+secret verifies the same string repeatedly, so the bug only exists where a real
+secret is configured. It is reasoned from Cloudflare's single-use guarantee, not
+measured. Worth re-checking by hand once real keys are in staging.
+
+**The token arrives ~2.7 s after page load.** A submit before then gets
+`captcha_failed`. All four actions map that code to
+`copy.auth.captcha.notCompleted` rather than to a credential error — and on
+`/magic-link` and `/forgot-password` it is the one error those actions surface
+at all, because the alternative is sending someone to "check your email" for a
+message that was never sent.
+
+## The test suites
+
+`[auth.captcha]` being on means anything calling a guarded endpoint in a test
+must carry a token:
+
+- `tests/isolation/helpers.ts` exports `TEST_CAPTCHA`; `signInAs` and
+  `signUpNewUser` use it. The **admin API is not guarded**, so `createUser`
+  needs nothing.
+- `tests/e2e/helpers.ts` waits for the real widget's token before submitting —
+  which is what a human's typing time supplies for free — and `roleIn()` passes
+  a token because it talks to GoTrue directly with no form.
+- `tests/isolation/captcha.test.ts` is the file that proves enforcement is real
+  rather than configured: all four endpoints refused without a token, and a
+  wrong password *with* a valid token still failing as `invalid_credentials`,
+  so an enabled captcha is not masking every other auth error.
+
+Separately, S2's rate limiter allows five attempts per address per fifteen
+minutes, which the browser suite crosses immediately by signing in as the same
+seeded users once per spec. `playwright.config.ts` sets
+`AUTH_RATE_LIMIT_DISABLED=1` on its dev server; `lib/auth/rate-limit.ts` ignores
+that unless `NODE_ENV` is not `production`, so it cannot open on a deployment.
 
 ## Hosted projects
 

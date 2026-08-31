@@ -99,6 +99,40 @@ async function consume(bucket: string, limit: number, windowSeconds: number): Pr
 }
 
 /**
+ * The one way to stand the limiter down, and it cannot be reached in production.
+ *
+ * WHY IT EXISTS. The browser suite signs in as the same handful of seeded users
+ * once per spec -- 17 specs, one address -- so it crosses five attempts almost
+ * immediately and every spec after that fails with "Too many attempts". That is
+ * the limiter working correctly against a workload no human produces, and
+ * discovered the honest way: the whole suite went red the first time it ran
+ * against PR 2's limiter.
+ *
+ * The alternatives were worse. Raising the limit breaks the acceptance
+ * criterion. A service-role function to clear a bucket adds an endpoint whose
+ * whole purpose is removing rate limits. Rewriting 17 specs to share one signed
+ * -in session is genuinely the better long-term answer -- it would also cut the
+ * suite's six minutes down -- but that is suite-wide setup, which belongs to Q4
+ * (full E2E), not to an auth PR reaching into another session's specs.
+ *
+ * WHY IT IS SAFE. Two conditions, and the first is not settable by
+ * configuration: `next build` and `next start` pin NODE_ENV to "production", so
+ * on any real deployment this returns false whatever the environment says. The
+ * escape only opens under `next dev`, and only when asked explicitly. It is set
+ * in exactly one committed place -- playwright.config.ts's webServer env -- and
+ * nowhere else.
+ *
+ * The limiter's own behaviour keeps its coverage regardless: pgTAP for the
+ * counter, tests/isolation/rate-limit.test.ts through PostgREST, and
+ * tests/auth-rate-limits.test.ts for every endpoint's wiring. What is lost is
+ * only the browser-level "hit the limit and see the message", which is S2's
+ * named territory for a manual check anyway.
+ */
+function limiterStoodDown(): boolean {
+  return process.env.NODE_ENV !== "production" && process.env.AUTH_RATE_LIMIT_DISABLED === "1";
+}
+
+/**
  * Records one attempt against `endpoint` and says whether it may proceed.
  *
  * `identifier` is the address being acted on, or the signed-in user's id where
@@ -114,6 +148,8 @@ export async function withinAuthRateLimit(
   endpoint: AuthEndpoint,
   identifier?: string,
 ): Promise<boolean> {
+  if (limiterStoodDown()) return true;
+
   const address = await clientAddress();
 
   // Both are consumed on every attempt, so Promise.all rather than a

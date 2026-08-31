@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * S2: rate limiting on every auth endpoint.
@@ -236,6 +236,53 @@ describe("every auth endpoint refuses once limited", () => {
     expect(LIMITED).not.toMatch(/\d/);
     expect(LIMITED.toLowerCase()).not.toContain("account");
     expect(LIMITED.toLowerCase()).not.toContain("address");
+  });
+});
+
+/**
+ * The test-only escape, and the guard that keeps it out of production. The
+ * second assertion is the one that matters: if NODE_ENV=production ever stopped
+ * closing this, a single environment variable would silently remove rate
+ * limiting from every auth endpoint on a live deployment.
+ */
+describe("standing the limiter down", () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+
+  afterEach(() => {
+    delete process.env.AUTH_RATE_LIMIT_DISABLED;
+    vi.stubEnv("NODE_ENV", originalNodeEnv ?? "test");
+  });
+
+  it("is off unless explicitly asked for", async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+    await expect(withinAuthRateLimit("sign-in", ADDRESS)).resolves.toBe(false);
+    expect(rpc).toHaveBeenCalled();
+  });
+
+  it("stands down under next dev when asked, without touching the store", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    process.env.AUTH_RATE_LIMIT_DISABLED = "1";
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await expect(withinAuthRateLimit("sign-in", ADDRESS)).resolves.toBe(true);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("is IGNORED in production, whatever the environment says", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    process.env.AUTH_RATE_LIMIT_DISABLED = "1";
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await expect(withinAuthRateLimit("sign-in", ADDRESS)).resolves.toBe(false);
+    expect(rpc).toHaveBeenCalled();
+  });
+
+  it("needs the exact value, not merely a set variable", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    process.env.AUTH_RATE_LIMIT_DISABLED = "true";
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await expect(withinAuthRateLimit("sign-in", ADDRESS)).resolves.toBe(false);
   });
 });
 
