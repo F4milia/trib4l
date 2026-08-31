@@ -1,7 +1,7 @@
 # Session 10 — Meetups
 
 Tracks progress against the Session 10 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
 "Events, RSVP, attendance recording, recurrence in the organizer's
 timezone. Attendance is a first-class record an organizer can mark
 manually, so the metric survives regardless of where the call happens.

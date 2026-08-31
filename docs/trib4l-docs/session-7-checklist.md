@@ -1,7 +1,7 @@
 # Session 7 — Search and Member Safety
 
 Tracks progress against the Session 7 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10):
 "Postgres full-text over posts and comments, org- and cohort-scoped ...
 Member-to-member reporting and blocking — distinct from organizer content
 moderation ... Reports route to organizers with an escalation path to

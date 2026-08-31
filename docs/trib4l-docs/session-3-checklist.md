@@ -1,7 +1,7 @@
 # Session 3 — Org Provisioning, Onboarding, Multi-Org Shell
 
 Tracks progress against the Session 3 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10)
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-1--community-core-sessions-3-10)
 (this session has no explicit "done means" line in the plan — the bar
 applied here matches Sessions 0–2's rigor: build it, verify it against a
 real Supabase instance and, where feasible, a real browser session, don't

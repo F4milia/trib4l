@@ -1,7 +1,7 @@
 # Session 12 — Live Events and VOD Library
 
 Tracks progress against the Session 12 scope in
-[`trib4l-build-from-zero.md`](./trib4l-build-from-zero.md#phase-2--video-via-mux-sessions-11-12):
+[`trib4l-build-from-zero.md`](../trib4l-build-from-zero.md#phase-2--video-via-mux-sessions-11-12):
 "Organizer-created live streams, RTMP ingest keys, auto-archive into VOD.
 Library UI with stage and cohort entitlement filtering. Entitlement
 resolution shares one code path with Session 11 — do not fork it."

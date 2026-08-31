@@ -150,7 +150,7 @@ describe("member_blocks and member_reports (F4milia's per-community complement t
     expect(reportError).toBeNull();
 
     // Real membership deletion in this app is always a soft-delete
-    // (deleted_at set, row kept -- see docs/data-retention-policy.md), not
+    // (deleted_at set, row kept -- see docs/trib4l-docs/data-retention-policy.md), not
     // a real DELETE, so that's what this test does too: a plain DELETE
     // would prove the FK's "on delete cascade" works, not the trigger this
     // feature actually depends on in production.
