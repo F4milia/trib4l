@@ -237,3 +237,17 @@ than week one.
   record's history" full-scans a table now fed by 30 tables — and the table
   is append-only with no retention policy · add (target_type, target_id)
   while it is still small. PERF-2.
+- 2026-09-01 · spec reconstruction · Ferenz 0.6 asked for `org_owner` to overlap
+  with `organizer`/`mentor` via a `membership_roles` join table, and the run doc
+  never carried that open question forward · DECLINED for now, one role per
+  membership. Zero-to-many roles would break the 12-member cap, which excludes
+  mentors by `role <> 'mentor'` — a member who also mentors would stop consuming
+  a seat and a Family could reach 13. And 19 historical migrations hardcode
+  `array['org_owner']::membership_role[]`, so the value cannot be dropped from
+  the enum anyway. If it reopens (co-owners, ownership transfer, a real
+  owner-and-organizer need), move ownership OFF the role axis —
+  `organizations.owner_profile_id` — not to a join table: all 48 role-checking
+  policies go through `has_org_role()` and none read `memberships.role`, so only
+  that one function changes. Ferenz 0.8's test cannot be written as specified;
+  that is knowingly unmet, not forgotten. Full reasoning:
+  f4milia-product-narrative-and-spec.md §10.1.

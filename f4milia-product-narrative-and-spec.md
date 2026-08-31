@@ -338,20 +338,75 @@ all Builds closed → Tower completion  → ledger_events (tower_event)
 Each of these is genuinely absent from both prompt documents. Guessing any of
 them produces schema that D1, D2, M1, K2, Q4, A2, A5 and K1 all inherit.
 
-### 10.1 The role model is unresolved — highest priority
+**10.1 is settled** (2026-09-01) and kept here with its reasoning rather than
+deleted, so the decision travels with the question. **10.2 does not block the
+schema session** — nothing before Wave 7 reads `contribution_ledger`, so the
+domain model can be built without it and the equity table can follow. The
+remaining eight are live.
 
-F0.6 states that `org_owner` **must be able to overlap** with `organizer` or
-`mentor`, that a single mutually-exclusive enum *"won't support that"*, and
-recommends replacing `memberships.role` with a `membership_roles` join table —
-*"confirm the approach before implementing, since it's a real schema change."*
+### 10.1 The role model — SETTLED 2026-09-01: F0.6 declined for now
 
-**The repository has a single `membership_role` enum** with `org_owner` as one
-of its values, and F0.8 asks for a test proving one membership can hold
-`organizer` and `org_owner` **simultaneously** — which the current schema cannot
-express.
+**Decision: keep the single `membership_role` enum. Do not build
+`membership_roles`.** Recorded so a future session reading F0.6 sees a decision
+rather than an oversight.
 
-So either the recommendation was declined, or it was never actioned. This is
-not a detail: it touches every RLS policy already written and tested.
+**What F0.6 asked for.** That `org_owner` **must be able to overlap** with
+`organizer` or `mentor`; that a single mutually-exclusive enum *"won't support
+that"*; and a `membership_roles` join table as the fix — *"confirm the approach
+before implementing, since it's a real schema change, not a config tweak."*
+F0.8 then asks for a test proving one membership holds `organizer` and
+`org_owner` simultaneously, which the current schema cannot express.
+
+**Why declined.** Three findings, each measured against the repository rather
+than estimated:
+
+1. **The 12-member cap depends on `mentor` being exclusive.**
+   `lib/family-cap.ts` counts members with `.neq("role", "mentor")`, because a
+   mentor is an outside guide and does not consume one of the Family's twelve
+   seats. Under zero-to-many roles, "is a mentor" becomes "has a mentor row" —
+   so a genuine Family member who *also* mentors would be excluded from the
+   cap, letting a Family reach thirteen real people. `founder-collective`
+   already has a member who is a mentor, so this is not hypothetical. F0.6 does
+   not mention it, and it is the kind of breakage that appears as a product bug
+   months later rather than as a failing test.
+
+2. **`org_owner` cannot be removed from the enum anyway.** Nineteen historical
+   migrations hardcode `array['org_owner']::membership_role[]`, and `db reset`
+   replays them from scratch. Removing the value breaks that replay, so it
+   would have to stay as a dead enum member — which removes most of the
+   modelling benefit the change was for.
+
+3. **Nothing is blocked by it today.** Two of the three seeded Families have
+   *zero* owners and the app works. Overlap is a convenience, not a missing
+   capability. Against that: 24 references across 16 app files, most of the
+   isolation suite's role setup, and `lib/org-nav.ts`, which uses
+   `role === "org_owner"` to decide whether Commerce appears in the nav.
+
+**What is therefore true, and should not be re-litigated casually:** a
+membership holds exactly one of `member` · `mentor` · `organizer` ·
+`org_owner`. The founder of a Family cannot be both its owner and its
+organizer. F0.7's settings/billing scope and F0.3's admin scope are held by
+different people, or one person holds `org_owner` and forgoes the organizer
+surfaces.
+
+**What would reopen it.** Any of:
+
+- Co-owners become a requirement (two founders sharing a Family).
+- Ownership transfer becomes a feature.
+- A real user need arrives for one person to be owner *and* organizer.
+
+**How to do it when that happens.** Not the full join table. Move ownership off
+the role axis instead — `organizations.owner_profile_id`, or a small
+`org_owners` table if co-owners are the trigger — and leave `organizer` and
+`mentor` in the enum. That satisfies both of F0.8's combinations, keeps the
+cap's meaning intact, and touches one function body: all 48 role-checking
+policies go through `has_org_role()` and none read `memberships.role`
+directly, so the policies themselves stay untouched. Best done inside a session
+already writing migrations.
+
+**Not settled by this:** F0.8's test cannot be written as specified. Record that
+as a knowingly-unmet item rather than writing a test that asserts something
+else.
 
 ### 10.2 The slice formula
 
@@ -411,6 +466,16 @@ one.
 ## 11. If you are the schema session
 
 Read §2 for what is specified, §10 for what is not, and treat §10 as blocking
-rather than as detail to resolve while typing. Bring 10.1 and 10.2 to a human:
-the first invalidates existing RLS if it changes, and the second is the number a
-member's eventual ownership is computed from.
+rather than as detail to resolve while typing.
+
+**10.1 is decided** — one role per membership. Build the domain model's RLS
+against `has_org_role()` as it stands.
+
+**10.2 is not, and does not need to be yet.** Leave `contribution_ledger` out
+of the first schema session entirely: nothing before Wave 7 reads it, and the
+formula must be written down with worked examples, by a human, before it is
+written in code. It is the number a member's eventual ownership is computed
+from, and CLAUDE.md gates any PR touching the equity ledger to Ivan.
+
+The eight remaining questions in §10 are the ones to bring to the 09:30 window
+before writing the migration.
