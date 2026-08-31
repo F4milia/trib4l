@@ -42,6 +42,7 @@ export type Database = {
           id: string
           metadata: Json
           org_id: string | null
+          seq: number
           target_id: string | null
           target_type: string
         }
@@ -52,6 +53,7 @@ export type Database = {
           id?: string
           metadata?: Json
           org_id?: string | null
+          seq?: never
           target_id?: string | null
           target_type: string
         }
@@ -62,6 +64,7 @@ export type Database = {
           id?: string
           metadata?: Json
           org_id?: string | null
+          seq?: never
           target_id?: string | null
           target_type?: string
         }
@@ -1267,6 +1270,8 @@ export type Database = {
           name: string
           settings: Json
           slug: string
+          table_prompt_time: string
+          timezone: string
           updated_at: string
         }
         Insert: {
@@ -1276,6 +1281,8 @@ export type Database = {
           name: string
           settings?: Json
           slug: string
+          table_prompt_time?: string
+          timezone?: string
           updated_at?: string
         }
         Update: {
@@ -1285,6 +1292,8 @@ export type Database = {
           name?: string
           settings?: Json
           slug?: string
+          table_prompt_time?: string
+          timezone?: string
           updated_at?: string
         }
         Relationships: []
@@ -1875,6 +1884,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      audit_safe_uuid: { Args: { p_value: string }; Returns: string }
       can_see_gated_content: {
         Args: {
           check_cohort_id: string
