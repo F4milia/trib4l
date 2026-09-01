@@ -32,8 +32,8 @@ select is(
   (select count(*)::int
      from pg_trigger t join pg_proc p on p.oid = t.tgfoid
     where p.proname = 'audit_row_change' and not t.tgisinternal),
-  35,
-  '35 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, towers and builds'
+  36,
+  '36 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, towers, builds and bricks'
 );
 
 -- The same claim from the other direction, and the one that actually holds the

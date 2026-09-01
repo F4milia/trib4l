@@ -329,3 +329,18 @@ than week one.
   cross-stream API change. Text-merging cleanly proves nothing; the RLS gate on
   the MERGED tree is the only thing that finds this class, so run it before
   opening a sync PR, not after.
+- 2026-09-01 · schema session · a CHECK on `verified_by is not null` made a
+  Family that had completed a verified Brick undeletable: `on delete set null`
+  fires an UPDATE, an UPDATE RE-EVALUATES CHECK constraints, and the failure
+  aborted the parent delete · CHECK constraints cannot be DEFERRABLE, so never
+  write a CHECK over a column another table's FK action can null. Model the
+  FACT (`verified_at`) separately from the POINTER (`verified_by`) and constrain
+  the fact. Found by testing a claim in a PR description, not by review.
+- 2026-09-01 · schema session · audit_row_change() nulls a vanished org_id only
+  `if tg_op = 'DELETE'`, but deleting an organization cascades to memberships,
+  whose `on delete set null` fires an UPDATE on a child whose org is mid-delete
+  -- audit_log_org_id_fkey then aborts the whole delete · widen that guard to
+  any tg_op. Latent since the audit series; `bricks` is the first table with
+  both a transitive cascade from organizations and a set-null from memberships,
+  so no existing table exposes it. OWED, and organization deletion is broken
+  until it lands. Skipped test in supabase/tests/database/130_bricks.sql.

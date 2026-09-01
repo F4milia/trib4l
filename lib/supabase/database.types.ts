@@ -121,6 +121,91 @@ export type Database = {
           },
         ]
       }
+      bricks: {
+        Row: {
+          assignee: string | null
+          build_id: string
+          created_at: string
+          description: string
+          due_at: string | null
+          id: string
+          org_id: string
+          status: Database["public"]["Enums"]["brick_status"]
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          assignee?: string | null
+          build_id: string
+          created_at?: string
+          description: string
+          due_at?: string | null
+          id?: string
+          org_id: string
+          status?: Database["public"]["Enums"]["brick_status"]
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          assignee?: string | null
+          build_id?: string
+          created_at?: string
+          description?: string
+          due_at?: string | null
+          id?: string
+          org_id?: string
+          status?: Database["public"]["Enums"]["brick_status"]
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bricks_assignee_fkey"
+            columns: ["assignee"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bricks_assignee_org_id_fkey"
+            columns: ["assignee", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "bricks_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bricks_build_id_org_id_fkey"
+            columns: ["build_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "bricks_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bricks_verified_by_org_id_fkey"
+            columns: ["verified_by", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+        ]
+      }
       builds: {
         Row: {
           created_at: string
@@ -2337,6 +2422,12 @@ export type Database = {
       }
     }
     Enums: {
+      brick_status:
+        | "open"
+        | "in_progress"
+        | "needs_help"
+        | "pending_verification"
+        | "done"
       build_status: "open" | "complete"
       build_type: "commerce" | "permanence" | "propagation" | "custom"
       invitation_status: "pending" | "accepted" | "revoked"
@@ -2488,6 +2579,13 @@ export const Constants = {
   },
   public: {
     Enums: {
+      brick_status: [
+        "open",
+        "in_progress",
+        "needs_help",
+        "pending_verification",
+        "done",
+      ],
       build_status: ["open", "complete"],
       build_type: ["commerce", "permanence", "propagation", "custom"],
       invitation_status: ["pending", "accepted", "revoked"],
