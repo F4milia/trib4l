@@ -5,7 +5,7 @@ Everything that would halt a Stream A session, session by session, in wave order
 | | |
 |---|---|
 | **Written** | 2026-09-02 |
-| **Revised** | 2026-09-02 — decisions 1, 2, 3, 6, 8, 9, 10, 11, 12 ruled on; the Supabase **Free** plan opened 13 and 14. See §10 |
+| **Revised** | 2026-09-02 — decisions 1, 2, 3, 6, 8, 9, 10, 11, 12 ruled on; the Free plan opened 13 and 14, and the Wave 4 pass opened 15. See §10 |
 | **Against** | `F4milia — Complete Run Doc (Prompts Included).md`, Stream A column |
 | **Repo state** | `origin/main` @ `8ed81dc` (after `#91`) |
 | **Scope** | Waves 3–10. Waves 0–2 (S1, S2, C1) are merged |
@@ -14,9 +14,11 @@ Everything that would halt a Stream A session, session by session, in wave order
 ---
 
 **Companion documents.** `ai-model-and-cost.md` carries the pricing and usage
-model behind decisions 4 and 5. `stream-a-unblock-plan.md` is the ordered PR plan
-for the blockers that can be removed **without** any of the open decisions — six
-of the eight 🔴 and all three 🔵.
+model behind decisions 4 and 5. `secrets-and-env.md` records every key James
+configures, which store it belongs in, and why invariant 2 decides that.
+`stream-a-unblock-plan.md` is the ordered PR plan for the blockers that can be
+removed **without** any of the open decisions — including tranche E, which takes
+Wave 4 from "cannot start" to "waiting on five values and one C2 table".
 
 ## 1. How to read this
 
@@ -32,8 +34,9 @@ of the eight 🔴 and all three 🔵.
 **The short version, as of the 2026-09-02 revision.** Both sessions that could not
 run as written now have a ruled path: **A5** gets a schema session slotted upstream of
 Wave 7, and **F2** keeps Wave 5 and builds the first Edge Function itself under four
-conditions (§10). **Four decisions are still open** — the model provider and keys, the
-AI cost ceiling, PostHog hosting, and how a Family-count cap is enforced — the last opened by the ruling that storage sits on Supabase **Free**,
+conditions (§10). **Five decisions are still open** — the model provider and keys, the
+AI cost ceiling, PostHog hosting, how a Family-count cap is enforced, and the read
+mark's design — the last opened by the ruling that storage sits on Supabase **Free**,
 which also adds real scope to C2. Everything else is a dependency to install
 or a scope surprise.
 
@@ -187,7 +190,15 @@ Account, keys, and install all outstanding.
 - The read mark is a **timestamp high-water**, so a message committing after the
   mark with an earlier `created_at` counts as read unseen.
 
-**Depends on C2** for the `notifications` table.
+**Depends on C2** for the `notifications` table — which is why the unblock plan's
+PR 8 specifies what N1 needs from it *before* C2 runs, rather than letting N1
+discover a mismatch in Wave 4.
+
+> **Tranche E of `stream-a-unblock-plan.md` covers this session.** After it, N1's
+> remaining blockers are five values only you can supply (VAPID pair, subject, two
+> Inngest keys) and one table C2 owns. The first carried defect above is fixed by
+> PR 13; the second is **decision 15**, because picking wrong is expensive to move
+> once a notification center sits on it.
 
 ## 5. Wave 5 — F1, then F2
 
@@ -410,7 +421,7 @@ the ruling, not the recommendation that produced it.
 | 11 | The equity engine | A5, Wave 7 | A **schema session is slotted upstream of Wave 7**: `contribution_ledger`, the `bricks` estimate columns, the deterministic slice function, pgTAP, RLS, in the schema sandbox. Unblocked by row 6. **Its prompt is unwritten** |
 | 12 | Expected concurrent Families | C2 | **8.** Fixes the per-Family quota at 100 MB — and `8 × 100 MB = 800 MB` is the usable budget exactly, so the ceiling invariant holds with equality and has no slack. Also makes `max_families = 8` a real constraint, which nothing in the system enforces; see decision 14 |
 
-### 🟠 Open — four
+### 🟠 Open — five
 
 | # | Decision | Blocks | Recommendation on the table |
 |---|---|---|---|
@@ -418,6 +429,7 @@ the ruling, not the recommendation that produced it.
 | 5 | AI cost ceiling | A1, Wave 6 | 10 suggestions/member/hour · 100/Family/day · `output_config: {effort: "low"}` with **`max_tokens: ~2048`** · an `AI_DISABLED` kill switch returning a plain refusal. Reuse `lib/email`'s rate-limit pattern. **The cap IS the budget:** 100/Family/day on Opus 5 uncached is ~$1,140/month at 8 Families; prompt caching takes that to ~$276. Set the numbers against `ai-model-and-cost.md` §3, not against intuition. **`max_tokens: 1024` was wrong** — thinking bills as output and counts against the cap, so it can truncate the suggestion |
 | 7 | PostHog cloud or self-hosted | Q3, Wave 9 | Cloud, EU region. Self-hosting means running ClickHouse to receive event names and counts; invariant 4 already bounds the payload in code |
 | 13 | **Ledger durability on Free** | the equity-engine schema session, before Wave 7 | Supabase Free does not include point-in-time recovery, and its backup guarantees are weaker than Pro's — **believed, not verified against your dashboard.** CLAUDE.md calls the Ledger *"a system of record for eventual ownership"*, so this wants deciding before it holds real slices: accept Free for pre-production, or upgrade when the engine ships |
+| 15 | **The read mark's design** | **N1, Wave 4** | The mark is a **timestamp high-water**, so a message committing after the mark but carrying an earlier `created_at` counts as read without being seen — the sibling of the `audit_log.created_at` transaction-time lesson. Either a `seq`-style monotonic column on `messages`, or per-message read receipts. **Recommended: the monotonic column** — cheaper, and it is how `audit_log` already solved this exact ordering problem. Receipts only if *"who has seen this"* is a product requirement rather than a badge |
 | 14 | **How the 8-Family cap is enforced** | **C2, now** · every signup path | Decision 12 makes `max_families = 8` load-bearing, and nothing in migrations, `app` or `lib` implements any such limit — so an `organizations` INSERT can break the storage ceiling, and the symptom lands on an unrelated Family's upload. **Recommended: a hard cap at Family creation with a plain refusal**, reversible by one constant. The alternative, monitor-and-alert, leaves the invariant as prose |
 
 > **Row 4 moved a wave earlier.** Decision 9 keeps F2 in Wave 5, and F2 cannot
