@@ -329,3 +329,11 @@ than week one.
   cross-stream API change. Text-merging cleanly proves nothing; the RLS gate on
   the MERGED tree is the only thing that finds this class, so run it before
   opening a sync PR, not after.
+- 2026-09-01 · Wave 2 gate · PERF-2 taken (20260903100602): audit_log now has
+  (target_type, target_id) · measured on 200k rows, "this record's history" went
+  from a 2869-buffer parallel seq scan at 7.123 ms to a 4-buffer index scan at
+  0.033 ms, for 9.2 MB of index. Not speculative — tests/isolation already
+  filters on target_id in three files because the 2026-08-29 constraint requires
+  it, and every new table adds more. The pgTAP asserts the PLAN, not just the
+  index's existence: an index that exists and is never chosen reads exactly like
+  one that works, which is the greptile.json lesson in another form.
