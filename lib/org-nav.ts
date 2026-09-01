@@ -48,18 +48,9 @@ type Def = [suffix: string, key: keyof typeof items, icon: OrgNavIcon];
 /** Path suffix -> deck key -> §10.1 icon. "" is the org home. */
 const COMMUNITY: ReadonlyArray<Def> = [
   ["", "home", "House"],
-  // Added with the move in this PR: once the dashboard takes `/o/[slug]`, the
-  // posts feed is otherwise reachable by URL only. The wider question -- that
-  // nine of these items are Trib4l concepts F4milia does not have -- is a
-  // separate PR, deliberately.
   ["/feed", "feed", "LayoutGrid"],
-  ["/mentorship", "mentorship", "HeartHandshake"],
-  ["/meetups", "meetups", "CalendarDays"],
-  ["/videos", "videos", "Video"],
-  ["/live", "live", "Radio"],
   ["/members", "members", "Users"],
   ["/messages", "messages", "MessagesSquare"],
-  ["/shop", "shop", "ShoppingBag"],
 ];
 
 /**
@@ -69,19 +60,25 @@ const COMMUNITY: ReadonlyArray<Def> = [
  */
 const MANAGE: ReadonlyArray<Def> = [
   ["/settings/members", "invitations", "Mail"],
-  ["/settings/products", "products", "Package"],
-  ["/settings/cohorts", "cohorts", "UsersRound"],
-  ["/settings/stages", "stages", "Milestone"],
-  ["/settings/mentorship", "mentorshipSettings", "HeartHandshake"],
-  ["/settings/meetups", "meetupsSettings", "CalendarDays"],
-  ["/settings/videos", "videosSettings", "Video"],
-  ["/settings/live", "liveSettings", "Radio"],
   ["/settings/reports", "reports", "Flag"],
   ["/settings/member-reports", "memberReports", "ShieldAlert"],
 ];
 
-/** org_owner only, matching the pre-migration nav exactly. */
-const OWNER: ReadonlyArray<Def> = [["/settings/commerce", "commerce", "CreditCard"]];
+/**
+ * Empty, and kept as a list rather than deleted.
+ *
+ * Its only entry was `/settings/commerce`, and CLAUDE.md is explicit that
+ * commerce is dormant-per-Tower with nothing touching Stripe until it is
+ * unparked -- so an owner-only link into it advertises a feature the product
+ * has deliberately switched off. The route still exists and still refuses a
+ * non-owner; only the signpost is gone.
+ *
+ * The shape stays because org_owner-only navigation is a real tier this
+ * product will want again (ownership transfer, the equity surfaces), and
+ * re-deriving it from the role logic later is more work than leaving an empty
+ * array with a reason attached.
+ */
+const OWNER: ReadonlyArray<Def> = [];
 
 const build = (slug: string, defs: ReadonlyArray<Def>): OrgNavItem[] =>
   defs.map(([suffix, key, icon]) => ({

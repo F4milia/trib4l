@@ -24,7 +24,11 @@ test.describe("dual-Family user", () => {
     await page.goto(`/o/${ORG.caregiverCircle}`);
 
     const hrefs = await sidebarHrefs(page);
-    expect(hrefs.length).toBeGreaterThan(5);
+    // Lowered from 5 with the nav trim: a plain member now sees four Community
+    // items, not nine. The number is a guard against the nav rendering EMPTY
+    // and the loop below then passing vacuously -- it is not a claim about how
+    // many features exist.
+    expect(hrefs.length).toBeGreaterThan(2);
 
     const orgScoped = hrefs.filter((h) => h.startsWith("/o/"));
     for (const h of orgScoped) {
@@ -38,7 +42,8 @@ test.describe("dual-Family user", () => {
     await page.goto(`/o/${ORG.founderCollective}`);
 
     const orgScoped = (await sidebarHrefs(page)).filter((h) => h.startsWith("/o/"));
-    expect(orgScoped.length).toBeGreaterThan(5);
+    // Same as above: a floor that catches an empty nav, not a feature count.
+    expect(orgScoped.length).toBeGreaterThan(2);
     for (const h of orgScoped) {
       expect(h, `${h} escaped Family B`).toContain(ORG.founderCollective);
       expect(h, `${h} leaked Family A`).not.toContain(ORG.caregiverCircle);

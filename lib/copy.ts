@@ -482,6 +482,19 @@ export const copy = {
       // description above stops being true when the dashboard lands and is
       // corrected in that PR, not this one.
       feed: { label: "Feed", description: "Posts and comments" },
+      /**
+       * FROM HERE, RETAINED BUT NO LONGER LINKED — Mentorship, Meetups,
+       * Videos, Live, Shop, and the Manage entries for Products, Cohorts,
+       * Stages, the four *Settings keys and Commerce.
+       *
+       * lib/org-nav.ts stopped offering them when the nav was trimmed to
+       * F4milia's own concepts. Kept rather than deleted because the routes
+       * still exist and still work — only the signposts are gone — so
+       * re-linking any of them is a one-line change in org-nav.ts rather than
+       * a copy round-trip. They remain honest descriptions of real
+       * destinations, which is what tests/org-nav.test.ts's deck census
+       * asserts; an unlinked entry breaks nothing there.
+       */
       mentorship: { label: "Mentorship", description: "Pairings and requests" },
       meetups: { label: "Meetups", description: "Gatherings and RSVPs" },
       videos: { label: "Videos", description: "Recorded sessions" },
