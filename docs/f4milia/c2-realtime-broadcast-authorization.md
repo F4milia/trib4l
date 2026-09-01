@@ -8,7 +8,7 @@ Carried forward from C1. **Read before starting C2.**
 | **Origin** | C1 (Wave 2, Stream A), PR `#72` — merged |
 | **Owner** | C2 (Wave 3, Stream A) — the next session on this surface |
 | **Severity** | Low impact, real. No message content leaks. Metadata does |
-| **Status** | **Open** — the channel is still ungated. §5.1 (the false comment) is closed; §5.2–§5.4 are C2's. Decided 2026-09-02 (James) to fold into C2 rather than patch separately |
+| **Status** | **CLOSED 2026-09-02 by C2 PR 1** — migration `20260903101501` plus `private: true` in `lib/conversations-realtime.ts`. §5.1 was already closed; §5.2 and §5.3 are done; §5.4 stands as a standing rule rather than a task |
 
 ---
 
@@ -85,9 +85,25 @@ now states the measured behaviour, names the probe, and points back here.
 **C2 does not need to redo this** — the numbering is kept so §5.2 and §5.3 keep
 their references.
 
-**2. Gate the channel.** Supabase Realtime Authorization puts RLS on
-`realtime.messages`, so a `join` is evaluated by policy like any other read. The
-policy C1 already has is the one to reuse:
+**2. Gate the channel. ✅ Done — migration `20260903101501`.** Supabase Realtime
+Authorization puts RLS on `realtime.messages`, so a `join` is evaluated by policy
+like any other read. The sketch below is what shipped, with three changes found
+while building it:
+
+- **Two policies, not one.** SELECT gates the join; INSERT gates *sending* a
+  broadcast. Without the second a participant joins, hears everyone, and cannot
+  announce their own typing — which reads as a broken indicator rather than a
+  missing policy.
+- **`case`, not `and`.** Postgres does not guarantee left-to-right evaluation of
+  AND, so a topic that is not a uuid could reach the `::uuid` cast and raise
+  22P02 inside a policy — a channel that will not join, for a reason no log
+  explains.
+- **RLS was already enabled on `realtime.messages` with zero policies.** Realtime
+  consults them only for `private: true` channels, which is why the hole existed
+  and why the client flag and the policies are one change: policies alone gate
+  nothing, the flag alone admits nobody.
+
+The policy C1 already has is the one to reuse:
 
 ```sql
 -- Sketch, not tested. The real version belongs in C2's migration.
@@ -104,11 +120,22 @@ create policy conversation_broadcast_join on realtime.messages
 `is_conversation_participant()` already checks the membership is active, so a
 departed member fails it — which is precisely the case in §3.
 
-**3. Verify it the way C1's other claims were verified.** The probe in §7
-reproduces the leak in about fifteen seconds; it should go from "carol received
-1" to "carol received 0" with the participant control still receiving. A test
-that only shows carol getting nothing proves nothing — realtime being broken in
-the environment looks identical.
+**3. Verify it the way C1's other claims were verified. ✅ Done —
+`tests/isolation/conversations-broadcast-authorization.test.ts`.** The outcome is
+better than "carol received 0": her join is now **refused** outright, so the
+assertion is a rejection rather than an absence. The participant control runs
+first and must actually receive a typing event, exactly as this section asks.
+
+**The question the blockers doc flagged as reasoned-but-unmeasured is now
+measured:** `private: true` gates the JOIN and does **not** break
+`postgres_changes`. A participant on the now-private channel still receives row
+events. The policy needed one clause, not two.
+
+Two controls were run rather than assumed. Reverting `private: true` (policies
+left in place) fails only the refusal test, with the other two still passing —
+so the refusal is carried by the fix, not by broken realtime. Dropping the
+policies (flag left in place) fails even the participant warm-up, which is the
+evidence for "one change, both halves".
 
 **4. Do not put content in a broadcast payload.** Reactions and threading will
 be tempting to deliver this way. Until §5.2 lands, broadcast is an unauthenticated
