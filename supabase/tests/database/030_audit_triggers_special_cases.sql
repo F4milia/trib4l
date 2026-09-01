@@ -48,8 +48,8 @@ select is(
   -- The census assertion below is the one that actually holds invariant 5. This
   -- total exists to catch a trigger attached to the WRONG function, which the
   -- census cannot see -- it is deliberately brittle, and that is its job.
-  47,
-  '47 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, C1''s conversations, conversation_participants and messages, towers, builds and bricks, mood_tags, table_prompts and table_entries, vows, and C2''s notifications, message_mentions, message_reactions and message_attachments'
+  48,
+  '48 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, C1''s conversations, conversation_participants and messages, towers, builds and bricks, mood_tags, table_prompts and table_entries, vows, and C2''s notifications, message_mentions, message_reactions and message_attachments, and push_subscriptions'
 );
 
 -- The same claim from the other direction, and the one that actually holds the
