@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import config from "../vitest.config.mts";
+import config from "../vitest.config.mjs";
 
 // A worktree inside the repository is inside every glob that is not anchored.
 //
