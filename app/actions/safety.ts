@@ -38,7 +38,7 @@ export async function createReport(formData: FormData) {
     );
   }
 
-  redirect(`/o/${orgSlug}?notice=${encodeURIComponent("Report sent to the organizers.")}`);
+  redirect(`/o/${orgSlug}/feed?notice=${encodeURIComponent("Report sent to the organizers.")}`);
 }
 
 export async function resolveReport(formData: FormData) {
@@ -86,8 +86,8 @@ export async function blockUser(formData: FormData) {
     .from("blocks")
     .insert({ blocker_profile_id: userData.user!.id, blocked_profile_id: blockedProfileId });
 
-  revalidatePath(`/o/${orgSlug}`);
-  redirect(`/o/${orgSlug}`);
+  revalidatePath(`/o/${orgSlug}/feed`);
+  redirect(`/o/${orgSlug}/feed`);
 }
 
 export async function unblockUser(formData: FormData) {
