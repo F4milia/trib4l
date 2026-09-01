@@ -2994,7 +2994,7 @@ export type Database = {
         Returns: boolean
       }
       unread_message_counts: {
-        Args: never
+        Args: { check_org_id: string }
         Returns: {
           conversation_id: string
           unread_count: number
