@@ -735,5 +735,42 @@ export const copy = {
     you: "You",
     unknownMember: "A former member",
     deleted: "This message was deleted.",
+
+    /**
+     * C2. Reactions and mentions.
+     *
+     * Same restraint as the strings above. A reaction bar is the other place a
+     * chat product starts inventing tone -- "Nice one!", "React to show some
+     * love" -- and every one of those is the product putting words in a
+     * Family's mouth. These name the action and stop.
+     */
+    reactions: {
+      /** The button that opens the picker. Not "React!" -- it is a verb, not a nudge. */
+      add: "Add reaction",
+      pickerLabel: "Choose a reaction",
+      /**
+       * The accessible label on each count. Screen readers hear the number and
+       * whether it includes them, because the visual affordance for "you
+       * reacted" is a border that a screen reader cannot see.
+       */
+      count: (emoji: string, n: number, includesYou: boolean) =>
+        includesYou
+          ? `${emoji}, ${n} including you. Activate to remove yours.`
+          : `${emoji}, ${n}. Activate to add yours.`,
+      /** A refusal, not a shrug: the member did something and it did not work. */
+      failed: "That reaction did not save. Try again.",
+    },
+
+    mentions: {
+      /** Announced when the list opens, so it is not a silent change. */
+      listLabel: "Members you can mention",
+      /** Nothing invented: it says what is true and offers no alternative. */
+      noMatches: "No members match.",
+      /**
+       * A mention notifies someone. Saying so once, at the point of choosing,
+       * is the difference between a feature and a surprise.
+       */
+      hint: "Mentioning someone notifies them.",
+    },
   },
 } as const;
