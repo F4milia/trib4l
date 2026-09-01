@@ -567,3 +567,33 @@ than week one.
   named commit, not as a present-tense fact, and re-read every doc the record
   cross-references before merging it. A record is a claim like any other; the
   2026-08-28 alignment rule applies to it.
+- 2026-09-02 · schema PR 9 · a SELECT policy of the form `using (deleted_at is
+  null and ...)` makes the table's own SOFT DELETE impossible: on UPDATE the new
+  row must satisfy the policies, so the moment deleted_at stops being null the
+  write fails with 42501 "new row violates row-level security policy". Measured
+  on one row, one author, one session — `set response_text` succeeded and `set
+  deleted_at` did not · a soft-deletable table needs either the author's own
+  deleted rows kept visible, or one SECURITY DEFINER function that writes the
+  column (20260903101311 took the second, per C1 PR4's pattern). pgTAP CANNOT
+  see this class at all — it runs as `postgres` and bypasses RLS, so
+  150_table_entries passed while the table was effectively append-and-edit-only.
+- 2026-09-02 · schema PR 9 · `.eq("org_id", x).maybeSingle()` on memberships
+  returns NO ROW rather than an error, because RLS lets a member read every
+  membership in their own Family and maybeSingle sees two · every assertion
+  downstream then reads `undefined` and reports "expected undefined to be
+  truthy", which looks like missing seed data. Resolve the caller's own row by
+  `profile_id = (await client.auth.getUser()).data.user.id`, never by org alone.
+- 2026-09-02 · schema PR 9 · signing in per TEST rather than per user pushed the
+  isolation suite past S2's five-per-fifteen-minutes auth limiter — and the
+  symptom was two UNRELATED files failing downstream (invitations,
+  platform-admin), not a rate-limit error in the file that caused it · memoise
+  one client per seeded user per file. A JWT is valid for the whole run. The
+  suite performs ~159 sign-ins already, so a new file's 22 is not a rounding
+  error.
+- 2026-09-02 · schema PR 9 · tests/isolation/invitations.test.ts and
+  platform-admin.test.ts FAIL on a second consecutive run with no reset —
+  verified with the new file absent, so this is pre-existing, not caused by it.
+  Both leave verified MFA factors behind and GoTrue then refuses enrol from
+  aal1 · Q4's edge case ("run the suite twice, run 2 passes on run 1's
+  residue") is already red for those two. A spec that elevates should unenroll
+  while it still holds aal2, which is the only window in which it can.
