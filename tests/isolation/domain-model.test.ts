@@ -381,17 +381,25 @@ describe("invariant 6 -- a block hides content from the blocker, not from the ro
       return (data ?? []).map((e) => e.id).sort();
     };
 
+    // ESTABLISH THE PRECONDITION FIRST -- "Alice is not blocking Bob".
+    //
+    // This delete used to sit BELOW the baseline read, which made the file fail
+    // on every second consecutive run: the block row from the previous run was
+    // still there, so Alice already saw nothing and the "before" assertion
+    // failed. The error reads as a broken SELECT policy on table_entries, three
+    // steps from the cause. Measured -- reproducible on runs 2 and 3, green on
+    // run 1.
+    //
+    // A spec asserts a TRANSITION. It cannot do that until it owns its own
+    // starting point.
+    await service.from("member_blocks").delete().eq("blocker_membership_id", aliceM!.id);
+
     const beforeForAlice = await bobsEntryIds(alice);
     const forBob = await bobsEntryIds(bob);
     // The positive half. Without it, everything below passes with the SELECT
     // policy deleted.
     expect(beforeForAlice.length).toBeGreaterThan(0);
     expect(forBob).toEqual(beforeForAlice);
-
-    // Service role only to establish the precondition -- a block row. The
-    // thing under test is what RLS does with it afterwards, and that is read
-    // as Alice and as Bob.
-    await service.from("member_blocks").delete().eq("blocker_membership_id", aliceM!.id);
     const { error: blockError } = await service.from("member_blocks").insert({
       org_id: ORG_IDS.caregiverCircle,
       blocker_membership_id: aliceM!.id,

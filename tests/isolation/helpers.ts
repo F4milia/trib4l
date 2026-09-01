@@ -154,11 +154,46 @@ export function createAnonClient(): SupabaseClient<Database> {
  * platform_admin login would require, done here via the API so it's
  * testable without any UI.
  */
+/**
+ * Removes every MFA factor a user holds, through the ADMIN API.
+ *
+ * Not through the database: grants here are least-privilege per migration and
+ * service_role has no privilege on the auth schema, while admin.getUserById
+ * returns the factor list and admin.mfa.deleteFactor removes them.
+ */
+export async function clearMfaFactors(userId: string): Promise<void> {
+  const service = createServiceRoleClient();
+  const { data, error } = await service.auth.admin.getUserById(userId);
+  if (error) throw new Error(`clearMfaFactors: ${error.message}`);
+
+  for (const factor of data.user?.factors ?? []) {
+    const { error: deleteError } = await service.auth.admin.mfa.deleteFactor({
+      id: factor.id,
+      userId,
+    });
+    if (deleteError) throw new Error(`clearMfaFactors: ${deleteError.message}`);
+  }
+}
+
 export async function elevateToAal2(client: SupabaseClient<Database>): Promise<void> {
-  // A random friendly name avoids "factor already exists" collisions when
-  // this suite runs more than once against the same seeded DB without an
-  // intervening `supabase db reset` -- otherwise the second run's enroll
-  // call for the same user collides with the first run's leftover factor.
+  // ESTABLISH THE PRECONDITION, do not assume it.
+  //
+  // GoTrue refuses `enroll` from an aal1 session once a VERIFIED factor
+  // exists, so a leftover factor from an earlier run makes this fail with
+  // "AAL2 required to enroll a new factor" -- an error naming the thing being
+  // set up rather than the residue that broke it. The random friendly name
+  // below was not enough: it avoids a NAME collision, and the refusal is about
+  // the session's assurance level.
+  //
+  // Clearing first is the only fix available at this point in the flow.
+  // Unenrolling at the END of each spec has to happen while the session still
+  // holds aal2 -- a window a FAILING test never reaches, which is how the
+  // residue accumulated in the first place.
+  const { data: userData } = await client.auth.getUser();
+  if (userData.user?.id) {
+    await clearMfaFactors(userData.user.id);
+  }
+
   const { data: enrollData, error: enrollError } = await client.auth.mfa.enroll({
     factorType: "totp",
     friendlyName: `isolation-test-${crypto.randomUUID()}`,
