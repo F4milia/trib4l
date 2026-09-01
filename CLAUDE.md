@@ -93,6 +93,13 @@ Commerce is dormant-per-Tower; nothing touches Stripe until unparked.
    tag adds one line to Learned constraints below before the next session
    launches. This is the only measurement in the process: an untagged merge
    is a data point lost, and every estimate stays a guess.
+8. BEFORE OPENING THE PR: write `docs/qa/<SESSION_ID>.md` from
+   `docs/qa/_TEMPLATE.md`. Expand this session's named edge case into numbered
+   steps with concrete expected results, using ONLY the named seed fixtures.
+   Add a Regression section naming the 2–3 behaviours from the previous two
+   sessions most likely to have been disturbed by this change. **Cap: 15
+   steps** — a human executes it against the preview URL during the NEXT
+   session's run, inside 30 minutes. Full SOP: `docs/qa-previous-session-sop.md`.
 
 ## Design constraints — Hearth & Material, every screen
 Zero border-radius, everywhere, no exceptions · no SaaS blues ·
