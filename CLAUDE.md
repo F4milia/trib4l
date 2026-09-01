@@ -355,3 +355,22 @@ than week one.
   closed-set guard by design, so a new key is a two-file change. Not a weakening
   of the test — but a fix that forgets it fails 050 with a message about content
   leaks, which points at the wrong problem.
+- 2026-09-01 · C1 PR1 · a plpgsql trigger shared by two tables cannot branch on
+  `case tg_table_name when 'messages' then new.author_membership_id else
+  new.membership_id end` — plpgsql resolves EVERY field reference against the
+  actual record, not just the branch taken, so it raises 42703 on whichever
+  table lacks the other column · read the field through `to_jsonb(new) ->> ...`.
+  The trap is not the error, it is that `throws_ok(sql, null, null, desc)`
+  accepts ANY error: two cross-Family assertions passed on that 42703 instead of
+  on the guard they name. Assert the guard's own message (`throws_like`), never
+  bare "it threw".
+- 2026-09-01 · C1 PR1 · the shared-stack collision now has a third shape: Stream
+  B ran `db reset` on ITS branch mid-session, so `supabase test db` ran against a
+  database carrying x11/x12 migrations and none of Stream A's · before trusting
+  any local pgTAP result, assert your own migration version is in
+  supabase_migrations.schema_migrations. A green run on the other branch's schema
+  is indistinguishable from a green run on yours.
+- 2026-09-01 · C1 PR1 · `supabase gen types typescript --local 2>&1` writes the
+  CLI's "a new version is available" notice into database.types.ts, which then
+  fails tsc with TS1005 at the last line · redirect stderr to /dev/null, not into
+  the file. The generator itself is fine; the notice is not on stdout.
