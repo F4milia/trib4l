@@ -159,41 +159,49 @@ already on `main` and the only regression risk in the session.
 
 ## 5. Numbering, and where Stream B is standing
 
-Stream B holds `schema/bricks` (towers, builds, bricks) and will follow with
-`table_entries`, `vows` and a seed extension. Collisions are avoidable if C2
-takes the slots below and no others.
+**Stream B's `schema/bricks` merged as `#80`** — towers, builds and bricks are on
+`main`. Stream B will follow with `table_entries`, `vows` and a seed extension,
+so the streams still share the trunk. Collisions are avoidable if C2 takes the
+slots below and no others.
 
-| | Stream A (C2) takes | Stream B holds |
+| | Stream A (C2) takes | Already on `main` |
 |---|---|---|
-| **Migrations** | `20260903100801`+ — the `x01` slot | `x11`/`x12` at minutes 1006/1007/1008, and onward |
-| **pgTAP files** | **`140`+** | `110_towers`, `120_builds`, `130_bricks` |
+| **Migrations** | `20260903100801`+ — the `x01` slot | Stream B's `x11`/`x12` through `20260903100812_bricks_rls` |
+| **pgTAP files** | **`140`+** | `110_conversations_schema`–`114` (C1), `110_towers`, `120_builds`, `130_bricks` (Stream B) |
 
-`110`–`114` are C1's and already on `main`. **Starting C2 at `120` or `130`
-collides with Stream B's unmerged files**, which is invisible until the merge —
-so `140`.
+Verified against `origin/main` after `#80`, not predicted: `120` and `130` are
+taken, the highest migration is `20260903100812`, and the highest `x01` slot used
+is `20260903100706`. So `20260903100801`+ and pgTAP `140`+ are both clear.
 
-### The conflict to expect, and its wrong resolution
+### The `030` census — resolved on `main`, and the base C2 computes from
 
 `supabase/tests/database/030_audit_triggers_special_cases.sql` hardcodes a total
-audit-trigger count. Both branches independently changed `33` → **`36`**, for
-different reasons:
+audit-trigger count. This was written as a conflict to expect; **`#80` landed
+`schema/bricks` on `main` first and it is now resolved.** The resolution is
+correct — **39** — and it is worth reading, because the trap was sharper than
+predicted:
 
 | Branch | Reasoning | Value |
 |---|---|---|
 | `main` | 33 + C1's `conversations`, `conversation_participants`, `messages` | 36 |
 | `schema/bricks` | 33 + `towers`, `builds`, `bricks` | 36 |
 
-Git will conflict on the prose, and **the correct merged value is 39, not 36.**
-Taking either side's line lands a wrong number. C2 adds four more tables
-(`notifications`, `message_mentions`, `message_reactions`,
-`message_attachments`), so C2's own value is **43** — computed from 39, not from
-whatever the merge left behind. Recompute it; do not increment the number
-already in the file. Commit 9 exists to make this one deliberate act rather than
-four guesses.
+Both streams wrote **the same number on the same line** for different reasons, so
+git **auto-merged the count to 36 without a conflict** and raised one only on the
+descriptive message beside it. Resolving the visible conflict would therefore
+have left a silently wrong total, three too low — and `030` then fails with a
+message about audit coverage, pointing at the wrong problem. The merged file now
+carries a comment saying exactly this.
+
+**What this means for C2:** the base is **39**, on `main`, today. C2 adds four
+tables (`notifications`, `message_mentions`, `message_reactions`,
+`message_attachments`), so C2's value is **43**. Re-derive it from the tables that
+landed; do not increment the number in the file and do not assume a merge got it
+right. Commit 9 exists to make this one deliberate act.
 
 Same closed-set shape as `tests/database/050`'s metadata key allowlist
-(CLAUDE.md, 2026-09-01): a fix that forgets it fails with a message about
-content leaks, pointing at the wrong problem.
+(CLAUDE.md, 2026-09-01): a closed-set guard two streams edit independently needs
+its total re-derived, never merged.
 
 ### Two things not to do
 
