@@ -467,6 +467,54 @@ export const copy = {
       },
     },
   },
+  /**
+   * D1 — the member home dashboard. Six elements, per the run doc: today's
+   * Table prompt status, their claimed Bricks with due windows, the Family's
+   * Tower progress, the current Vow holder, the streak, and recent Ledger
+   * highlights.
+   *
+   * The empty states are the interesting half. Every one says what is actually
+   * true and offers nothing invented — a Family between Towers is in a real
+   * state (F3.5 calls it a quiet season), not a broken one.
+   */
+  dashboard: {
+    eyebrow: "Home",
+    /**
+     * §9: a landmark needs an accessible name, and this page has two
+     * complementary regions once the org shell sidebar is counted. Without
+     * this the two are indistinguishable to a screen reader — and to a test,
+     * which is how it was found.
+     */
+    railLandmark: "Family summary",
+    tableHeading: "Today at the Table",
+    tableWritten: "You have written today.",
+    tableUnwritten: "You have not written today.",
+    /**
+     * Spec §10.4 does not say where prompts come from — platform-authored,
+     * Family-authored, seasonal or rotating — and no job assigns one per day
+     * yet. So this card reports the member's STATUS, which is what the run doc
+     * asks for, and names a prompt only when their own entry carries one.
+     * Inventing a selection rule here would be inventing product.
+     */
+    tableNoPrompt: "No prompt is set for today.",
+    towerHeading: "The Tower",
+    towerProgress: "Bricks laid",
+    towerEmpty: "No Tower yet. A Family between Towers is a quiet season, not a gap.",
+    towerNoBricks: "No Bricks yet. Progress shows once the Builds have work in them.",
+    bricksHeading: "Your Bricks",
+    bricksEmpty: "Nothing claimed. Open Bricks are on the Family board.",
+    bricksNoDue: "No date",
+    bricksOverdue: "Overdue",
+    vowHeading: "The Vow",
+    vowHolder: "Held by",
+    vowEmpty: "No Vow is being held right now.",
+    streakHeading: "Streak",
+    streakUnit: "days at the Table",
+    streakNote: "A missed day holds the streak. It never resets.",
+    ledgerHeading: "The Ledger",
+    ledgerEmpty: "Nothing recorded yet. The Ledger fills as the Family works.",
+  },
+
   orgNav: {
     /** §9: <aside> nav gets an aria-label. */
     landmark: "Main navigation",
@@ -476,7 +524,25 @@ export const copy = {
       manage: "Manage",
     },
     items: {
-      home: { label: "Home", description: "The shared feed" },
+      home: { label: "Home", description: "Your Family at a glance" },
+      // The inherited Trib4l posts feed, moved off `/o/[slug]` so D1's
+      // dashboard can take the route a member lands on daily. `home`'s
+      // description above stops being true when the dashboard lands and is
+      // corrected in that PR, not this one.
+      feed: { label: "Feed", description: "Posts and comments" },
+      /**
+       * FROM HERE, RETAINED BUT NO LONGER LINKED — Mentorship, Meetups,
+       * Videos, Live, Shop, and the Manage entries for Products, Cohorts,
+       * Stages, the four *Settings keys and Commerce.
+       *
+       * lib/org-nav.ts stopped offering them when the nav was trimmed to
+       * F4milia's own concepts. Kept rather than deleted because the routes
+       * still exist and still work — only the signposts are gone — so
+       * re-linking any of them is a one-line change in org-nav.ts rather than
+       * a copy round-trip. They remain honest descriptions of real
+       * destinations, which is what tests/org-nav.test.ts's deck census
+       * asserts; an unlinked entry breaks nothing there.
+       */
       mentorship: { label: "Mentorship", description: "Pairings and requests" },
       meetups: { label: "Meetups", description: "Gatherings and RSVPs" },
       videos: { label: "Videos", description: "Recorded sessions" },

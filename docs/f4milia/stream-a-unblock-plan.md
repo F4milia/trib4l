@@ -65,15 +65,14 @@ at `b28d6c7`, max migration `20260903101311`, max pgTAP `190`:
 
 | Order | PR | Migration | pgTAP |
 |---|---|---|---|
-| 1 | C2 PR 1 · Realtime Authorization | `20260903101701` | `230` |
-| 2 | C2 PR 2 · Threading | `20260903101801` | `240` |
-| 3 | C2 PR 3 · `notifications` + `'mention'` | `20260903101901` | `250` |
-| 4 | C2 PR 4 · `message_mentions` | `20260903102001` | `260` |
-| 5 | C2 PR 5 · `message_reactions` | `20260903102101` | `270` |
-| 6 | C2 PR 6 · Storage + project ceiling | `20260903102201` | `280` |
-| 7 | **PR 2** · definer `search_path` | `20260903102301` | `290` |
-| 8 | **PR 10** · `push_subscriptions` | `20260903102401` | `300` |
-| 9 | **PR 13** · `unread_message_counts(org)` | `20260903102501` | `310` |
+| 1 | C2 PR 1 · Realtime Authorization | `20260903101401` | `200` |
+| 2 | C2 PR 2 · Schema (5 tables, threading, enum, `030`) | `20260903101501`–`101505` | `210`–`250` |
+| 3 | C2 PR 3 · Storage + project guard | `20260903101601` | `260` |
+| 4 | **PR 2** · definer `search_path` | `20260903101701` | `270` |
+| 5 | **PR 10** · `push_subscriptions` | `20260903101801` | `280` |
+| 6 | **PR 13** · `unread_message_counts(org)` | `20260903101901` | `290` |
+
+C2 PR 4 (data access and UI) adds no migration.
 
 Stream B's `x11` offset at each of those minutes stays free, which is the point of
 the offset convention.
@@ -88,27 +87,38 @@ which sections of the design language the PR actually applies.
 
 ## 2. Tranche 0 — C2, which runs before all of it
 
-C2 is Wave 3 and the next session due, and three of its PRs are things later
-sessions are waiting on. Detail lives in `c2-pr-plan.md`, which was revised in the
-same pass as this document; only what changed and what it unblocks is here.
+C2 is Wave 3, next due, and it builds the `notifications` table and the
+`'mention'` enum value that **N1 cannot start without and no other session
+creates.** That is why it sits ahead of everything below rather than beside it.
 
-**Sequence: C2 PR 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8**, unchanged from its own plan.
+**Its plan is `c2-pr-plan.md`, revised on `main` (`1e1c49b`) by another session
+into four PRs with every decision closed.** That revision is better than the one
+this plan originally assumed, in a way worth recording: it establishes that **the
+per-Family quota is measured across *all* attachment buckets, not per feature.**
+M1 (Wave 5) reuses the pattern for Table entry photos and Brick attachments
+*"same quotas, same caps"* — so a per-feature quota would give each Family a
+second 100 MB and blow the 1 GB plan before Wave 6. Nothing in this plan's own
+storage reasoning had caught that.
 
-**What the rulings changed in it:**
+**Sequence: C2 PR 1 → 2 → 3 → 4.**
 
-| C2 PR | Change |
-|---|---|
-| **3** | Now also carries **N1's requirements** for `notifications` — folded in as its §5.5 rather than living as a separate spec, because C2's PR 3 already owns the table. **`'mention'` is C2's to add, not N1's** |
-| **5** | Ruled: `message_reactions` as its own table, keyed on `membership_id`. The legacy table's CHECK makes a message-keyed row impossible outright, so this was never the small option |
-| **6** | Quota numbers ruled — **5 MB per file, on the bucket row too · 100 MB per Family · blob deleted with the message** — and given **new scope**: a per-Family quota does not bound the 1 GB project total. `8 × 100 MB = 800 MB` is the usable budget exactly, so the PR needs a project-level check as well |
-| all | Slots reallocated: `20260903101701`+ and pgTAP `230`+. Both original reservations had gone stale |
+| C2 PR | What | Migration | pgTAP |
+|---|---|---|---|
+| 1 | Realtime Authorization — the C1 carried debt | `20260903101401` | `200` |
+| 2 | Schema — 5 tables, threading, `'mention'`, `030` recompute | `101501`–`101505` | `210`–`250` |
+| 3 | Storage — bucket, RLS, caps, **and the project guard** | `20260903101601` | `260` |
+| 4 | Data access and UI | — | — |
 
-**What C2 unblocks:** the `notifications` table and the `'mention'` enum value,
-which **N1 (Wave 4) cannot start without** and which no other session in the run
-doc creates. That is why C2 sits ahead of every PR below rather than beside them.
+**What this plan contributed back to it:** the slot allocation above. C2's own §5
+reserved `20260903100801`+ and pgTAP `140`+ and said so having *verified against
+`origin/main`, not predicted* — but Stream B landed `table_entries`, `vows`, the
+streak and the seed fixtures afterwards, so the migration slot fell **below** the
+branch max (`20260903101311`, an out-of-order apply) and pgTAP `140`–`190` became
+fully occupied. Corrected in both documents, and the allocation now lives in one
+place because two plans allocating the one lane independently is what caused it.
 
-**Still open inside C2:** decision 14 — how the 8-Family cap is enforced. It lands
-on C2 PR 6, since nothing in the repo limits how many Families exist and an
+**Still open inside C2:** decision 14 — how the 8-Family cap is enforced — which
+lands on PR 3, since nothing in the repo limits how many Families exist and an
 `organizations` INSERT can break the storage ceiling with no upload involved.
 
 ## 3. Tranche A — do now, no decisions

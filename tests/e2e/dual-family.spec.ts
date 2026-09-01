@@ -24,7 +24,11 @@ test.describe("dual-Family user", () => {
     await page.goto(`/o/${ORG.caregiverCircle}`);
 
     const hrefs = await sidebarHrefs(page);
-    expect(hrefs.length).toBeGreaterThan(5);
+    // Lowered from 5 with the nav trim: a plain member now sees four Community
+    // items, not nine. The number is a guard against the nav rendering EMPTY
+    // and the loop below then passing vacuously -- it is not a claim about how
+    // many features exist.
+    expect(hrefs.length).toBeGreaterThan(2);
 
     const orgScoped = hrefs.filter((h) => h.startsWith("/o/"));
     for (const h of orgScoped) {
@@ -38,7 +42,8 @@ test.describe("dual-Family user", () => {
     await page.goto(`/o/${ORG.founderCollective}`);
 
     const orgScoped = (await sidebarHrefs(page)).filter((h) => h.startsWith("/o/"));
-    expect(orgScoped.length).toBeGreaterThan(5);
+    // Same as above: a floor that catches an empty nav, not a feature count.
+    expect(orgScoped.length).toBeGreaterThan(2);
     for (const h of orgScoped) {
       expect(h, `${h} escaped Family B`).toContain(ORG.founderCollective);
       expect(h, `${h} leaked Family A`).not.toContain(ORG.caregiverCircle);
@@ -110,6 +115,11 @@ test.describe("dual-Family user", () => {
     // org_owner scope, not organizer, and redirects to the Family home -- so a
     // bounce to `/`, to another Family, or to an error page would all be wrong
     // and all used to satisfy this test.
+    // Strict `$` again. The previous PR widened this to `(/feed)?` because its
+    // temporary redirect sent the Family home one hop further on; this PR puts
+    // the dashboard on the org root and deletes that redirect, so the refusal
+    // lands exactly where it used to and the alternation would now hide a real
+    // regression rather than describe one.
     await expect(page).toHaveURL(new RegExp(`/o/${ORG.founderCollective}$`));
     expect(res?.status()).toBe(200);
     // And she is still genuinely inside Family B, not bounced out of it.

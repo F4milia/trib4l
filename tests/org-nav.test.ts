@@ -19,13 +19,19 @@ const COMMUNITY = [
   // than exempted from it -- the census is the point of the file, and a nav
   // item nobody pinned is a nav item that can silently appear for the wrong
   // role.
-  "", "/mentorship", "/meetups", "/videos", "/live", "/members", "/messages", "/shop",
+  // Trimmed to F4milia's own concepts. Mentorship, Meetups, Videos, Live and
+  // Shop are Trib4l inheritance and no session in the run doc builds on them,
+  // so the nav no longer offers them. Their ROUTES still exist and still
+  // enforce their own access — only the signposts are gone, which is why this
+  // census shrank rather than the app losing surfaces.
+  "", "/feed", "/members", "/messages",
 ].map((p) => `/o/${SLUG}${p}`);
 
 const MANAGE = [
-  "/settings/members", "/settings/products", "/settings/cohorts", "/settings/stages",
-  "/settings/mentorship", "/settings/meetups", "/settings/videos", "/settings/live",
-  "/settings/reports", "/settings/member-reports",
+  // Invitations stays: W2's first-run needs it. Reports and member-reports stay
+  // because they are invariant 6's surface. The rest configure features the nav
+  // no longer offers.
+  "/settings/members", "/settings/reports", "/settings/member-reports",
 ].map((p) => `/o/${SLUG}${p}`);
 
 const COMMERCE = `/o/${SLUG}/settings/commerce`;
@@ -41,8 +47,19 @@ describe("orgNav role gating", () => {
     expect(hrefs("organizer")).not.toContain(COMMERCE);
   });
 
-  it("gives org_owner commerce, last in manage", () => {
-    expect(hrefs("org_owner")).toEqual([...COMMUNITY, ...MANAGE, COMMERCE]);
+  /**
+   * org_owner now sees exactly what an organizer sees. The owner-only tier held
+   * one link, /settings/commerce, and CLAUDE.md is explicit that commerce is
+   * dormant-per-Tower with nothing touching Stripe until it is unparked — so
+   * the nav no longer advertises it.
+   *
+   * Asserted rather than deleted, because the claim has changed rather than
+   * disappeared: an owner must see no MORE than an organizer, and an owner-only
+   * item reappearing silently is exactly what this file exists to catch.
+   */
+  it("gives org_owner the same nav as an organizer -- commerce is not advertised", () => {
+    expect(hrefs("org_owner")).toEqual([...COMMUNITY, ...MANAGE]);
+    expect(hrefs("org_owner")).not.toContain(COMMERCE);
   });
 
   it("never leaks a settings route to a non-managing role", () => {

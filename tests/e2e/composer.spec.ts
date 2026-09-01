@@ -9,7 +9,11 @@ import { ORG, signIn } from "./helpers";
  */
 test("a member can post to the feed, and the post appears", async ({ page }) => {
   await signIn(page, "alice");
-  await page.goto(`/o/${ORG.caregiverCircle}`);
+  // /feed, not the org root. D1 moved the inherited posts feed off
+  // `/o/[slug]` so the dashboard can take the route a member lands on daily.
+  // Following the redirect would still pass today and would break the moment
+  // the dashboard replaces it -- so this points at where the composer lives.
+  await page.goto(`/o/${ORG.caregiverCircle}/feed`);
 
   const body = `e2e composer check ${process.env.E2E_STAMP ?? "local"}-${Math.random().toString(36).slice(2, 8)}`;
   await page.fill('textarea[name="body"]', body);
