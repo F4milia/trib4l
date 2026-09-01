@@ -1,5 +1,11 @@
 # Manual checks
 
+**Not under `supabase/tests/`, and that is deliberate.** `supabase test db`
+globs every `.sql` beneath that directory and runs it as pgTAP, so a fixture
+with no `plan()` fails the whole suite with "No plan found in TAP output" --
+which names the fixture but reads as a broken test run. These files live here
+instead.
+
 The run doc's **named edge case register** assigns one check per session that
 the human reviewer executes by hand before merging, "chosen because the
 automated gates structurally can't catch it."
@@ -17,8 +23,8 @@ person looking at the output.
 ```bash
 npx supabase db reset
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
-  -f supabase/tests/manual/c1-dual-family-fixture.sql
-bash supabase/tests/manual/c1-dual-family-check.sh
+  -f docs/manual-checks/c1-dual-family-fixture.sql
+bash docs/manual-checks/c1-dual-family-check.sh
 ```
 
 Every numbered line must read as its `(want ...)` says, the message list must

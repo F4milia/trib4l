@@ -484,3 +484,11 @@ than week one.
   feature being tested and is not. A negative control that fails at sign-in
   proves nothing -- I reported one as verified before checking WHY it failed.
   Read the failure message, not the pass/fail count.
+- 2026-09-02 · C1 PR7 · `supabase test db` globs EVERY `.sql` under
+  supabase/tests/ recursively and runs it as pgTAP, so a fixture or helper
+  placed there fails the whole suite with "No plan found in TAP output" · only
+  pgTAP files belong under supabase/tests/. Manual-check fixtures live in
+  docs/manual-checks/. Caught in CI, not locally, because I added the files and
+  did not re-run the suite afterwards -- adding a FILE can break a runner that
+  discovers by glob, so re-run the suite after any addition to a test tree, not
+  only after editing a test.
