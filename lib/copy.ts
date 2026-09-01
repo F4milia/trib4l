@@ -482,6 +482,7 @@ export const copy = {
       videos: { label: "Videos", description: "Recorded sessions" },
       live: { label: "Live", description: "Streams in progress" },
       members: { label: "Members", description: "Who is here" },
+      messages: { label: "Messages", description: "The channel and your DMs" },
       shop: { label: "Shop", description: "Products for sale" },
 
       invitations: { label: "Invitations", description: "Invite and remove" },
@@ -627,5 +628,46 @@ export const copy = {
       notYourFamily: "That is not a Family you belong to.",
       failed: "The message could not be sent. Please try again.",
     },
+  },
+  /**
+   * Conversations (C1).
+   *
+   * Deliberately plain. A chat surface invents more copy than any other kind
+   * of screen -- placeholder banter, cheerful empty states, "say hi!" nudges --
+   * and every one of those is a sentence the product puts in a Family's mouth.
+   * These strings name what is there and stop.
+   */
+  conversations: {
+    heading: "Messages",
+    familyChannel: "Everyone",
+    familyChannelDescription: "Every member of this Family is here.",
+    directHeading: "Direct messages",
+    /** Honest empty states: what is true, and what to do, with nothing invented. */
+    noDirects: "No direct messages yet.",
+    emptyRoom: "No messages in here yet.",
+    emptyRoomChannel: "Nothing has been said in the Family channel yet.",
+    loading: "Loading\u2026",
+    composerLabel: "Message",
+    composerPlaceholder: "Write a message",
+    send: "Send",
+    sending: "Sending\u2026",
+    /** Shown under the composer once the cap is close, and again when passed. */
+    remaining: (n: number) => `${n} characters left`,
+    tooLong: "This message is too long to send.",
+    /** One name, two names, then a count -- never a list that grows forever. */
+    typing: (names: string[]) =>
+      names.length === 1
+        ? `${names[0]} is typing`
+        : names.length === 2
+          ? `${names[0]} and ${names[1]} are typing`
+          : `${names.length} people are typing`,
+    unreadLabel: (n: number) => `${n} unread`,
+    /** The live region announcement. Names the sender, never the content. */
+    announceNew: (name: string) => `New message from ${name}`,
+    backToList: "All conversations",
+    readBy: (n: number) => (n === 1 ? "Read by 1" : `Read by ${n}`),
+    you: "You",
+    unknownMember: "A former member",
+    deleted: "This message was deleted.",
   },
 } as const;

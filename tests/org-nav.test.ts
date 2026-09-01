@@ -15,7 +15,11 @@ const hrefs = (role: Parameters<typeof orgNav>[1]) =>
  * pinned down.
  */
 const COMMUNITY = [
-  "", "/mentorship", "/meetups", "/videos", "/live", "/members", "/shop",
+  // /messages is C1: the Family channel and DMs. Added to this census rather
+  // than exempted from it -- the census is the point of the file, and a nav
+  // item nobody pinned is a nav item that can silently appear for the wrong
+  // role.
+  "", "/mentorship", "/meetups", "/videos", "/live", "/members", "/messages", "/shop",
 ].map((p) => `/o/${SLUG}${p}`);
 
 const MANAGE = [

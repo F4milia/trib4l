@@ -446,3 +446,19 @@ than week one.
   subscriber was allowed to see it · any published table whose updates matter
   needs REPLICA IDENTITY FULL. C1 soft-deletes messages via UPDATE, so without
   it a deleted message stays on every open screen until a refresh.
+- 2026-09-01 · C1 PR7 · `vi.fn(impl)` INFERS the mock's signature from that
+  impl, so a later `mockImplementation` reading a different argument stops
+  typechecking — and the obvious workaround, an unused rest parameter, trips
+  no-unused-vars · declare the mock bare as `vi.fn()` and install the default
+  implementation in beforeEach. Cost three rounds of typecheck/lint ping-pong
+  here.
+- 2026-09-01 · C1 PR7 · module-level `vi.fn()` mocks keep their call history
+  across tests in the same file, so "refuses to send an empty message" counted
+  the send a previous test made and reported a bug that was not there · every
+  component file with hoisted mocks needs `vi.clearAllMocks()` in beforeEach.
+  Same residue lesson as the isolation-suite entries, now inside one file.
+- 2026-09-01 · C1 PR7 · jsdom implements no layout, so `scrollIntoView` is
+  undefined and an unguarded call takes the whole component down at mount —
+  every test in the file fails with one stack trace pointing at a useEffect ·
+  optional-call browser layout APIs (`el?.scrollIntoView?.()`); a missing
+  scroll must never be able to unmount a room.

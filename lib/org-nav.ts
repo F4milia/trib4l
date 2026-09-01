@@ -15,6 +15,7 @@ export type OrgNavIcon =
   | "Video"
   | "Radio"
   | "Users"
+  | "MessagesSquare"
   | "ShoppingBag"
   | "Mail"
   | "Package"
@@ -52,6 +53,7 @@ const COMMUNITY: ReadonlyArray<Def> = [
   ["/videos", "videos", "Video"],
   ["/live", "live", "Radio"],
   ["/members", "members", "Users"],
+  ["/messages", "messages", "MessagesSquare"],
   ["/shop", "shop", "ShoppingBag"],
 ];
 
