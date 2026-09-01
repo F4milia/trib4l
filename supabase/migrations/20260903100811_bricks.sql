@@ -27,7 +27,12 @@ alter table memberships add constraint memberships_id_org_id_key unique (id, org
 
 create table bricks (
   id uuid primary key default gen_random_uuid(),
-  build_id uuid not null references builds (id) on delete cascade,
+  -- No single-column REFERENCES here, and none on assignee or verified_by
+  -- below: the composite keys at the bottom of this table enforce a strict
+  -- superset (the row exists AND it is in this Family). A redundant simple FK
+  -- also fired its own action first and masked the composite SET NULL bug
+  -- described there, which is how that bug survived a green test run.
+  build_id uuid not null,
 
   -- Denormalised for the same reason builds carries it: the Brick board reads
   -- per Family, and a policy that joined through build_id would evaluate that
@@ -42,13 +47,13 @@ create table bricks (
   -- two-real-clients test is owed in schema PR 9, and pgTAP cannot write it
   -- (one session, and it runs as postgres). Until then this is a property of
   -- Postgres this column relies on, not a property this repo has measured.
-  assignee uuid references memberships (id) on delete set null,
+  assignee uuid,
 
   -- F4.7: "any member OTHER THAN the Brick's assignee can confirm it". Written
   -- down as a column with a CHECK rather than left to the code path, because
   -- peer verification is the property that makes a completed Brick mean
   -- something -- and the Ledger accrues slices from completed Bricks.
-  verified_by uuid references memberships (id) on delete set null,
+  verified_by uuid,
 
   -- WHO verified, above, and THAT it was verified, here -- two facts, and only
   -- the second is permanent.
@@ -80,14 +85,33 @@ create table bricks (
   updated_at timestamptz not null default now(),
 
   -- A Brick cannot claim a Family its Build is not in.
-  foreign key (build_id, org_id) references builds (id, org_id) on delete cascade,
+  --
+  -- DEFERRABLE, and that is not decoration. Deleting an organization cascades
+  -- to memberships AND, through towers and builds, to bricks -- and Postgres
+  -- promises no order between them. When the membership cascade's UPDATE on a
+  -- brick lands after its build is already gone, an immediate check fails with
+  -- `bricks_build_id_org_id_fkey ... is not present in table "builds"` and
+  -- aborts the whole delete. Deferred to COMMIT, the brick has been deleted by
+  -- then and there is nothing left to validate. Unlike a CHECK, a foreign key
+  -- CAN be deferred, which is why this one is fixable at the constraint and
+  -- bricks_done_requires_verification was not.
+  foreign key (build_id, org_id) references builds (id, org_id)
+    on delete cascade deferrable initially deferred,
 
   -- Its assignee and verifier must be members of that same Family. Without
   -- this, a Brick could be assigned to somebody in another Family: a real row,
   -- a valid id, and invisible to RLS, which sees nothing wrong with either
   -- side on its own.
-  foreign key (assignee, org_id) references memberships (id, org_id) on delete set null,
-  foreign key (verified_by, org_id) references memberships (id, org_id) on delete set null,
+  --
+  -- `set null (assignee)` names the column deliberately. A bare SET NULL on a
+  -- composite key nulls EVERY referencing column, org_id included -- measured
+  -- as `null value in column "org_id" of relation "bricks" violates not-null
+  -- constraint` when a member's row was deleted. org_id is this table's RLS
+  -- anchor; nulling it is never right.
+  foreign key (assignee, org_id) references memberships (id, org_id)
+    on delete set null (assignee),
+  foreign key (verified_by, org_id) references memberships (id, org_id)
+    on delete set null (verified_by),
 
   -- F4.7, enforced: nobody signs off their own work.
   constraint bricks_verifier_is_not_assignee

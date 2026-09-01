@@ -163,13 +163,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "bricks_assignee_fkey"
-            columns: ["assignee"]
-            isOneToOne: false
-            referencedRelation: "memberships"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bricks_assignee_org_id_fkey"
             columns: ["assignee", "org_id"]
             isOneToOne: false
@@ -177,25 +170,11 @@ export type Database = {
             referencedColumns: ["id", "org_id"]
           },
           {
-            foreignKeyName: "bricks_build_id_fkey"
-            columns: ["build_id"]
-            isOneToOne: false
-            referencedRelation: "builds"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bricks_build_id_org_id_fkey"
             columns: ["build_id", "org_id"]
             isOneToOne: false
             referencedRelation: "builds"
             referencedColumns: ["id", "org_id"]
-          },
-          {
-            foreignKeyName: "bricks_verified_by_fkey"
-            columns: ["verified_by"]
-            isOneToOne: false
-            referencedRelation: "memberships"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "bricks_verified_by_org_id_fkey"

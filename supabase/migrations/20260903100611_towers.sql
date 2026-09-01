@@ -45,11 +45,18 @@ create index towers_org_id_idx on towers (org_id);
 -- that RLS could not catch, because the pointer itself would be legitimate.
 -- Referencing (active_tower_id, id) against towers (id, org_id) means the
 -- database refuses it.
+--
+-- `set null (active_tower_id)`, NAMING THE COLUMN, is load-bearing. A bare
+-- `on delete set null` on a COMPOSITE key nulls EVERY referencing column --
+-- here that is `id`, the primary key. Measured: deleting an active Tower
+-- failed with `null value in column "id" of relation "organizations" violates
+-- not-null constraint`, so an active Tower could never be deleted at all.
+-- Column-specific SET NULL needs Postgres 15+; this project is on 17.
 alter table organizations
   add column active_tower_id uuid,
   add constraint organizations_active_tower_fk
     foreign key (active_tower_id, id) references towers (id, org_id)
-    on delete set null;
+    on delete set null (active_tower_id);
 
 comment on column organizations.active_tower_id is
   'The Tower this Family is currently building. Null between Towers -- a quiet season is a real state (F3.5), not a missing value.';

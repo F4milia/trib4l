@@ -10,7 +10,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(26);
+select plan(28);
 
 -- ------------------------------------------------------------------- shape
 select has_table('public', 'bricks', 'bricks exists');
@@ -166,11 +166,32 @@ select is(
   'the Brick stays done, the pointer clears, and the FACT of verification survives'
 );
 
+-- REGRESSION: a bare SET NULL on the composite (verified_by, org_id) key nulls
+-- org_id too, which is NOT NULL and is this table's RLS anchor. Fixed by naming
+-- the column in the constraint.
+select is(
+  (select org_id from public.bricks
+    where id = '00000000-0000-0000-0000-0000000000d5'),
+  '00000000-0000-0000-0000-00000000000a'::uuid,
+  'org_id survives the verifier leaving -- SET NULL touches only the pointer'
+);
+
 -- ------------------------------------ nothing may cross Family lines
 insert into public.towers (id, org_id, title)
 values ('00000000-0000-0000-0000-0000000000e8', '00000000-0000-0000-0000-00000000000b', 'Another goal');
 insert into public.builds (id, tower_id, org_id, type, title)
 select build_b, '00000000-0000-0000-0000-0000000000e8', org_b, 'custom', 'Elsewhere' from _bk;
+
+-- bricks_build_id_org_id_fkey is DEFERRABLE INITIALLY DEFERRED, so by default
+-- this violation raises at COMMIT rather than at the INSERT -- and pgTAP runs
+-- inside a transaction that rolls back, where a deferred check never fires.
+-- The guarantee is not weaker (the transaction still cannot commit), but its
+-- TIMING moved, so the assertion has to say which it is testing.
+--
+-- Set immediate for this one check: that proves the constraint rejects the row,
+-- which is the property under test. Then restore, so the deletion cases later
+-- in this file still exercise the deferred behaviour they depend on.
+set constraints public.bricks_build_id_org_id_fkey immediate;
 
 select throws_ok(
   $$insert into public.bricks (build_id, org_id, description)
@@ -178,8 +199,18 @@ select throws_ok(
             '00000000-0000-0000-0000-00000000000a', 'Claiming the wrong Family')$$,
   '23503',
   null,
-  'a Brick cannot claim a Family its Build is not in'
+  'a Brick cannot claim a Family its Build is not in (checked immediately)'
 );
+
+select is(
+  (select condeferred from pg_constraint
+    where conname = 'bricks_build_id_org_id_fkey'
+      and conrelid = 'public.bricks'::regclass),
+  true,
+  'and it is deferred by default -- which is what lets a Family be deleted'
+);
+
+set constraints public.bricks_build_id_org_id_fkey deferred;
 
 -- The assignee case is the subtler one: dave is a real member with a valid
 -- membership id, and RLS sees nothing wrong with either side on its own.

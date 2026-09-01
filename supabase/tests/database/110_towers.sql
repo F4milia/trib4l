@@ -14,7 +14,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(20);
 
 -- ------------------------------------------------------------------- shape
 select has_table('public', 'towers', 'towers exists');
@@ -132,6 +132,30 @@ select is(
     where conname = 'organizations_active_tower_fk'),
   'n',
   'active_tower_id is set null when its Tower goes'
+);
+
+-- REGRESSION: a bare `on delete set null` on the composite (active_tower_id,
+-- id) key nulls EVERY referencing column, including organizations.id -- so an
+-- active Tower could not be deleted at all. Fixed by naming the column.
+insert into public.organizations (id, slug, name)
+values ('00000000-0000-0000-0000-0000000000b1', 'tower-delete-probe', 'Probe');
+insert into public.towers (id, org_id, title)
+values ('00000000-0000-0000-0000-0000000000b2',
+        '00000000-0000-0000-0000-0000000000b1', 'Probe goal');
+update public.organizations
+   set active_tower_id = '00000000-0000-0000-0000-0000000000b2'
+ where id = '00000000-0000-0000-0000-0000000000b1';
+
+select lives_ok(
+  $$delete from public.towers where id = '00000000-0000-0000-0000-0000000000b2'$$,
+  'the active Tower can be deleted -- SET NULL must not reach organizations.id'
+);
+
+select is(
+  (select active_tower_id from public.organizations
+    where id = '00000000-0000-0000-0000-0000000000b1'),
+  null,
+  'and the Family is left Tower-less rather than deleted'
 );
 
 select * from finish();
