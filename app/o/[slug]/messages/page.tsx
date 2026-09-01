@@ -27,7 +27,7 @@ export default async function MessagesPage({
   // Both go through the caller own client, so RLS decides what comes back.
   const [conversations, unread] = await Promise.all([
     listConversations(supabase, currentOrg.org_id),
-    unreadCounts(supabase),
+    unreadCounts(supabase, currentOrg.org_id),
   ]);
 
   const channel = conversations.find((c) => c.kind === "family_channel");

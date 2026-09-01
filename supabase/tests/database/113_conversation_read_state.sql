@@ -5,6 +5,13 @@
 -- off-by-one. A blocker who sees "3 new" in a room showing two messages has
 -- been told exactly how much the person they blocked is saying.
 
+-- SIGNATURE CHANGED 2026-09-02 by the Stream A unblocking PR 13.
+-- unread_message_counts() took no argument and spanned every Family the caller
+-- belongs to. Every assertion in this file was written for a single-Family
+-- fixture, so none of them was wrong -- the defect is invisible to a
+-- single-Family account, which is exactly why it survived C1. The calls below
+-- now name this file's own org; the claims are unchanged.
+
 begin;
 create extension if not exists pgtap with schema extensions;
 
@@ -46,7 +53,7 @@ select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-00000000ae01","role":"authenticated"}', true);
 
 select is(
-  (select unread_count from public.unread_message_counts()
+  (select unread_count from public.unread_message_counts('00000000-0000-0000-0000-00000000fe01'::uuid)
     where conversation_id = (select id from chan)),
   2::bigint,
   'a has read nothing, so both messages are unread'
@@ -75,7 +82,7 @@ select isnt(
 );
 
 select is(
-  (select count(*)::int from public.unread_message_counts()
+  (select count(*)::int from public.unread_message_counts('00000000-0000-0000-0000-00000000fe01'::uuid)
     where conversation_id = (select id from chan)),
   0,
   'and the room drops out of the unread list entirely'
@@ -98,7 +105,7 @@ values ('00000000-0000-0000-0000-00000000fe01', (select id from chan),
 set local role authenticated;
 
 select is(
-  (select unread_count from public.unread_message_counts()
+  (select unread_count from public.unread_message_counts('00000000-0000-0000-0000-00000000fe01'::uuid)
     where conversation_id = (select id from chan)),
   1::bigint,
   'a message sent after the mark is unread again'
@@ -109,7 +116,7 @@ select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-00000000be01","role":"authenticated"}', true);
 
 select is(
-  (select coalesce(unread_count, 0) from public.unread_message_counts()
+  (select coalesce(unread_count, 0) from public.unread_message_counts('00000000-0000-0000-0000-00000000fe01'::uuid)
     where conversation_id = (select id from chan)),
   1::bigint,
   'b sees only c''s message as unread -- b''s own two do not count'
@@ -193,7 +200,7 @@ select is(
 -- b is posting. SECURITY INVOKER on unread_message_counts() is what makes the
 -- count inherit the same policy as the read.
 select is(
-  (select coalesce(sum(unread_count), 0) from public.unread_message_counts()
+  (select coalesce(sum(unread_count), 0) from public.unread_message_counts('00000000-0000-0000-0000-00000000fe01'::uuid)
     where conversation_id = (select id from chan)),
   0::numeric,
   'and the unread count agrees -- a blocked author''s messages never reach the badge'

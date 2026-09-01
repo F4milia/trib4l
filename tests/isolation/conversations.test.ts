@@ -207,7 +207,7 @@ describe("conversations, through the data-access layer", () => {
     // state rather than from whatever earlier tests left behind. Establishing
     // preconditions rather than asserting a starting state.
     await markConversationRead(alice, channelA.id);
-    expect((await unreadCounts(alice)).get(channelA.id) ?? 0).toBe(0);
+    expect((await unreadCounts(alice, ORG_IDS.caregiverCircle)).get(channelA.id) ?? 0).toBe(0);
 
     await sendMessage(bob, {
       orgId: ORG_IDS.caregiverCircle,
@@ -215,10 +215,10 @@ describe("conversations, through the data-access layer", () => {
       body: `bob says ${crypto.randomUUID()}`,
     });
 
-    expect((await unreadCounts(alice)).get(channelA.id)).toBe(1);
+    expect((await unreadCounts(alice, ORG_IDS.caregiverCircle)).get(channelA.id)).toBe(1);
 
     await markConversationRead(alice, channelA.id);
-    expect((await unreadCounts(alice)).get(channelA.id) ?? 0).toBe(0);
+    expect((await unreadCounts(alice, ORG_IDS.caregiverCircle)).get(channelA.id) ?? 0).toBe(0);
 
     // And bob's own message was never unread to bob.
     //
@@ -234,7 +234,7 @@ describe("conversations, through the data-access layer", () => {
       conversationId: channelA.id,
       body: `bob again ${crypto.randomUUID()}`,
     });
-    expect((await unreadCounts(bob)).get(channelA.id) ?? 0).toBe(0);
+    expect((await unreadCounts(bob, ORG_IDS.caregiverCircle)).get(channelA.id) ?? 0).toBe(0);
   });
 
   it("will not mark a room read for someone who is not in it", async () => {

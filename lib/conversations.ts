@@ -210,11 +210,22 @@ export async function openDirectConversation(
   return data as string;
 }
 
-/** Unread counts for every room the caller can see, keyed by conversation id. */
+/**
+ * Unread counts for one Family's rooms, keyed by conversation id.
+ *
+ * orgId is required, and that is the point. The first version took no argument
+ * and returned counts for every Family the caller belongs to at once -- correct
+ * row by row, wrong as a set. Any surface that sums it renders a cross-Family
+ * number inside one Family's UI, which is invariant 6 defeated by arithmetic
+ * rather than by content. N1 turns these into notification badges.
+ */
 export async function unreadCounts(
   supabase: SupabaseClient<Database>,
+  orgId: string,
 ): Promise<Map<string, number>> {
-  const { data, error } = await supabase.rpc("unread_message_counts");
+  const { data, error } = await supabase.rpc("unread_message_counts", {
+    check_org_id: orgId,
+  });
   if (error) throw error;
 
   const counts = new Map<string, number>();
