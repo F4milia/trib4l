@@ -120,15 +120,22 @@ select ok(
   'RLS is enabled on message_attachments'
 );
 
--- Deny-all until PR 3 brings the bucket and its policies together. A table that
--- denies everything is visibly unfinished; one that allows too much looks done.
+-- PR 2 shipped this table deny-all (RLS on, zero policies) so the metadata and
+-- the bytes it points at became reachable in the SAME change. PR 3 closed that
+-- window by adding the bucket and these policies together, so the assertion
+-- moved with the design rather than being deleted.
+--
+-- Still no UPDATE and no DELETE policy: replacing an attachment in place would
+-- move bytes without moving the row that accounts for them, and a delete
+-- happens through message deletion, which removes the object too.
 select is(
-  (select count(*)::int from pg_policy p join pg_class c on c.oid = p.polrelid
+  (select array_agg(p.polcmd::text order by p.polcmd::text)
+     from pg_policy p join pg_class c on c.oid = p.polrelid
      join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public' and c.relname = 'message_attachments'),
-  0,
-  'and it has NO policies yet -- deny-all is the deliberate starting state, '
-  'not an oversight; C2 PR 3 adds them with the bucket'
+  array['a', 'r'],
+  'message_attachments has exactly an INSERT and a SELECT policy -- added by '
+  'PR 3 with the bucket, and still nothing that could rewrite a row in place'
 );
 
 select has_trigger('public', 'message_attachments', 'message_attachments_audit',

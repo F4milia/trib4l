@@ -2755,6 +2755,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_family_storage_quota: {
+        Args: { check_org_id: string; incoming_bytes: number }
+        Returns: string
+      }
       consume_rate_limit: {
         Args: { p_bucket: string; p_limit: number; p_window_seconds: number }
         Returns: boolean
@@ -2783,6 +2787,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      family_storage_bytes: { Args: { check_org_id: string }; Returns: number }
       family_streak: { Args: { p_org_id: string }; Returns: number }
       family_table_day: {
         Args: { p_org_id: string }
@@ -2958,6 +2963,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      project_storage_bytes: { Args: never; Returns: number }
       retire_table_entry: { Args: { p_entry_id: string }; Returns: boolean }
       revoke_all_my_sessions: { Args: never; Returns: number }
       revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
