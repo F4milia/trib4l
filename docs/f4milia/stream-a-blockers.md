@@ -34,9 +34,9 @@ Wave 4 from "cannot start" to "waiting on five values and one C2 table".
 **The short version, as of the 2026-09-02 revision.** Both sessions that could not
 run as written now have a ruled path: **A5** gets a schema session slotted upstream of
 Wave 7, and **F2** keeps Wave 5 and builds the first Edge Function itself under four
-conditions (§10). **Five decisions are still open** — the model provider and keys, the
-AI cost ceiling, PostHog hosting, how a Family-count cap is enforced, and the read
-mark's design — the last opened by the ruling that storage sits on Supabase **Free**,
+conditions (§10). **Six decisions are still open** — the model provider and keys, the
+AI cost ceiling, PostHog hosting, how a Family-count cap is enforced, the read
+mark's design, and the app icon — the last opened by the ruling that storage sits on Supabase **Free**,
 which also adds real scope to C2. Everything else is a dependency to install
 or a scope surprise.
 
@@ -421,7 +421,7 @@ the ruling, not the recommendation that produced it.
 | 11 | The equity engine | A5, Wave 7 | A **schema session is slotted upstream of Wave 7**: `contribution_ledger`, the `bricks` estimate columns, the deterministic slice function, pgTAP, RLS, in the schema sandbox. Unblocked by row 6. **Its prompt is unwritten** |
 | 12 | Expected concurrent Families | C2 | **8.** Fixes the per-Family quota at 100 MB — and `8 × 100 MB = 800 MB` is the usable budget exactly, so the ceiling invariant holds with equality and has no slack. Also makes `max_families = 8` a real constraint, which nothing in the system enforces; see decision 14 |
 
-### 🟠 Open — five
+### 🟠 Open — six
 
 | # | Decision | Blocks | Recommendation on the table |
 |---|---|---|---|
@@ -429,6 +429,7 @@ the ruling, not the recommendation that produced it.
 | 5 | AI cost ceiling | A1, Wave 6 | 10 suggestions/member/hour · 100/Family/day · `output_config: {effort: "low"}` with **`max_tokens: ~2048`** · an `AI_DISABLED` kill switch returning a plain refusal. Reuse `lib/email`'s rate-limit pattern. **The cap IS the budget:** 100/Family/day on Opus 5 uncached is ~$1,140/month at 8 Families; prompt caching takes that to ~$276. Set the numbers against `ai-model-and-cost.md` §3, not against intuition. **`max_tokens: 1024` was wrong** — thinking bills as output and counts against the cap, so it can truncate the suggestion |
 | 7 | PostHog cloud or self-hosted | Q3, Wave 9 | Cloud, EU region. Self-hosting means running ClickHouse to receive event names and counts; invariant 4 already bounds the payload in code |
 | 13 | **Ledger durability on Free** | the equity-engine schema session, before Wave 7 | Supabase Free does not include point-in-time recovery, and its backup guarantees are weaker than Pro's — **believed, not verified against your dashboard.** CLAUDE.md calls the Ledger *"a system of record for eventual ownership"*, so this wants deciding before it holds real slices: accept Free for pre-production, or upgrade when the engine ships |
+| 16 | **The app icon** | W2 (Stream B, Wave 4) · unblock-plan PR 3 | The only brand asset in the repo is the default `app/favicon.ico`, and a PWA manifest needs 192px and 512px icons to be installable. **Recommended: a provisional mark from locked tokens only** — masonry motif, Deep Slate, zero radius, no invented lettering — shipped labelled as provisional so the shell is testable without a brand decision being made silently. Replace before any public install |
 | 15 | **The read mark's design** | **N1, Wave 4** | The mark is a **timestamp high-water**, so a message committing after the mark but carrying an earlier `created_at` counts as read without being seen — the sibling of the `audit_log.created_at` transaction-time lesson. Either a `seq`-style monotonic column on `messages`, or per-message read receipts. **Recommended: the monotonic column** — cheaper, and it is how `audit_log` already solved this exact ordering problem. Receipts only if *"who has seen this"* is a product requirement rather than a badge |
 | 14 | **How the 8-Family cap is enforced** | **C2, now** · every signup path | Decision 12 makes `max_families = 8` load-bearing, and nothing in migrations, `app` or `lib` implements any such limit — so an `organizations` INSERT can break the storage ceiling, and the symptom lands on an unrelated Family's upload. **Recommended: a hard cap at Family creation with a plain refusal**, reversible by one constant. The alternative, monitor-and-alert, leaves the invariant as prose |
 

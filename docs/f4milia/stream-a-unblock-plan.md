@@ -32,6 +32,34 @@ on five values and one C2 table."* Everything that can be built without your key
 is built and lands **inert** — the app boots, the suite passes, and nothing sends
 — so the day the keys exist, N1 is configuration rather than construction.
 
+### 1.1 · Constraints that apply to every PR here
+
+Recorded because an earlier draft of this plan omitted all four, and each is the
+kind of thing that surfaces as a mysterious failure rather than as a warning.
+
+**A QA document per code PR.** Standing workflow §8: `docs/qa/<SESSION_ID>.md`
+from `_TEMPLATE.md`, before the PR opens, capped at 15 steps, using only the named
+seed fixtures, with a Regression section naming the behaviours most likely
+disturbed. Ten of the thirteen PRs here are code, so **that is ten QA documents** —
+real work, not a formality, and it was unbudgeted until now. The docs-only PRs
+(8, 6, 7) follow `#92`'s precedent and ship without one.
+
+**Three PRs contend for the shared Supabase stack.** PRs **4, 10 and 13** all need
+isolation tests, and isolation needs GoTrue and PostgREST — which
+`scripts/schema-sandbox.sh` does not have. Only PR 2 can be verified entirely in
+the sandbox. So those three have to be scheduled against Stream B's activity, one
+at a time, and a green run proves nothing unless your own migration version is
+present in `supabase_migrations.schema_migrations` first.
+
+**Three PRs add migrations.** PRs **2, 10 and 13** each need a distinct Stream A
+`x01`-family minute offset — distinct from each other, not just from Stream B's
+`x11`. `version` is the primary key of `schema_migrations`, so a duplicate makes
+the merged branch unable to reset at all, and neither branch shows it alone.
+
+**Two PRs touch brand surface.** PRs 3 and 9 (icons, and anything user-visible in
+the manifest) require re-reading `f4milia-design-system.md` first, and stating
+which sections of the design language the PR actually applies.
+
 ## 2. Tranche A — do now, no decisions
 
 ### PR 1 · Invariant 12 — Sentry DSN to the environment, `dataCollection` explicitly off
@@ -112,11 +140,24 @@ than landing as a stub that a later PR finishes.
 before merging; this is the file both sessions were otherwise going to create,
 which is the collision decision 10 exists to prevent.
 
-**Design:** icons are brand surface, so re-read `f4milia-design-system.md` first.
-Zero border-radius, Parchment / Deep Slate, no SaaS blues, and state which
-sections of the design system the PR actually applies — per the scripted-migration
-lesson, a PR that converts surfaces without applying the language has not finished
-the session's job.
+**🟠 The icons are a gap I cannot close myself.** Verified: the only brand asset
+in the repo is `app/favicon.ico`, the Next.js default. A PWA manifest needs 192px
+and 512px icons to be installable at all, so *something* must exist for the shell
+to be testable — but designing an app mark is a brand decision, and CLAUDE.md
+rules out inventing placeholders that read as real.
+
+The shape I recommend: ship the shell with a **provisional mark built only from
+locked tokens** — the masonry motif on Deep Slate, zero radius, no lettering
+invented — labelled provisional in the PR and in the manifest's own comment, and
+**tracked as decision 16**. That keeps the shell installable and testable now
+without quietly making a brand decision on your behalf. The alternative is you
+supply a mark and PR 3 waits.
+
+**Design:** re-read `f4milia-design-system.md` before touching either. Zero
+border-radius, Parchment / Deep Slate, no SaaS blues, and state which sections of
+the design language the PR actually applies — per the scripted-migration lesson, a
+PR that converts surfaces without applying the language has not finished the
+session's job.
 
 ## 3. Tranche B — make the test signal honest
 
@@ -201,8 +242,16 @@ does not need.
    conditions.
 4. **Wave 7:** the equity schema session sits upstream.
 
-**Flag:** this edits `F4milia — Complete Run Doc (Prompts Included).md`, a
-governing doc. Confirm before I touch it.
+**Flag — and it is bigger than I first wrote it.** Read directly against the run
+doc: W2's deliverables include *"PWA: installable, app icon, offline-tolerant
+shell"* (line 402), its commit line is `feat: legal page shells, first-run, PWA`,
+and its named edge case is *"Complete first-run inside the installed PWA, not a
+browser tab."* So amendment 2 does not merely add a note to Wave 4 — **it rewrites
+a Stream B session's deliverable list and its acceptance criteria.**
+
+That needs Stream B's awareness, not only your approval. Amendments 1, 3 and 4 are
+Stream A's own and can go ahead on your word alone; amendment 2 should not land as
+a surprise in the other stream's prompt.
 
 ## 5. Tranche E — make Wave 4 runnable
 
@@ -226,6 +275,11 @@ but C2 needs it a wave earlier, and that ambiguity is how a table gets built
 twice.
 
 No table is built here. This exists so N1 does not discover a mismatch in Wave 4.
+
+**Confirmed 2026-09-02: C2 has not started**, so this PR still does what it is for.
+Had C2 already built the table, this would have become a review of someone else's
+schema rather than a specification, and would have lost its place at the front of
+the order.
 
 ### PR 9 · Environment manifest
 
