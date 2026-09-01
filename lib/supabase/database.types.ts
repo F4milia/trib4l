@@ -121,6 +121,118 @@ export type Database = {
           },
         ]
       }
+      bricks: {
+        Row: {
+          assignee: string | null
+          build_id: string
+          created_at: string
+          description: string
+          due_at: string | null
+          id: string
+          org_id: string
+          status: Database["public"]["Enums"]["brick_status"]
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          assignee?: string | null
+          build_id: string
+          created_at?: string
+          description: string
+          due_at?: string | null
+          id?: string
+          org_id: string
+          status?: Database["public"]["Enums"]["brick_status"]
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          assignee?: string | null
+          build_id?: string
+          created_at?: string
+          description?: string
+          due_at?: string | null
+          id?: string
+          org_id?: string
+          status?: Database["public"]["Enums"]["brick_status"]
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bricks_assignee_org_id_fkey"
+            columns: ["assignee", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "bricks_build_id_org_id_fkey"
+            columns: ["build_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "bricks_verified_by_org_id_fkey"
+            columns: ["verified_by", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+        ]
+      }
+      builds: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          status: Database["public"]["Enums"]["build_status"]
+          title: string
+          tower_id: string
+          type: Database["public"]["Enums"]["build_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          status?: Database["public"]["Enums"]["build_status"]
+          title: string
+          tower_id: string
+          type: Database["public"]["Enums"]["build_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          status?: Database["public"]["Enums"]["build_status"]
+          title?: string
+          tower_id?: string
+          type?: Database["public"]["Enums"]["build_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builds_tower_id_fkey"
+            columns: ["tower_id"]
+            isOneToOne: false
+            referencedRelation: "towers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_tower_id_org_id_fkey"
+            columns: ["tower_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "towers"
+            referencedColumns: ["id", "org_id"]
+          },
+        ]
+      }
       cohort_members: {
         Row: {
           cohort_id: string
@@ -1496,6 +1608,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          active_tower_id: string | null
           created_at: string
           deleted_at: string | null
           id: string
@@ -1507,6 +1620,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_tower_id?: string | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -1518,6 +1632,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_tower_id?: string | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -1528,7 +1643,15 @@ export type Database = {
           timezone?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_active_tower_fk"
+            columns: ["active_tower_id", "id"]
+            isOneToOne: false
+            referencedRelation: "towers"
+            referencedColumns: ["id", "org_id"]
+          },
+        ]
       }
       platform_staff: {
         Row: {
@@ -2023,6 +2146,44 @@ export type Database = {
           },
         ]
       }
+      towers: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          org_id: string
+          status: Database["public"]["Enums"]["tower_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id: string
+          status?: Database["public"]["Enums"]["tower_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id?: string
+          status?: Database["public"]["Enums"]["tower_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "towers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_assets: {
         Row: {
           cohort_id: string | null
@@ -2419,6 +2580,14 @@ export type Database = {
       }
     }
     Enums: {
+      brick_status:
+        | "open"
+        | "in_progress"
+        | "needs_help"
+        | "pending_verification"
+        | "done"
+      build_status: "open" | "complete"
+      build_type: "commerce" | "permanence" | "propagation" | "custom"
       conversation_kind: "family_channel" | "direct"
       invitation_status: "pending" | "accepted" | "revoked"
       ledger_event_type:
@@ -2438,6 +2607,7 @@ export type Database = {
       report_status: "open" | "escalated" | "resolved"
       report_target_type: "post" | "comment" | "member"
       support_request_status: "open" | "handled"
+      tower_status: "active" | "stalled" | "pivoted" | "complete"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2568,6 +2738,15 @@ export const Constants = {
   },
   public: {
     Enums: {
+      brick_status: [
+        "open",
+        "in_progress",
+        "needs_help",
+        "pending_verification",
+        "done",
+      ],
+      build_status: ["open", "complete"],
+      build_type: ["commerce", "permanence", "propagation", "custom"],
       conversation_kind: ["family_channel", "direct"],
       invitation_status: ["pending", "accepted", "revoked"],
       ledger_event_type: [
@@ -2588,6 +2767,7 @@ export const Constants = {
       report_status: ["open", "escalated", "resolved"],
       report_target_type: ["post", "comment", "member"],
       support_request_status: ["open", "handled"],
+      tower_status: ["active", "stalled", "pivoted", "complete"],
     },
   },
 } as const

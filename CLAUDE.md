@@ -355,6 +355,23 @@ than week one.
   closed-set guard by design, so a new key is a two-file change. Not a weakening
   of the test — but a fix that forgets it fails 050 with a message about content
   leaks, which points at the wrong problem.
+- 2026-09-01 · schema session · a CHECK on `verified_by is not null` made a
+  Family that had completed a verified Brick undeletable: `on delete set null`
+  fires an UPDATE, an UPDATE RE-EVALUATES CHECK constraints, and the failure
+  aborted the parent delete · CHECK constraints cannot be DEFERRABLE, so never
+  write a CHECK over a column another table's FK action can null. Model the
+  FACT (`verified_at`) separately from the POINTER (`verified_by`) and constrain
+  the fact. Found by testing a claim in a PR description, not by review.
+- 2026-09-01 · schema session · audit_row_change() nulled a vanished org_id only
+  `if tg_op = 'DELETE'`, but deleting an organization cascades to memberships,
+  whose `on delete set null` fires an UPDATE on a child whose org is mid-delete
+  -- audit_log_org_id_fkey then aborted the whole delete. `bricks` is the first
+  table with both a transitive cascade from organizations and a set-null from
+  memberships, so no existing table exposed it · RESOLVED by the CD-3/CD-4 fix
+  above (20260903100601), which catches foreign_key_violation on any tg_op
+  rather than pre-checking on DELETE only. Two streams reached the same defect
+  from opposite ends within an hour; the entry is kept because the reasoning
+  ("a cascade UPDATE is not a DELETE") is what generalises.
 - 2026-09-01 · C1 PR1 · a plpgsql trigger shared by two tables cannot branch on
   `case tg_table_name when 'messages' then new.author_membership_id else
   new.membership_id end` — plpgsql resolves EVERY field reference against the

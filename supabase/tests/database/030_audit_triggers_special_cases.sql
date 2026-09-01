@@ -32,8 +32,18 @@ select is(
   (select count(*)::int
      from pg_trigger t join pg_proc p on p.oid = t.tgfoid
     where p.proname = 'audit_row_change' and not t.tgisinternal),
-  36,
-  '36 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, and C1''s conversations, conversation_participants and messages'
+  -- 39, NOT 36, and the merge that produced this number is worth a warning.
+  -- Stream A and Stream B each raised this from 33 to 36 -- A for C1's
+  -- conversations, conversation_participants and messages, B for towers,
+  -- builds and bricks. Both wrote the SAME NUMBER on the SAME LINE, so git
+  -- auto-merged it to 36 and raised a conflict only on the message beside it.
+  -- Resolving the visible conflict therefore leaves a silently wrong count
+  -- that is three too low, and 030 then fails with a message about audit
+  -- coverage, which points at the wrong problem. Same shape as the
+  -- metadata-allowlist entry in CLAUDE.md: a closed-set guard two streams edit
+  -- independently needs its total re-derived, never merged.
+  39,
+  '39 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, C1''s conversations, conversation_participants and messages, and towers, builds and bricks'
 );
 
 -- The same claim from the other direction, and the one that actually holds the
