@@ -14,21 +14,42 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
--- 5 has_trigger + 1 total + 1 mode arg + 2 organizations/order_items org_id
--- + 1 order_items count + 2 profiles + 2 no-op pair + 2 platform_staff
+-- 5 has_trigger + 1 total + 1 census + 1 mode arg + 2 organizations/order_items
+-- org_id + 1 order_items count + 2 profiles + 2 no-op pair + 2 platform_staff
 -- + 1 unknown-mode raise
-select plan(21);  -- +4: deleting an organization, and its cascade
+select plan(22);  -- +4: deleting an organization, and its cascade; +1 census
 
 -- ------------------------------------------------------------- attachment
 select has_trigger('public', t, t || '_audit', 'audit trigger on ' || t)
   from unnest(array['organizations','order_items','blocks','platform_staff','profiles']) as t;
 
+-- count(*), not count(distinct tgname). Trigger names are unique per TABLE,
+-- not per schema, so every table here names its trigger `<table>_audit` and
+-- two tables could legitimately share a name -- at which point `distinct`
+-- collapses them and the total reads low while the assertion still passes.
+-- Counting rows counts triggers, which is what this is asserting.
 select is(
-  (select count(distinct t.tgname)::int
+  (select count(*)::int
      from pg_trigger t join pg_proc p on p.oid = t.tgfoid
     where p.proname = 'audit_row_change' and not t.tgisinternal),
-  32,
-  '32 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1) and support_requests (H1)'
+  33,
+  '33 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1) and ledger_events'
+);
+
+-- The same claim from the other direction, and the one that actually holds the
+-- invariant: no table in public is MISSING a trigger. The count above goes
+-- stale silently every time a table is added; this does not.
+select is(
+  (select coalesce(string_agg(c.relname, ', ' order by c.relname), '')
+     from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind = 'r'
+      and c.relname not in ('audit_log', 'idempotency_keys', 'webhook_events')
+      and not exists (
+        select 1 from pg_trigger t join pg_proc p on p.oid = t.tgfoid
+         where t.tgrelid = c.oid and p.proname = 'audit_row_change'
+           and not t.tgisinternal)),
+  '',
+  'every table in public carries an audit trigger, except the three exempt by invariant 5'
 );
 
 -- Filter by trigger name: organizations and profiles each already carry an
