@@ -72,12 +72,22 @@ select lives_ok(
 -- Both were legal schema, neither was a leak. Patching the inputs a third time
 -- would have invited a fourth, so the RULE is stated instead of approximated.
 --
--- metadata has exactly four possible keys, and only one can ever hold a value:
+-- metadata has exactly six possible keys, and only one can ever hold content:
 --
---   changed           column names          schema
---   target_key_type   a type name           schema
---   org_id_at_delete  a uuid                id
---   target_key        a row's key           VALUE -- integer types only
+--   changed            column names         schema
+--   target_key_type    a type name          schema
+--   org_id_at_delete   a uuid               id
+--   org_id_unresolved  a uuid               id
+--   actor_unresolved   the literal true     flag, carries nothing
+--   target_key         a row's key          VALUE -- integer types only
+--
+-- org_id_unresolved and actor_unresolved arrived with CD-3/CD-4
+-- (20260903100601): when audit_log's own foreign key cannot accept a
+-- reference, the attribution moves here rather than aborting the write. Both
+-- are the same shape as org_id_at_delete, which this file already reasoned
+-- about -- a uuid is an id, not content -- and actor_unresolved deliberately
+-- stores a flag rather than the claimed uuid, because a uuid naming no profile
+-- is an unverified string from a claim, not an id.
 --
 -- A closed key set cannot false-positive on a legal identifier, and unlike the
 -- regex it also catches a single-token secret, which "looks like prose" would
@@ -121,7 +131,8 @@ select ok(
     select 1 from public.audit_log a, jsonb_object_keys(a.metadata) k
      where a.action not in ('moderate_post', 'moderate_comment',
                             'moderate_video_asset', 'designate_mentor')
-       and k not in ('changed', 'target_key', 'target_key_type', 'org_id_at_delete')
+       and k not in ('changed', 'target_key', 'target_key_type', 'org_id_at_delete',
+                     'org_id_unresolved', 'actor_unresolved')
   ),
   'metadata carries only keys audit_row_change is known to write'
 );
@@ -245,7 +256,8 @@ select ok(
   not exists (
     select 1 from public.audit_log a, jsonb_object_keys(a.metadata) k
      where a.target_type = '_probe_colspace'
-       and k not in ('changed', 'target_key', 'target_key_type', 'org_id_at_delete')
+       and k not in ('changed', 'target_key', 'target_key_type', 'org_id_at_delete',
+                     'org_id_unresolved', 'actor_unresolved')
   ),
   'and the guard does not fire on it'
 );

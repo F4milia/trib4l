@@ -329,11 +329,29 @@ than week one.
   cross-stream API change. Text-merging cleanly proves nothing; the RLS gate on
   the MERGED tree is the only thing that finds this class, so run it before
   opening a sync PR, not after.
-- 2026-09-01 · Wave 2 gate · PERF-2 taken (20260903100602): audit_log now has
-  (target_type, target_id) · measured on 200k rows, "this record's history" went
-  from a 2869-buffer parallel seq scan at 7.123 ms to a 4-buffer index scan at
-  0.033 ms, for 9.2 MB of index. Not speculative — tests/isolation already
-  filters on target_id in three files because the 2026-08-29 constraint requires
-  it, and every new table adds more. The pgTAP asserts the PLAN, not just the
-  index's existence: an index that exists and is never chosen reads exactly like
-  one that works, which is the greptile.json lesson in another form.
+- 2026-09-01 · Wave 2 gate · PERF-1 does not reproduce and was NOT built. It was
+  recorded as "`to_jsonb(new)` copies the entire row to read two scalar fields —
+  measured +50% write cost on a 4 KB body, scaling with row width". Re-measured
+  three ways: extraction in isolation (no audit INSERT), 3000 rows carrying an
+  INCOMPRESSIBLE 4 KB body — no trigger 166–206 ms, `to_jsonb` 191–231 ms, the
+  proposed dynamic-`EXECUTE` narrow read 192–599 ms; at 64 KB all three are
+  indistinguishable (280–351 ms) · the +50% was the audit INSERT itself, which is
+  the cost of auditing, not a defect. The original 4 KB body was almost certainly
+  `repeat('x', 4096)`, which pglz crushes to nothing — a filler that compresses
+  cannot measure a row-width effect. Verify a filler is incompressible
+  (`pg_column_size`) before quoting a number from it, and re-measure a deferred
+  perf defect before building its fix; this one would have added a per-row
+  dynamic query for no gain.
+- 2026-09-01 · Wave 2 gate · CD-3/CD-4 fixed (20260903100601): insert into
+  audit_log and catch `foreign_key_violation`, discriminating on
+  `GET STACKED DIAGNOSTICS CONSTRAINT_NAME` · nulling both columns on any
+  violation passes every obvious assertion and silently drops the actor on every
+  organization deletion, which is a routine path, not an edge case. The
+  EXCEPTION block costs nothing measurable here (180–200 ms vs 170–208 ms
+  without) — the earlier warning against it was about wrapping a whole function
+  body per row, not one INSERT.
+- 2026-09-01 · Wave 2 gate · adding a metadata key means editing the key
+  allowlist in tests/database/050, twice, plus its prose census · that file is a
+  closed-set guard by design, so a new key is a two-file change. Not a weakening
+  of the test — but a fix that forgets it fails 050 with a message about content
+  leaks, which points at the wrong problem.
