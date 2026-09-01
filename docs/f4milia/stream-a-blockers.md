@@ -332,12 +332,13 @@ percentages are computed at read time from the row values and **never stored.**
 
 **Gate:** merges at 09:30 with Ivan present, no exceptions.
 
-> **✅ DECIDED (2026-09-02) — a schema session is slotted upstream of Wave 7:**
+> **✅ WRITTEN (2026-09-02) — `docs/f4milia/equity-engine-schema-session.md`.**
+> A schema session slotted upstream of Wave 7:
 > `contribution_ledger`, the `bricks` estimate columns, the deterministic slice
 > function, pgTAP and RLS, run in the schema sandbox. Unblocked by the formula
-> decision above. **That session's prompt is not yet written** — this is now the
-> largest remaining piece of work in the run doc's Stream A column, and it is
-> three waves out.
+> decision above. The prompt now exists, so the largest structural gap in the
+> run doc's Stream A column is a session waiting to be run rather than one
+> waiting to be described.
 
 ## 8. Wave 8 — K1
 
@@ -420,7 +421,7 @@ the ruling, not the recommendation that produced it.
 | 8 | Vercel plan and project shape | R1, Wave 10 | **Hobby (Free), one project, for now.** Preview protection is available on Hobby so invariant 9 holds; named staging environments are not, so R1 uses Preview-vs-Production env vars in the single project. Revisit before F4milia is commercial — Hobby is documented as non-commercial. Consequences in §9 |
 | 9 | F2 / A1 ordering | Wave 5 | **No swap — the run doc's wave order is followed.** F2 keeps Wave 5 and builds the first Edge Function itself, under the four conditions below |
 | 10 | Service worker ownership | N1, Wave 4 | The PWA shell — manifest, icons, a registered but empty service worker — ships as **its own small PR before Wave 4.** W2 builds its UI on it; N1 adds only a `push` handler |
-| 11 | The equity engine | A5, Wave 7 | A **schema session is slotted upstream of Wave 7**: `contribution_ledger`, the `bricks` estimate columns, the deterministic slice function, pgTAP, RLS, in the schema sandbox. Unblocked by row 6. **Its prompt is unwritten** |
+| 11 | The equity engine | A5, Wave 7 | A **schema session is slotted upstream of Wave 7**: `contribution_ledger`, the `bricks` estimate columns, the deterministic slice function, pgTAP, RLS, in the schema sandbox. Unblocked by row 6. ✅ **Prompt written: `equity-engine-schema-session.md`** |
 | 12 | Expected concurrent Families | C2 | **8.** Fixes the per-Family quota at 100 MB — and `8 × 100 MB = 800 MB` is the usable budget exactly, so the ceiling invariant holds with equality and has no slack. Also makes `max_families = 8` a real constraint, which nothing in the system enforces; see decision 14 |
 
 ### 🟠 Open — six
