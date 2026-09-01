@@ -467,3 +467,20 @@ than week one.
   and Postgres rejects them at the point of use, mid-file, after earlier
   statements have already run · caught three times in one session. Spell
   mnemonics in a-f only: aa/bb/cc for people, dd for a DM, fa/fb for Families.
+- 2026-09-02 · C1 browser check · a dev server left running from ANOTHER
+  worktree is invisible and explains everything downstream. `next dev` was
+  serving /Users/james/Downloads/brandLamb/stream-a (branch `stream-a`,
+  pre-S2), which has no components/turnstile.tsx and no /messages route, while
+  the shared Supabase stack carried THIS tree's migrations and
+  `[auth.captcha] enabled = true` · old app code plus current GoTrue config
+  means every sign-in fails with GoTrue's raw "no captcha_token found", and the
+  raw text appears because that commit predates S2's captcha_failed mapping.
+  Before debugging a browser symptom, check `ps ax | grep "next dev"` for the
+  server's actual path; five worktrees share port 3000.
+- 2026-09-02 · C1 browser check · playwright.config.ts sets
+  `AUTH_RATE_LIMIT_DISABLED=1` in its OWN webServer block only, so a dev server
+  started by hand keeps the five-per-fifteen-minutes limiter · running a spec
+  twice then fails at signIn with a 20s waitForURL timeout, which looks like the
+  feature being tested and is not. A negative control that fails at sign-in
+  proves nothing -- I reported one as verified before checking WHY it failed.
+  Read the failure message, not the pass/fail count.
