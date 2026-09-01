@@ -288,3 +288,200 @@ insert into ledger_events (org_id, event_type, payload, created_at) values
 -- what D1's second acceptance clause renders from, and there is nothing to
 -- add here -- an empty Family is a state the product has to be honest about,
 -- not a hole in the fixture.
+
+-- ===========================================================================
+-- QA FIXTURES -- docs/qa-previous-session-sop.md, prerequisite 2.
+-- ===========================================================================
+--
+-- "The wave table's edge cases keep using the same actors. Seed them once in
+--  supabase/seed.sql with stable emails, and every QA doc references them by
+--  name instead of 'create a user who...'."
+--
+-- Each account below is named for the STATE IT IS IN, not for a person, so a
+-- QA step can say "log in as departed@f4milia.test" and mean something exact.
+--
+-- THEY LIVE IN THEIR OWN TWO FAMILIES, and that is the important design
+-- decision here. caregiver-circle, founder-collective and wellness-guild are
+-- pinned by 26 isolation files and by 180_seed_domain_data.sql -- their member
+-- counts, streaks and Tower titles are asserted. Putting a departed member or
+-- a memorial lock into one of them would perturb assertions that exist to
+-- catch real regressions, and every future QA fixture would perturb them
+-- again. qa-family-a and qa-family-b are separate so the two fixture sets
+-- cannot interfere.
+--
+-- Password for every account is the same as the rest of this file. The SOP
+-- says the shared password belongs in the team password manager rather than
+-- the repo; that applies to STAGING. This file is local/staging seed data and
+-- already carries password123 for six accounts, so a different rule for these
+-- nine would be a false sense of security, not a real one.
+
+insert into organizations (id, slug, name) values
+  ('00000000-0000-0000-0000-00000000000d', 'qa-family-a', 'QA Family A'),
+  ('00000000-0000-0000-0000-00000000000e', 'qa-family-b', 'QA Family B');
+
+insert into auth.users (
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+  confirmation_token, recovery_token, email_change, email_change_token_new,
+  email_change_token_current, phone_change, phone_change_token,
+  reauthentication_token
+) values
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000b1',
+   'authenticated', 'authenticated', 'dual@f4milia.test', extensions.crypt('password123', extensions.gen_salt('bf')),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Dual Family"}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000b2',
+   'authenticated', 'authenticated', 'blocker@f4milia.test', extensions.crypt('password123', extensions.gen_salt('bf')),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Blocker"}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000b3',
+   'authenticated', 'authenticated', 'blocked@f4milia.test', extensions.crypt('password123', extensions.gen_salt('bf')),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Blocked"}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000b4',
+   'authenticated', 'authenticated', 'departed@f4milia.test', extensions.crypt('password123', extensions.gen_salt('bf')),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Departed"}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000b5',
+   'authenticated', 'authenticated', 'memorial@f4milia.test', extensions.crypt('password123', extensions.gen_salt('bf')),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Memorial"}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000b6',
+   'authenticated', 'authenticated', 'second@f4milia.test', extensions.crypt('password123', extensions.gen_salt('bf')),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Second Member"}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000b7',
+   'authenticated', 'authenticated', 'orphan@f4milia.test', extensions.crypt('password123', extensions.gen_salt('bf')),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"No Family"}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000b8',
+   'authenticated', 'authenticated', 'staff1@f4milia.test', extensions.crypt('password123', extensions.gen_salt('bf')),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Staff One"}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000b9',
+   'authenticated', 'authenticated', 'staff2@f4milia.test', extensions.crypt('password123', extensions.gen_salt('bf')),
+   now(), '{"provider":"email","providers":["email"]}', '{"display_name":"Staff Two"}', now(), now(), '', '', '', '', '', '', '', '');
+
+-- orphan@ gets NO membership at all. That absence is the fixture: O1's edge
+-- case, W2's first-run, and every "signed up but has not joined" path need a
+-- person in exactly this state, and creating one by hand each time is what
+-- the SOP exists to stop.
+insert into memberships (id, org_id, profile_id, role) values
+  -- qa-family-a. dual@ created it, so second@ is genuinely a non-creator.
+  ('00000000-0000-0000-0000-000000019001', '00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-0000000000b1', 'org_owner'),
+  ('00000000-0000-0000-0000-000000019002', '00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-0000000000b6', 'member'),
+  ('00000000-0000-0000-0000-000000019003', '00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-0000000000b2', 'member'),
+  ('00000000-0000-0000-0000-000000019004', '00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-0000000000b3', 'member'),
+  ('00000000-0000-0000-0000-000000019005', '00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-0000000000b4', 'member'),
+  ('00000000-0000-0000-0000-000000019006', '00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-0000000000b5', 'member'),
+  -- qa-family-b, so dual@ is in two Families with different content in each.
+  ('00000000-0000-0000-0000-000000019007', '00000000-0000-0000-0000-00000000000e', '00000000-0000-0000-0000-0000000000b1', 'member');
+
+insert into platform_staff (profile_id) values
+  ('00000000-0000-0000-0000-0000000000b8'),
+  ('00000000-0000-0000-0000-0000000000b9');
+
+-- 2FA, seeded verified. Invariant 7 ENFORCES two-factor for platform_staff at
+-- sign-in, so a staff fixture without a factor cannot reach a single staff
+-- route -- and enrolling one by hand after every `db reset` is exactly the
+-- friction the SOP is trying to remove.
+--
+-- The secret is a published RFC 4226 test vector, stored the way GoTrue stores
+-- one: plaintext base32 in auth.mfa_factors.secret (verified against factors
+-- this repo's own elevateToAal2 helper had already created). Generate a code
+-- from it with any TOTP app or with otpauth in a test:
+--
+--   new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(QA_TOTP_SECRET) })
+--
+-- If a future GoTrue enables at-rest encryption of this column these rows stop
+-- working, and the symptom will be "invalid code" rather than anything about
+-- encryption -- so check the column's format before debugging the code.
+insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret) values
+  ('00000000-0000-0000-0000-000000069001', '00000000-0000-0000-0000-0000000000b8',
+   'qa-seeded', 'totp', 'verified', now(), now(), 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'),
+  ('00000000-0000-0000-0000-000000069002', '00000000-0000-0000-0000-0000000000b9',
+   'qa-seeded', 'totp', 'verified', now(), now(), 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP');
+
+-- ----------------------------------------------------- qa-family-a content
+insert into towers (id, org_id, title, description, status) values
+  ('00000000-0000-0000-0000-000000029001', '00000000-0000-0000-0000-00000000000d',
+   'Finish the allotment shed', 'Somewhere to keep the tools and sit out of the rain.', 'active');
+
+update organizations set active_tower_id = '00000000-0000-0000-0000-000000029001'
+ where id = '00000000-0000-0000-0000-00000000000d';
+
+insert into builds (id, tower_id, org_id, type, title, status) values
+  ('00000000-0000-0000-0000-000000039001', '00000000-0000-0000-0000-000000029001',
+   '00000000-0000-0000-0000-00000000000d', 'custom', 'Frame and roof', 'open');
+
+-- departed@ holds two Bricks and has finished a third. After the departure
+-- below, 20260903100911's trigger reverts the two open ones to unassigned and
+-- leaves the finished one attributed -- which is D2's named edge case and
+-- K1's, in one fixture.
+insert into bricks (id, build_id, org_id, description, assignee, due_at, status) values
+  ('00000000-0000-0000-0000-000000049001', '00000000-0000-0000-0000-000000039001',
+   '00000000-0000-0000-0000-00000000000d', 'Concrete the base',
+   '00000000-0000-0000-0000-000000019005', now() + interval '4 days', 'in_progress'),
+  ('00000000-0000-0000-0000-000000049002', '00000000-0000-0000-0000-000000039001',
+   '00000000-0000-0000-0000-00000000000d', 'Order the timber',
+   '00000000-0000-0000-0000-000000019005', now() - interval '2 days', 'needs_help');
+
+insert into bricks (id, build_id, org_id, description, assignee, verified_by, verified_at, status) values
+  ('00000000-0000-0000-0000-000000049003', '00000000-0000-0000-0000-000000039001',
+   '00000000-0000-0000-0000-00000000000d', 'Clear the plot',
+   '00000000-0000-0000-0000-000000019005', '00000000-0000-0000-0000-000000019001',
+   now() - interval '6 days', 'done');
+
+insert into vows (id, org_id, holder_id, commitment, status, assigned_at) values
+  ('00000000-0000-0000-0000-000000059001', '00000000-0000-0000-0000-00000000000d',
+   '00000000-0000-0000-0000-000000019002', 'I will water the plot on Wednesdays',
+   'active', now() - interval '6 days');
+
+-- blocked@ has written, so the block below has real content to hide and
+-- invariant 6 is QA-able without composing anything first. memorial@ has
+-- written too, so the lock has something to preserve.
+insert into table_entries (org_id, member_id, entry_date, prompt_id, response_text) values
+  ('00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-000000019004', current_date - 1, '00000000-0000-0000-0000-000000060001', 'Wrote this so a blocked account has something to hide.'),
+  ('00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-000000019004', current_date - 3, '00000000-0000-0000-0000-000000060002', 'And a second one, on a different day.'),
+  ('00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-000000019006', current_date - 2, '00000000-0000-0000-0000-000000060001', 'Written before the account was memorialised. It stays.'),
+  ('00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-000000019001', current_date - 1, '00000000-0000-0000-0000-000000060001', 'The Family keeps going.');
+
+insert into ledger_events (org_id, event_type, payload, created_at) values
+  ('00000000-0000-0000-0000-00000000000d', 'tower_event',
+   '{"summary": "QA Family A set its Tower: finish the allotment shed."}', now() - interval '20 days'),
+  ('00000000-0000-0000-0000-00000000000d', 'brick_complete',
+   '{"summary": "Departed cleared the plot before they left."}', now() - interval '6 days');
+
+-- ----------------------------------------------------- qa-family-b content
+-- Deliberately DIFFERENT from Family A, for the same reason the main fixture's
+-- two Families differ: dual@ switching between them has to change what is on
+-- screen, or the switch proves nothing.
+insert into towers (id, org_id, title, description, status) values
+  ('00000000-0000-0000-0000-000000029002', '00000000-0000-0000-0000-00000000000e',
+   'Run the winter supper club', 'Once a month, somebody else cooks.', 'active');
+
+update organizations set active_tower_id = '00000000-0000-0000-0000-000000029002'
+ where id = '00000000-0000-0000-0000-00000000000e';
+
+insert into vows (id, org_id, holder_id, commitment, status, assigned_at) values
+  ('00000000-0000-0000-0000-000000059002', '00000000-0000-0000-0000-00000000000e',
+   '00000000-0000-0000-0000-000000019007', 'I will book the hall by the 20th',
+   'active', now() - interval '2 days');
+
+insert into table_entries (org_id, member_id, entry_date, prompt_id, response_text) values
+  ('00000000-0000-0000-0000-00000000000e', '00000000-0000-0000-0000-000000019007', current_date, '00000000-0000-0000-0000-000000060001', 'Different Family, different day, different answer.');
+
+-- ------------------------------------------------------------- the states
+-- Order matters below: each of these three is a TRANSITION, and seeding the
+-- end state directly would skip the trigger that produces it.
+
+-- 1. The block. blocker@ has blocked blocked@, so blocked@'s two entries above
+--    are hidden from blocker@ SPECIFICALLY and from nobody else.
+insert into member_blocks (org_id, blocker_membership_id, blocked_membership_id) values
+  ('00000000-0000-0000-0000-00000000000d',
+   '00000000-0000-0000-0000-000000019003',
+   '00000000-0000-0000-0000-000000019004');
+
+-- 2. The departure. A SOFT delete, because that is what leaving a Family is
+--    here -- and it fires memberships_release_bricks, which is the whole
+--    point: after this, 049001 and 049002 are open and unassigned while
+--    049003 stays done and still attributed to departed@.
+update memberships set deleted_at = now()
+ where id = '00000000-0000-0000-0000-000000019005';
+
+-- 3. The memorial lock. Set on the profile, which is where 20260903100401
+--    puts it; memorial@'s entries stay visible and stop being editable.
+update profiles set memorialized_at = now(), memorialized_by = '00000000-0000-0000-0000-0000000000b8'
+ where id = '00000000-0000-0000-0000-0000000000b5';
