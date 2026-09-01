@@ -462,3 +462,8 @@ than week one.
   every test in the file fails with one stack trace pointing at a useEffect ·
   optional-call browser layout APIs (`el?.scrollIntoView?.()`); a missing
   scroll must never be able to unmount a room.
+- 2026-09-02 · C1 · mnemonic uuids in fixtures must be HEX. `...0aa1` is a
+  uuid; `...ma01` (membership), `...dm001` (dm) and `...fc0m1` (mentor) are not,
+  and Postgres rejects them at the point of use, mid-file, after earlier
+  statements have already run · caught three times in one session. Spell
+  mnemonics in a-f only: aa/bb/cc for people, dd for a DM, fa/fb for Families.
