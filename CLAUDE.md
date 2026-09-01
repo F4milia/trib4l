@@ -422,3 +422,11 @@ than week one.
   the blocked member is posting — invariant 6 defeated by a number rather than
   by content · SECURITY INVOKER on anything that aggregates RLS-protected rows,
   and assert the count against the visible-row count, not against a constant.
+- 2026-09-01 · C1 PR5 · an isolation spec that asserts a LIST LENGTH asserts a
+  starting state: `listConversations(alice, A)` had length 1 alone and 2 once a
+  sibling test opened a DM, and bob's unread count read alice's earlier messages
+  · count by a property (kind, author) or assert a transition, never the size of
+  a shared collection. Both failures here were green when each test ran alone,
+  which is the whole trap. Verify by running the file TWICE with no reset --
+  Q4's edge case, worth applying to every isolation file as it is written rather
+  than in Wave 9.
