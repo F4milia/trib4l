@@ -164,10 +164,22 @@ describe("realtime delivery", () => {
     // by id -- nothing stops a client from ASKING; the question is whether the
     // server sends. This is the leak the whole session is defending against,
     // on the one path that does not go through PostgREST.
+    //
+    // STRENGTHENED BY C2 PR 1, not weakened. Until Realtime Authorization
+    // landed, this join SUCCEEDED and the assertion below was "she is in the
+    // room and receives no rows" -- true, and carried entirely by
+    // postgres_changes RLS. The channel is now `private: true`, so the join
+    // itself is evaluated against realtime.messages and Carol is refused
+    // before any row path is consulted.
+    //
+    // Both claims are kept. The refusal is the new, earlier guarantee; the
+    // empty array still asserts the row path independently, so if a future
+    // change makes the channel public again this test fails on the refusal
+    // rather than passing quietly on the weaker half.
     const leaked: string[] = [];
-    await subscribeAndWait(carol, dmId, {
-      onMessage: (m) => leaked.push(m.body),
-    });
+    await expect(
+      subscribeAndWait(carol, dmId, { onMessage: (m) => leaked.push(m.body) }, 12_000),
+    ).rejects.toThrow(/CHANNEL_ERROR|TIMED_OUT/);
 
     // Bob is a real participant, and subscribes too -- so a failure to receive
     // is distinguishable from realtime simply not working in this environment.

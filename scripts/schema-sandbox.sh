@@ -119,7 +119,13 @@ cmd_bootstrap() {
   psql_q -f - < "$ROOT/scripts/sandbox-bootstrap-grants.sql" >/dev/null
   docker exec -i "$CONTAINER" psql -h 127.0.0.1 -U supabase_auth_admin -d postgres \
     -v ON_ERROR_STOP=1 -q -f - < "$ROOT/scripts/sandbox-bootstrap-auth.sql" >/dev/null
-  echo "bootstrap applied (default privileges, then auth)"
+  # As supabase_admin, not postgres: the image ships a `realtime` schema owned
+  # by supabase_admin, and `postgres` is NOT a superuser here (rolsuper = f), so
+  # creating in it fails with "permission denied for schema realtime". Same
+  # reason the auth bootstrap above connects as supabase_auth_admin.
+  docker exec -i "$CONTAINER" psql -h 127.0.0.1 -U supabase_admin -d postgres \
+    -v ON_ERROR_STOP=1 -q -f - < "$ROOT/scripts/sandbox-bootstrap-realtime.sql" >/dev/null
+  echo "bootstrap applied (default privileges, then auth, then realtime)"
 }
 
 cmd_migrate() {

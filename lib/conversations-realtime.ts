@@ -12,8 +12,9 @@ import type { Message } from "./conversations";
  * arrives here, the database already decided this subscriber may see it, blocks
  * included.
  *
- * That guarantee covers postgres_changes and NOTHING ELSE. The typing handler
- * below is a broadcast, which no policy gates -- see sendTyping().
+ * That guarantee covered postgres_changes and NOTHING ELSE until C2 PR 1. The
+ * typing handler below is a broadcast, which has no row for a policy to be
+ * evaluated against; it is now gated at the JOIN instead -- see sendTyping().
  *
  * That is worth being explicit about, because the tempting shape is to check
  * membership in the callback "to be safe". A check here would be a second
@@ -71,7 +72,15 @@ export function subscribeToConversation(
    */
   onStatus?: (status: SubscriptionStatus) => void,
 ): RealtimeChannel {
-  const channel = supabase.channel(`conversation:${conversationId}`);
+  // `private: true` is what makes the join pass through RLS on
+  // realtime.messages (migration 20260903101501). Without it the channel is a
+  // string anyone may join, which is the C1 finding this closes; with it and
+  // no policies, nobody joins at all -- RLS is already enabled on that table.
+  // The flag and the policies are one change, and reverting means reverting
+  // both.
+  const channel = supabase.channel(`conversation:${conversationId}`, {
+    config: { private: true },
+  });
 
   channel.on(
     "postgres_changes",
@@ -139,28 +148,26 @@ export function subscribeToConversation(
 /**
  * Announces that this member is typing.
  *
- * Broadcast is NOT ACCESS-CONTROLLED, in either direction. It carries whatever
- * the sender puts in it, and -- measured 2026-09-02 -- ANY authenticated client
- * may join ANY channel by name and receive it. A channel is a string; there is
- * no row for a policy to be evaluated against, so the database does not gate
- * the join.
+ * Broadcast still carries whatever the sender puts in it, and it still has no
+ * per-message policy -- there is no row for one to be evaluated against. What
+ * changed in C2 PR 1 is the JOIN: the channel is opened `private: true`, so
+ * Realtime evaluates RLS on realtime.messages before letting a client in, and
+ * conversation_channel_join calls is_conversation_participant().
  *
- * An earlier version of this comment claimed delivery reached "only people
- * already subscribed to a channel the database let them join". That was wrong,
- * and it was wrong in the direction that matters. The probe: a member of
- * Family B joined `conversation:<a Family A uuid>` and received Family A's
- * typing events, while a postgres_changes subscription on the same channel for
- * the same user delivered nothing.
+ * The history is worth keeping, because the comment here was confidently wrong
+ * once. It claimed delivery reached "only people already subscribed to a
+ * channel the database let them join". The database let ANYONE join. The
+ * probe: a member of Family B joined `conversation:<a Family A uuid>` and
+ * received Family A's typing events, while postgres_changes on the same
+ * channel for the same user delivered nothing.
  *
- * So the payload stays a membership id and nothing else. What leaks today is
- * that someone is active in a room -- to anyone holding its id, including a
- * member who has since been removed from the Family and still has it in their
- * browser history.
+ * A member removed from a Family fails the join now, because
+ * is_conversation_participant() checks the membership is still active -- which
+ * was the case that actually mattered, not a stranger guessing a uuid.
  *
- * DO NOT extend this to carry message text, display names, or anything a
- * non-participant must not read. Gating the join needs Realtime Authorization
- * (RLS on realtime.messages); that is owed to C2 --
- * docs/f4milia/c2-realtime-broadcast-authorization.md.
+ * STILL DO NOT extend this to carry message text or display names. The join is
+ * gated; the payload is not, and a gate is a weaker guarantee than a policy on
+ * a real row. The membership id is the ceiling.
  */
 export function sendTyping(channel: RealtimeChannel, membershipId: string): void {
   void channel.send({
