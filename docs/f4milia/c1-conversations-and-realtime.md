@@ -171,14 +171,20 @@ isolation test must demonstrably fail with its policy removed:
 | `old.deleted_at is null` guard | 1 |
 | both integrity triggers | 4 |
 
-**Provenance of the header's suite counts.** The unit figure (**1015 across 37**)
-was re-measured on this branch when the record was finalised, after `#73` merged
-— `npm test`, 2026-09-02. The pgTAP and isolation figures are **carried forward
-from the session's own last green run, not re-measured here**: `#73` touched no
-file in `supabase/tests/` or `tests/isolation/`, and the shared local stack was
-held by Stream B, so re-running them would have destroyed its database mid-run.
-Stated this way because CLAUDE.md's 2026-08-28 alignment entry rules out
-describing a check that was not executed.
+**Provenance of the header's suite counts.** All three were measured after `#73`
+merged, none carried forward:
+
+| Suite | Figure | Measured by |
+|---|---|---|
+| unit | 1015 across 37 | `npm test`, locally on `main`, 2026-09-02 |
+| pgTAP | `Files=20, Tests=385` | CI `database-tests`, run `33541447893` |
+| isolation | 149 across 25 | CI `isolation`, run `33541448021` |
+
+The two database suites were **not** run locally on purpose: Stream B held the
+shared stack, and `npm run test:isolation` begins with `supabase db reset`, which
+would have destroyed its database mid-run (CLAUDE.md, 2026-08-30). CI provisions
+its own Postgres, so it is the only authority available while the streams
+overlap — and it is the stronger one, because it resets from scratch.
 
 ## 6. Four times a suite was green while proving less than it claimed
 
