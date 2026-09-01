@@ -8,7 +8,7 @@ Carried forward from C1. **Read before starting C2.**
 | **Origin** | C1 (Wave 2, Stream A), PR `#72` — merged |
 | **Owner** | C2 (Wave 3, Stream A) — the next session on this surface |
 | **Severity** | Low impact, real. No message content leaks. Metadata does |
-| **Status** | **Open.** Decided 2026-09-02 (James) to fold into C2 rather than patch separately |
+| **Status** | **Open** — the channel is still ungated. §5.1 (the false comment) is closed; §5.2–§5.4 are C2's. Decided 2026-09-02 (James) to fold into C2 rather than patch separately |
 
 ---
 
@@ -71,17 +71,19 @@ merely convenient, it is the only fit.
 
 ## 5. What C2 should do
 
-**1. Correct a false comment first — it is on `main` today.**
+**1. Correct a false comment first. ✅ Done — `8052613`, on `main`.**
 
-`lib/conversations-realtime.ts` currently claims, of broadcast:
+`lib/conversations-realtime.ts` claimed, of broadcast:
 
 > "...and only to people already subscribed to a channel the database let them
 > join."
 
-The database lets **anyone** join. That sentence is wrong, it shipped in `#72`,
+The database lets **anyone** join. That sentence was wrong, it shipped in `#72`,
 and it is the kind of confident-and-false comment CLAUDE.md's 2026-08-28
-alignment entry exists to prevent. Fix it whether or not the rest of this lands
-in the same PR.
+alignment entry exists to prevent. It was corrected ahead of this session and
+now states the measured behaviour, names the probe, and points back here.
+**C2 does not need to redo this** — the numbering is kept so §5.2 and §5.3 keep
+their references.
 
 **2. Gate the channel.** Supabase Realtime Authorization puts RLS on
 `realtime.messages`, so a `join` is evaluated by policy like any other read. The
@@ -147,7 +149,7 @@ control, as §5.3 says.
 ## 8. Related
 
 - `docs/manual-checks/README.md` — C1's named edge case, and how to prove it can
-  fail *(currently on `feat/conversations-ui`, unmerged)*
+  fail — on `main` since `#76`
 - `supabase/tests/database/114_conversations_realtime.sql` — the publication and
   replica-identity assertions
 - CLAUDE.md, 2026-09-01 C1 PR6 entries — realtime readiness levels, and why

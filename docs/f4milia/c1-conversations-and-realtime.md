@@ -7,11 +7,11 @@ Session record. Wave 2 · Stream A.
 | **Ran** | 2026-09-01 – 2026-09-02 |
 | **Scope** | `F4milia — Complete Run Doc`, Wave 2, Stream A |
 | **Gate cleared first** | The four deferred audit-trigger defects — see §1 |
-| **Delivered** | 6 PRs merged (`#67`–`#72`), 1 open (`#73`), 3 follow-ups (`#74`, `#76`, and `#75` which did not land — §9) |
+| **Delivered** | 7 PRs merged (`#67`–`#73`), 3 follow-ups (`#74`, `#76`, and `#75` which did not land — §9) |
 | **C1's own assertions** | 69 pgTAP across 5 files · 14 isolation · 7 unit · 5 browser |
-| **Suites on `main` at close** | 385 pgTAP across 20 files · 149 isolation across 25 · 988 unit across 36 |
+| **Suites on `main` at close** | 385 pgTAP across 20 files · 149 isolation across 25 · **1015 unit across 37** |
 | **Review tier** | Greptile — new RLS surface throughout |
-| **Status** | **Schema, policies, channel creation, read state, data access and realtime are merged. The UI is not** — `#73` is open by decision. One finding carried to C2 |
+| **Status** | **Complete and merged** — schema, policies, channel creation, read state, data access, realtime and the UI. One finding carried to C2 |
 
 ---
 
@@ -53,9 +53,19 @@ gain and a worse tail.
 | **#70** | `last_read_at`, `unread_message_counts()`, `mark_conversation_read()` | merged `clean` |
 | **#71** | `lib/conversations.ts`, `create_direct_conversation()`, SDK isolation tests | merged `clean` |
 | **#72** | Realtime publication, `REPLICA IDENTITY FULL`, client subscription, typing broadcast | merged `clean` |
-| **#73** | The channel and DM surface, copy deck, nav entry | **open — will not merge** |
+| **#73** | The channel and DM surface, copy deck, nav entry | merged — see the note below |
 | **#74** | The C2 broadcast finding, and the comment it disproved | merged |
-| **#76** | Re-land of C1's hand-check and seven learned constraints | open |
+| **#76** | Re-land of C1's hand-check and seven learned constraints | merged |
+
+**`#73` was decided against, then merged anyway — recorded because the reversal
+is the fact, not the first decision.** This record was drafted while `#73` was
+open by decision; it merged at 17:48:37 UTC on 2026-09-01, nine minutes after
+`#76`. Everything downstream of that call changed with it: `/o/[slug]/messages`
+exists on `main` and the browser half of the named edge case has a home again.
+Two notes in `c2-realtime-broadcast-authorization.md` went stale with it and are
+corrected in the same change: its §8 still called `docs/manual-checks/`
+unmerged, which `#76` had already fixed, and its §5.1 still asked C2 to correct
+a comment `8052613` had already corrected.
 
 ## 3. The decisions worth remembering
 
@@ -136,7 +146,7 @@ files because the 2026-08-29 constraint requires it.
 
 ## 5. How it was verified
 
-Four independent paths, because each proves a different claim:
+Five independent paths, because each proves a different claim:
 
 | | Proves |
 |---|---|
@@ -144,7 +154,7 @@ Four independent paths, because each proves a different claim:
 | `tests/isolation/conversations.test.ts` | `lib/conversations.ts` inherits them |
 | `tests/isolation/conversations-realtime.test.ts` | the socket honours them |
 | `docs/manual-checks/c1-dual-family-check.sh` | raw PostgREST, no SDK in the path |
-| `tests/e2e/dual-family-conversations.spec.ts` | the screen — *on `#73` only* |
+| `tests/e2e/dual-family-conversations.spec.ts` | the screen |
 
 **Every policy has a drop-and-count control**, per CLAUDE.md's rule that an
 isolation test must demonstrably fail with its policy removed:
@@ -160,6 +170,21 @@ isolation test must demonstrably fail with its policy removed:
 | membership-join trigger | 4 |
 | `old.deleted_at is null` guard | 1 |
 | both integrity triggers | 4 |
+
+**Provenance of the header's suite counts.** All three were measured after `#73`
+merged, none carried forward:
+
+| Suite | Figure | Measured by |
+|---|---|---|
+| unit | 1015 across 37 | `npm test`, locally on `main`, 2026-09-02 |
+| pgTAP | `Files=20, Tests=385` | CI `database-tests`, run `33541447893` |
+| isolation | 149 across 25 | CI `isolation`, run `33541448021` |
+
+The two database suites were **not** run locally on purpose: Stream B held the
+shared stack, and `npm run test:isolation` begins with `supabase db reset`, which
+would have destroyed its database mid-run (CLAUDE.md, 2026-08-30). CI provisions
+its own Postgres, so it is the only authority available while the streams
+overlap — and it is the stronger one, because it resets from scratch.
 
 ## 6. Four times a suite was green while proving less than it claimed
 
@@ -211,11 +236,6 @@ migration.
 
 ## 8. What is not satisfied
 
-**The UI is not merged.** `#73` holds the channel and DM surface and its browser
-spec. Decided 2026-09-02 not to merge it. Until it does, `/o/[slug]/messages` does
-not exist on `main` and the browser half of the named edge case has no home —
-`docs/manual-checks/` is the runnable version.
-
 **No rate limit on sending.** Invariant 7 covers endpoints that cost money or send
 anything; a message does neither today. It will once N1 turns messages into pushes
 and emails. That is Q2's sweep, named here so it is a decision rather than an
@@ -259,5 +279,5 @@ glob, even when no test was edited.**
 - `docs/f4milia/c2-realtime-broadcast-authorization.md` — the finding C2 inherits
 - `docs/manual-checks/README.md` — the hand-check, and how to prove it can fail
 - CLAUDE.md Learned constraints — **26 entries** added by this session: 19 on
-  `main`, and 7 more re-landing with `#76` (they were stranded twice — first
-  on the unmerged UI branch, then by the stacked-merge in §9)
+  `main`, and 7 more re-landed by `#76` (they were stranded twice — first
+  on the then-unmerged UI branch, then by the stacked-merge in §9)
