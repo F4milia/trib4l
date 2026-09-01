@@ -65,12 +65,19 @@ at `b28d6c7`, max migration `20260903101311`, max pgTAP `190`:
 
 | Order | PR | Migration | pgTAP |
 |---|---|---|---|
-| 1 | C2 PR 1 · Realtime Authorization | `20260903101401` | `200` |
-| 2 | C2 PR 2 · Schema (5 tables, threading, enum, `030`) | `20260903101501`–`101505` | `210`–`250` |
-| 3 | C2 PR 3 · Storage + project guard | `20260903101601` | `260` |
-| 4 | **PR 2** · definer `search_path` | `20260903101701` | `270` |
+| 1 | **PR 2** · definer `search_path` | `20260903101401` ✅ landed | `200` ✅ |
+| 2 | C2 PR 1 · Realtime Authorization | `20260903101501` | `210` |
+| 3 | C2 PR 2 · Schema (5 tables, threading, enum, `030`) | `20260903101601`–`101605` | `220`–`260` |
+| 4 | C2 PR 3 · Storage + project guard | `20260903101701` | `270` |
 | 5 | **PR 10** · `push_subscriptions` | `20260903101801` | `280` |
 | 6 | **PR 13** · `unread_message_counts(org)` | `20260903101901` | `290` |
+
+**Revised once already, and the reason generalises.** The first version of this
+table allocated by the *plan's* suggested order, which put C2 first. Execution
+took the unblocking PRs first instead, and a migration must carry a version
+ABOVE everything already applied — so numbering by planned order rather than by
+landing order would have produced the same out-of-order defect this table was
+created to fix, one layer up. **Allocate by the order things actually land.**
 
 C2 PR 4 (data access and UI) adds no migration.
 
