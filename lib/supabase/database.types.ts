@@ -1344,6 +1344,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          active_tower_id: string | null
           created_at: string
           deleted_at: string | null
           id: string
@@ -1355,6 +1356,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_tower_id?: string | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -1366,6 +1368,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_tower_id?: string | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -1376,7 +1379,15 @@ export type Database = {
           timezone?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_active_tower_fk"
+            columns: ["active_tower_id", "id"]
+            isOneToOne: false
+            referencedRelation: "towers"
+            referencedColumns: ["id", "org_id"]
+          },
+        ]
       }
       platform_staff: {
         Row: {
@@ -1871,6 +1882,44 @@ export type Database = {
           },
         ]
       }
+      towers: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          org_id: string
+          status: Database["public"]["Enums"]["tower_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id: string
+          status?: Database["public"]["Enums"]["tower_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id?: string
+          status?: Database["public"]["Enums"]["tower_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "towers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_assets: {
         Row: {
           cohort_id: string | null
@@ -2258,6 +2307,7 @@ export type Database = {
       report_status: "open" | "escalated" | "resolved"
       report_target_type: "post" | "comment" | "member"
       support_request_status: "open" | "handled"
+      tower_status: "active" | "stalled" | "pivoted" | "complete"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2407,6 +2457,7 @@ export const Constants = {
       report_status: ["open", "escalated", "resolved"],
       report_target_type: ["post", "comment", "member"],
       support_request_status: ["open", "handled"],
+      tower_status: ["active", "stalled", "pivoted", "complete"],
     },
   },
 } as const
