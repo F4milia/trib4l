@@ -499,4 +499,133 @@ export const copy = {
       allCommunities: { label: "All communities", description: "Everywhere you belong" },
     },
   },
+  /**
+   * Transactional email (E1). Every string here is fixed. None of it is
+   * interpolated from a Family, a member, a Table entry or a message --
+   * CLAUDE.md invariant 3: "Emails and pushes name the event, never the
+   * content. Assume the inbox may be shared."
+   *
+   * That extends to Family and member NAMES, which the S1 prompt rules out in
+   * so many words ("Verification emails carry no Family names or content").
+   * An invitation therefore says that you have been invited; which Family, and
+   * by whom, is behind the link where only the holder of the token sees it.
+   */
+  email: {
+    invite: {
+      eyebrow: "Invitation",
+      subject: "You have been invited to a Family",
+      heading: "Someone saved you a seat",
+      body: [
+        "A Family on F4milia has invited you to join them.",
+        "The invitation names the Family once you open it. It expires in fourteen days.",
+      ],
+      action: "Open the invitation",
+      footnote: "If you were not expecting this, ignore it and nothing happens.",
+    },
+    familyNight: {
+      eyebrow: "Family Night",
+      subject: "Your Family Night digest is ready",
+      heading: "This week is written up",
+      body: ["Your Family's week has been gathered into a digest. It is waiting for you."],
+      action: "Read the digest",
+      footnote: "You can turn this off for this Family in your notification settings.",
+    },
+    vow: {
+      eyebrow: "Vow",
+      subject: {
+        assigned: "A Vow is yours this rotation",
+        due_soon: "Your Vow is due soon",
+        completed: "A Vow was completed",
+      },
+      heading: {
+        assigned: "The Vow comes to you",
+        due_soon: "Your Vow closes shortly",
+        completed: "The Vow is kept",
+      },
+      body: {
+        assigned: ["The rotation has reached you. Details are on your Vow."],
+        due_soon: ["The window on your current Vow is closing."],
+        completed: ["A Vow in your Family has been completed."],
+      },
+      action: "Open the Vow",
+      footnote: "You can turn this off for this Family in your notification settings.",
+    },
+    passwordReset: {
+      eyebrow: "Account",
+      subject: "Reset your F4milia password",
+      heading: "Set a new password",
+      body: [
+        "Use the button below to choose a new password. The link works once and expires in one hour.",
+        "If you did not ask for this, your password has not changed and no action is needed.",
+      ],
+      action: "Choose a new password",
+      footnote: "This message is about your account, not about any Family.",
+    },
+  },
+  /**
+   * The help page (H1). Every answer below is a statement about behaviour that
+   * exists in this repo today, checked against the code or against
+   * docs/data-retention-policy.md before being written down -- CLAUDE.md's
+   * "honest empty states, no invented placeholders" applies at least as
+   * strongly to a page that tells people how the product works.
+   *
+   * Deliberately absent: anything about Towers, Bricks, Vows, the Table or the
+   * Ledger. None of those exist in the schema yet, and a help page that
+   * explains features nobody can use is worse than one that stays quiet about
+   * them.
+   */
+  help: {
+    eyebrow: "Support",
+    title: "Help",
+    intro: "Answers to what comes up most, and a way to reach the F4milia team directly.",
+
+    faqHeading: "Common questions",
+    faq: [
+      {
+        q: "How do I join a Family?",
+        a: "By invitation only. An organizer sends an invitation to your email address; once you sign in with that same address, the invitation appears on your home page and you accept it there. Invitations expire fourteen days after they are sent.",
+      },
+      {
+        q: "I was invited, but I cannot see the invitation.",
+        a: "An invitation is matched to the exact address it was sent to, so sign in with that address rather than another one. If it was sent more than fourteen days ago it has expired and an organizer needs to send a new one.",
+      },
+      {
+        q: "Can I turn off emails from one Family but not another?",
+        a: "Yes. Notification settings are kept per Family rather than as one switch, so muting one leaves the others exactly as they were. Muting one kind of notification also leaves the other kinds alone.",
+      },
+      {
+        q: "Who can read what I send through this form?",
+        a: "You and F4milia's platform team. The organizers of your Family cannot read support requests, on purpose — you may be writing to us about them.",
+      },
+      {
+        q: "Will you email me what people write in my Family?",
+        a: "No. Our emails name what happened and never quote it, because an inbox is often shared or read over someone's shoulder. To read anything, you sign in.",
+      },
+      {
+        q: "What happens to my things if I delete my account?",
+        a: "Your name and picture are removed and your profile is marked deleted. Things you contributed to a Family stay, attributed to a deleted member rather than to you, and records that have to outlive an account — your membership history, and anything financial — are kept.",
+      },
+    ],
+
+    formHeading: "Send us a message",
+    formIntro: "We read every message. Replies come by email to the address on your account.",
+    familyLabel: "Which Family is this about?",
+    familyNone: "Not about a specific Family",
+    subjectLabel: "Subject",
+    bodyLabel: "What is going on?",
+    submit: "Send message",
+
+    sent: "Message sent. We will reply by email to the address on your account.",
+    yoursHeading: "Your messages",
+    yoursEmpty: "You have not sent us anything yet.",
+    statusOpen: "Open",
+    statusHandled: "Handled",
+
+    errors: {
+      subjectRequired: "Please give the message a subject.",
+      bodyRequired: "Please tell us what is going on.",
+      notYourFamily: "That is not a Family you belong to.",
+      failed: "The message could not be sent. Please try again.",
+    },
+  },
 } as const;

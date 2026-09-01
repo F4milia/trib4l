@@ -301,3 +301,31 @@ than week one.
   flips the parity and can make an unrelated word ("shadow") read as a class
   string, failing a rule on a file the change barely touched · avoid apostrophes
   in comments in app/ and components/, or fix the extractor.
+- 2026-09-01 · spec reconstruction · Ferenz 0.6 asked for `org_owner` to overlap
+  with `organizer`/`mentor` via a `membership_roles` join table, and the run doc
+  never carried that open question forward · DECLINED for now, one role per
+  membership. Zero-to-many roles would break the 12-member cap, which excludes
+  mentors by `role <> 'mentor'` — a member who also mentors would stop consuming
+  a seat and a Family could reach 13. And 19 historical migrations hardcode
+  `array['org_owner']::membership_role[]`, so the value cannot be dropped from
+  the enum anyway. If it reopens (co-owners, ownership transfer, a real
+  owner-and-organizer need), move ownership OFF the role axis —
+  `organizations.owner_profile_id` — not to a join table: all 48 role-checking
+  policies go through `has_org_role()` and none read `memberships.role`, so only
+  that one function changes. Ferenz 0.8's test cannot be written as specified;
+  that is knowingly unmet, not forgotten. Full reasoning:
+  f4milia-product-narrative-and-spec.md §10.1.
+- 2026-09-01 · demo→main sync · both streams numbered migrations upward from the
+  same date in the same stride, so `20260903100101`, `100201` and `100301` each
+  existed twice · `version` is the PRIMARY KEY of
+  supabase_migrations.schema_migrations and IS the timestamp prefix, so the
+  merged branch could not `db reset` at all. Neither branch showed it alone.
+  Streams pick distinct minute offsets (Stream A `x01`, Stream B `x11`), and a
+  cross-branch merge checks `ls supabase/migrations | sed 's/_.*//' | uniq -d`
+  before anything else.
+- 2026-09-01 · demo→main sync · enabling `[auth.captcha]` on main broke all nine
+  cases in the other stream's tests/isolation/support-requests.test.ts, which
+  predated it and signed in with no token · a config.toml change is a
+  cross-stream API change. Text-merging cleanly proves nothing; the RLS gate on
+  the MERGED tree is the only thing that finds this class, so run it before
+  opening a sync PR, not after.

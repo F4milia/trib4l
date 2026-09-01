@@ -42,6 +42,7 @@ export type Database = {
           id: string
           metadata: Json
           org_id: string | null
+          seq: number
           target_id: string | null
           target_type: string
         }
@@ -52,6 +53,7 @@ export type Database = {
           id?: string
           metadata?: Json
           org_id?: string | null
+          seq?: never
           target_id?: string | null
           target_type: string
         }
@@ -62,6 +64,7 @@ export type Database = {
           id?: string
           metadata?: Json
           org_id?: string | null
+          seq?: never
           target_id?: string | null
           target_type?: string
         }
@@ -1115,6 +1118,54 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          channel: Database["public"]["Enums"]["notification_channel"]
+          created_at: string
+          enabled: boolean
+          id: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          org_id: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          created_at?: string
+          enabled: boolean
+          id?: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          org_id: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notification_type?: Database["public"]["Enums"]["notification_type"]
+          org_id?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -1267,6 +1318,8 @@ export type Database = {
           name: string
           settings: Json
           slug: string
+          table_prompt_time: string
+          timezone: string
           updated_at: string
         }
         Insert: {
@@ -1276,6 +1329,8 @@ export type Database = {
           name: string
           settings?: Json
           slug: string
+          table_prompt_time?: string
+          timezone?: string
           updated_at?: string
         }
         Update: {
@@ -1285,6 +1340,8 @@ export type Database = {
           name?: string
           settings?: Json
           slug?: string
+          table_prompt_time?: string
+          timezone?: string
           updated_at?: string
         }
         Relationships: []
@@ -1480,7 +1537,15 @@ export type Database = {
           timezone?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_memorialized_by_fkey"
+            columns: ["memorialized_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reactions: {
         Row: {
@@ -1726,6 +1791,54 @@ export type Database = {
           },
         ]
       }
+      support_requests: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          org_id: string | null
+          status: Database["public"]["Enums"]["support_request_status"]
+          subject: string
+          submitted_by_profile_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          org_id?: string | null
+          status?: Database["public"]["Enums"]["support_request_status"]
+          subject: string
+          submitted_by_profile_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          org_id?: string | null
+          status?: Database["public"]["Enums"]["support_request_status"]
+          subject?: string
+          submitted_by_profile_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_requests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_requests_submitted_by_profile_id_fkey"
+            columns: ["submitted_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_assets: {
         Row: {
           cohort_id: string | null
@@ -1881,6 +1994,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      audit_safe_uuid: { Args: { p_value: string }; Returns: string }
       can_see_gated_content: {
         Args: {
           check_cohort_id: string
@@ -1972,18 +2086,6 @@ export type Database = {
         Args: { local_date: string; local_time: string; tz: string }
         Returns: string
       }
-      my_sessions: {
-        Args: never
-        Returns: {
-          aal: string
-          created_at: string
-          id: string
-          ip: unknown
-          is_current: boolean
-          last_active_at: string
-          user_agent: string
-        }[]
-      }
       memorialize_profile: { Args: { p_profile_id: string }; Returns: boolean }
       moderate_comment: {
         Args: { reason?: string; target_comment_id: string }
@@ -2055,7 +2157,27 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      unmemorialize_profile: { Args: { p_profile_id: string }; Returns: boolean }
+      my_sessions: {
+        Args: never
+        Returns: {
+          aal: string
+          created_at: string
+          id: string
+          ip: unknown
+          is_current: boolean
+          last_active_at: string
+          user_agent: string
+        }[]
+      }
+      notification_preference_enabled: {
+        Args: {
+          p_channel?: Database["public"]["Enums"]["notification_channel"]
+          p_org_id: string
+          p_profile_id: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+        }
+        Returns: boolean
+      }
       revoke_all_my_sessions: { Args: never; Returns: number }
       revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
@@ -2080,16 +2202,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      unmemorialize_profile: {
+        Args: { p_profile_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       invitation_status: "pending" | "accepted" | "revoked"
       meetup_rsvp_status: "going" | "maybe" | "not_going"
       membership_role: "member" | "mentor" | "organizer" | "org_owner"
       mentor_pairing_status: "proposed" | "active" | "completed" | "declined"
+      notification_channel: "email"
+      notification_type: "family_night_digest" | "vow_notification"
       order_status: "pending" | "paid" | "canceled" | "refunded"
       product_type: "digital" | "physical" | "ticket" | "cohort_seat"
       report_status: "open" | "escalated" | "resolved"
       report_target_type: "post" | "comment" | "member"
+      support_request_status: "open" | "handled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2224,10 +2353,13 @@ export const Constants = {
       meetup_rsvp_status: ["going", "maybe", "not_going"],
       membership_role: ["member", "mentor", "organizer", "org_owner"],
       mentor_pairing_status: ["proposed", "active", "completed", "declined"],
+      notification_channel: ["email"],
+      notification_type: ["family_night_digest", "vow_notification"],
       order_status: ["pending", "paid", "canceled", "refunded"],
       product_type: ["digital", "physical", "ticket", "cohort_seat"],
       report_status: ["open", "escalated", "resolved"],
       report_target_type: ["post", "comment", "member"],
+      support_request_status: ["open", "handled"],
     },
   },
 } as const
