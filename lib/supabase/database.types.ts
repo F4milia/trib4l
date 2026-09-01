@@ -1359,6 +1359,146 @@ export type Database = {
           },
         ]
       }
+      message_attachments: {
+        Row: {
+          byte_size: number
+          created_at: string
+          id: string
+          message_id: string
+          mime_type: string
+          org_id: string
+          storage_path: string
+        }
+        Insert: {
+          byte_size: number
+          created_at?: string
+          id?: string
+          message_id: string
+          mime_type: string
+          org_id: string
+          storage_path: string
+        }
+        Update: {
+          byte_size?: number
+          created_at?: string
+          id?: string
+          message_id?: string
+          mime_type?: string
+          org_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_attachments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_mentions: {
+        Row: {
+          created_at: string
+          id: string
+          mentioned_membership_id: string
+          message_id: string
+          org_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mentioned_membership_id: string
+          message_id: string
+          org_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mentioned_membership_id?: string
+          message_id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_mentions_mentioned_membership_id_fkey"
+            columns: ["mentioned_membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_mentions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_mentions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          membership_id: string
+          message_id: string
+          org_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          membership_id: string
+          message_id: string
+          org_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          membership_id?: string
+          message_id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reactions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           author_membership_id: string
@@ -1368,6 +1508,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           org_id: string
+          parent_message_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1378,6 +1519,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           org_id: string
+          parent_message_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1388,6 +1530,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           org_id?: string
+          parent_message_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1410,6 +1553,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
@@ -1493,6 +1643,64 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          actor_membership_id: string | null
+          created_at: string
+          id: string
+          membership_id: string
+          org_id: string
+          read_at: string | null
+          target_id: string
+          target_type: string
+          type: Database["public"]["Enums"]["notification_type"]
+        }
+        Insert: {
+          actor_membership_id?: string | null
+          created_at?: string
+          id?: string
+          membership_id: string
+          org_id: string
+          read_at?: string | null
+          target_id: string
+          target_type: string
+          type: Database["public"]["Enums"]["notification_type"]
+        }
+        Update: {
+          actor_membership_id?: string | null
+          created_at?: string
+          id?: string
+          membership_id?: string
+          org_id?: string
+          read_at?: string | null
+          target_id?: string
+          target_type?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_membership_id_fkey"
+            columns: ["actor_membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2641,11 +2849,23 @@ export type Database = {
         Args: { check_conversation_id: string }
         Returns: string
       }
+      mark_notification_read: {
+        Args: { check_notification_id: string }
+        Returns: undefined
+      }
       membership_is_memorialized: {
         Args: { check_membership_id: string }
         Returns: boolean
       }
       memorialize_profile: { Args: { p_profile_id: string }; Returns: boolean }
+      message_reaction_counts: {
+        Args: { check_message_id: string }
+        Returns: {
+          emoji: string
+          reacted_by_me: boolean
+          reaction_count: number
+        }[]
+      }
       moderate_comment: {
         Args: { reason?: string; target_comment_id: string }
         Returns: {
@@ -2801,7 +3021,7 @@ export type Database = {
       membership_role: "member" | "mentor" | "organizer" | "org_owner"
       mentor_pairing_status: "proposed" | "active" | "completed" | "declined"
       notification_channel: "email"
-      notification_type: "family_night_digest" | "vow_notification"
+      notification_type: "family_night_digest" | "vow_notification" | "mention"
       order_status: "pending" | "paid" | "canceled" | "refunded"
       product_type: "digital" | "physical" | "ticket" | "cohort_seat"
       report_status: "open" | "escalated" | "resolved"
@@ -2962,7 +3182,7 @@ export const Constants = {
       membership_role: ["member", "mentor", "organizer", "org_owner"],
       mentor_pairing_status: ["proposed", "active", "completed", "declined"],
       notification_channel: ["email"],
-      notification_type: ["family_night_digest", "vow_notification"],
+      notification_type: ["family_night_digest", "vow_notification", "mention"],
       order_status: ["pending", "paid", "canceled", "refunded"],
       product_type: ["digital", "physical", "ticket", "cohort_seat"],
       report_status: ["open", "escalated", "resolved"],
