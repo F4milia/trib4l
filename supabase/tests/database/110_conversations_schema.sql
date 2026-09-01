@@ -50,9 +50,26 @@ insert into public.memberships (id, org_id, profile_id, role) values
   ('00000000-0000-0000-0000-000000000bb1',
    '00000000-0000-0000-0000-00000000fb01', '00000000-0000-0000-0000-0000000000c2', 'member');
 
+-- PR 3 gives every new Family a channel automatically, so the explicit
+-- family_channel insert below would now collide with it. These files pin
+-- specific conversation ids to keep their assertions readable, so they drop
+-- the auto-created room and install their own. Deleting it cascades away the
+-- participants the membership trigger added, which is why this comes after the
+-- memberships and before the fixture conversations.
+delete from public.conversations where kind = 'family_channel' and org_id in ('00000000-0000-0000-0000-00000000fa01', '00000000-0000-0000-0000-00000000fb01');
+
 insert into public.conversations (id, org_id, kind, created_by_membership_id) values
   ('00000000-0000-0000-0000-0000000000e1',
    '00000000-0000-0000-0000-00000000fa01', 'family_channel',
+   '00000000-0000-0000-0000-000000000aa1'),
+  -- A direct room as well. The happy-path and body-cap assertions below use
+  -- THIS one, not the channel: PR 3's membership trigger auto-joins the family
+  -- channel whenever a membership becomes active, so an explicit participant
+  -- insert into the channel collides with the trigger's own. A direct
+  -- conversation is not auto-managed, so those assertions test the integrity
+  -- trigger rather than racing PR 3's.
+  ('00000000-0000-0000-0000-0000000000e2',
+   '00000000-0000-0000-0000-00000000fa01', 'direct',
    '00000000-0000-0000-0000-000000000aa1');
 
 -- ------------------------------------------- one channel per Family
@@ -126,7 +143,7 @@ update public.memberships set deleted_at = null
 select lives_ok(
   $$ insert into public.conversation_participants (org_id, conversation_id, membership_id)
      values ('00000000-0000-0000-0000-00000000fa01',
-             '00000000-0000-0000-0000-0000000000e1',
+             '00000000-0000-0000-0000-0000000000e2',
              '00000000-0000-0000-0000-000000000aa1') $$,
   'a member of the conversation''s own Family can be a participant'
 );
@@ -134,7 +151,7 @@ select lives_ok(
 select lives_ok(
   $$ insert into public.messages (org_id, conversation_id, author_membership_id, body)
      values ('00000000-0000-0000-0000-00000000fa01',
-             '00000000-0000-0000-0000-0000000000e1',
+             '00000000-0000-0000-0000-0000000000e2',
              '00000000-0000-0000-0000-000000000aa1', 'hello Family') $$,
   'and can post into it'
 );
@@ -145,7 +162,7 @@ select lives_ok(
 select lives_ok(
   $$ insert into public.messages (org_id, conversation_id, author_membership_id, body)
      values ('00000000-0000-0000-0000-00000000fa01',
-             '00000000-0000-0000-0000-0000000000e1',
+             '00000000-0000-0000-0000-0000000000e2',
              '00000000-0000-0000-0000-000000000aa1', repeat('x', 1000)) $$,
   'a message of exactly 1000 characters is accepted'
 );
@@ -153,7 +170,7 @@ select lives_ok(
 select throws_ok(
   $$ insert into public.messages (org_id, conversation_id, author_membership_id, body)
      values ('00000000-0000-0000-0000-00000000fa01',
-             '00000000-0000-0000-0000-0000000000e1',
+             '00000000-0000-0000-0000-0000000000e2',
              '00000000-0000-0000-0000-000000000aa1', repeat('x', 1001)) $$,
   '23514',
   null,
