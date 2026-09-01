@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { listConversations, resolveMembershipId } from "../../lib/conversations";
+import { listConversations } from "../../lib/conversations";
 import { ORG_IDS, SEEDED_USERS, signInAs } from "./helpers";
 
 /**
