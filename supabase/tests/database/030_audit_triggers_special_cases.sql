@@ -32,18 +32,24 @@ select is(
   (select count(*)::int
      from pg_trigger t join pg_proc p on p.oid = t.tgfoid
     where p.proname = 'audit_row_change' and not t.tgisinternal),
-  -- 39, NOT 36, and the merge that produced this number is worth a warning.
-  -- Stream A and Stream B each raised this from 33 to 36 -- A for C1's
-  -- conversations, conversation_participants and messages, B for towers,
-  -- builds and bricks. Both wrote the SAME NUMBER on the SAME LINE, so git
-  -- auto-merged it to 36 and raised a conflict only on the message beside it.
-  -- Resolving the visible conflict therefore leaves a silently wrong count
-  -- that is three too low, and 030 then fails with a message about audit
-  -- coverage, which points at the wrong problem. Same shape as the
-  -- metadata-allowlist entry in CLAUDE.md: a closed-set guard two streams edit
-  -- independently needs its total re-derived, never merged.
-  42,
-  '42 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, C1''s conversations, conversation_participants and messages, towers, builds and bricks, and mood_tags, table_prompts and table_entries'
+  -- IF YOU ARE RESOLVING A MERGE CONFLICT ON THIS NUMBER: do not pick a side.
+  -- Re-derive it. Both branches will have RAISED it, so if they added the same
+  -- count of tables they will have written the SAME NUMBER on this line -- git
+  -- then auto-merges it silently and raises a conflict only on the string
+  -- below, and the merged total is short by whatever the other branch added.
+  -- That happened on 2026-09-02: Stream A and Stream B each took 33 to 36, the
+  -- true answer was 39, and the resulting failure reads as an audit-coverage
+  -- problem rather than an arithmetic one.
+  --
+  -- Count it from the database instead of reasoning about it:
+  --   select count(*) from pg_trigger t join pg_proc p on p.oid = t.tgfoid
+  --    where p.proname = 'audit_row_change' and not t.tgisinternal;
+  --
+  -- The census assertion below is the one that actually holds invariant 5. This
+  -- total exists to catch a trigger attached to the WRONG function, which the
+  -- census cannot see -- it is deliberately brittle, and that is its job.
+  43,
+  '43 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, C1''s conversations, conversation_participants and messages, towers, builds and bricks, mood_tags, table_prompts and table_entries, and vows'
 );
 
 -- The same claim from the other direction, and the one that actually holds the
