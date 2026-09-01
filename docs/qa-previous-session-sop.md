@@ -28,13 +28,22 @@ The commit timestamp on `docs/qa/N-1.md` must fall *inside* session N's run wind
 | `.github/workflows/qa-gate.yml` | ✅ installed, **not** a required check yet — see below |
 | `docs/qa/_TEMPLATE.md` | ✅ installed |
 | CLAUDE.md standing workflow item 8 | ✅ added — Claude writes the QA doc before opening the PR |
-| **Prerequisite 1 — preview deploys** | ❌ **BLOCKED.** Two merged commits (`chore/disable-vercel-auto-deploy`, `chore/disable-git-deployments`) deliberately turned Git deploys off. Re-enabling reverses somebody's decision and is outward-facing, so it needs an explicit call — not a silent revert |
-| **Prerequisite 2 — named seed fixtures** | ❌ **NOT DONE.** `supabase/seed.sql` is Stream B's remaining surface (`d1-readiness.md` §4 step 6). Editing it from Stream A is exactly the cross-stream collision CLAUDE.md workflow item 4 says to stop and report |
+| **Prerequisite 1 — preview deploys** | ✅ **restored in `#91`**, and proven on that PR: a Preview deployment went Ready in 59s and the PR carried a live URL. `deploymentEnabled` is now an object disabling only `main`, so production stays manual. **Caveat:** the original disable was caused by the hobby-plan build quota, not by policy, and the plan has not changed — see below |
+| **Prerequisite 2 — named seed fixtures** | ⏳ **Stream B's.** `#88` already seeded domain data and two Families that differ; the QA fixture roles below are being added there too (James, 2026-09-02). Not touched from Stream A — `supabase/seed.sql` is Stream B's surface, and editing it here is the cross-stream collision CLAUDE.md workflow item 4 says to stop and report |
 
-**Until 1 and 2 land, the SOP cannot run end to end** — there is no preview URL
-to QA against and no stable fixtures to name in the steps. The repo-side
-scaffolding is in place so that the day those two clear, the loop starts with no
-further setup.
+**Preview deploys are back; the fixtures are the last piece.** The repo-side
+scaffolding is in place, so the loop starts the day Stream B's fixtures land,
+with no further setup.
+
+> **The quota caveat, because it will bite again otherwise.** Previews were not
+> disabled for policy reasons. `b3204cc` records the cause: preview builds
+> exhausted the **free-tier quota** (`Deployment rate limited, retry in 24
+> hours`), leaving the Vercel check red on every PR. The team is still on the
+> **hobby** plan, so the ceiling is unchanged and the same failure can recur.
+> Two fixes, neither applied yet: upgrade the plan, or add an `ignoreCommand`
+> skipping builds whose commits touch only `docs/`, `supabase/`, `tests/` and
+> `.github/` — most of this repo's traffic. The second composes with this SOP,
+> since docs PRs carry `skip-qa` and need no preview.
 
 Making qa-gate a **required** status check is a branch-protection change
 (Settings → Branches) and is deliberately left off: switching it on today would
@@ -44,8 +53,10 @@ block every in-flight PR, none of which carry a Loom link.
 
 ## Prerequisites (one-time, ~2 hours, do this week)
 
-### 1. Preview deploys must exist per PR
-`vercel.json` currently says "stop Vercel deploying from git" (10 hours ago). If that killed preview deployments, there is no URL to QA against and this whole SOP is dead on arrival. Two options:
+### 1. Preview deploys must exist per PR — ✅ done, `#91`
+**Done in `#91`.** It had indeed killed them: `deploymentEnabled: false` as a bare boolean disables git deployments for *every* branch, previews included. It is now an object disabling only `main`, so PR branches deploy and production stays manual. Proven on `#91` itself — Preview Ready in 59s, live URL on the PR.
+
+The original options, kept for the record:
 
 - **Re-enable Git deploys, preview only.** In Vercel project settings, keep Production branch = `main` but disable auto-production deploys if that was the concern; leave Preview enabled. Or use `ignoreCommand` in `vercel.json` to skip only `main`.
 - **CI deploy.** A GitHub Action runs `vercel deploy --token=$VERCEL_TOKEN` on every PR and posts the URL as a PR comment.
