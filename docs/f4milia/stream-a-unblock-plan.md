@@ -10,7 +10,8 @@ What can be built **now**, before the next session, to remove blockers from
 | **Selection rule** | Every PR in tranches A–C needs **no decision from James**. The four open decisions block none of it |
 | **PR sizing** | By natural cohesion, not by a line cap — CLAUDE.md's 200-line rule is waived here at James's instruction. **§3 still stands: migrations ship standalone**, so PR 2 stays on its own |
 | **Verified** | Every state claim below was re-checked against the working tree rather than read off the blockers doc. Commands in §6 |
-| **Companion** | `secrets-and-env.md` — every key James configures, which store it belongs in, and why invariant 2 decides that |
+| **Companion** | `secrets-and-env.md` — every key James configures, which store it belongs in, and why invariant 2 decides that · `c2-pr-plan.md` — the detail behind tranche 0 |
+| **Numbering** | **`PR n`** is this plan's own. **`C2 PR n`** is `c2-pr-plan.md`'s. Two schemes, kept distinct on purpose |
 
 ---
 
@@ -21,7 +22,7 @@ What can be built **now**, before the next session, to remove blockers from
 | 🔴 HARD blockers | 6 | **2** |
 | 🔵 CARRIED defects | 3 | **1**, and it is a decision rather than a fix |
 | Sessions that cannot run as written | A5, K1 | **none** |
-| Wave 4 (N1) | 5 blockers | **keys and one C2 table** |
+| Wave 4 (N1) | 5 blockers | **keys only** — C2 tranche 0 lands the table |
 | New decisions required | — | **one** (the read mark, §5.1) |
 
 The two 🔴 that survive are both C2's, in the other session: the `notifications`
@@ -51,16 +52,66 @@ the sandbox. So those three have to be scheduled against Stream B's activity, on
 at a time, and a green run proves nothing unless your own migration version is
 present in `supabase_migrations.schema_migrations` first.
 
-**Three PRs add migrations.** PRs **2, 10 and 13** each need a distinct Stream A
-`x01`-family minute offset — distinct from each other, not just from Stream B's
-`x11`. `version` is the primary key of `schema_migrations`, so a duplicate makes
-the merged branch unable to reset at all, and neither branch shows it alone.
+**Nine PRs add migrations, across both plans, into one lane.** PRs **2, 10, 13**
+here and **C2 PRs 1–6** are all Stream A migrations. `version` is the primary key
+of `schema_migrations`, so a duplicate makes the merged branch unable to reset at
+all — and neither branch shows it alone. C2's plan reserved a range independently
+and **it went stale**: its `20260903100801` is free but sits *below* the branch max
+`20260903101311`, and its reserved pgTAP `140`+ is fully taken by Stream B's
+`140_brick_release_on_departure` through `190_qa_fixtures`.
+
+So the allocation lives **here, once, for both plans** — verified against the tree
+at `b28d6c7`, max migration `20260903101311`, max pgTAP `190`:
+
+| Order | PR | Migration | pgTAP |
+|---|---|---|---|
+| 1 | C2 PR 1 · Realtime Authorization | `20260903101701` | `230` |
+| 2 | C2 PR 2 · Threading | `20260903101801` | `240` |
+| 3 | C2 PR 3 · `notifications` + `'mention'` | `20260903101901` | `250` |
+| 4 | C2 PR 4 · `message_mentions` | `20260903102001` | `260` |
+| 5 | C2 PR 5 · `message_reactions` | `20260903102101` | `270` |
+| 6 | C2 PR 6 · Storage + project ceiling | `20260903102201` | `280` |
+| 7 | **PR 2** · definer `search_path` | `20260903102301` | `290` |
+| 8 | **PR 10** · `push_subscriptions` | `20260903102401` | `300` |
+| 9 | **PR 13** · `unread_message_counts(org)` | `20260903102501` | `310` |
+
+Stream B's `x11` offset at each of those minutes stays free, which is the point of
+the offset convention.
+
+**This table is true as of a named commit, not forever.** Stream B overtaking C2's
+reservation is exactly what happened once already — so re-check the branch max
+immediately before writing each file, not when reading this plan.
 
 **Two PRs touch brand surface.** PRs 3 and 9 (icons, and anything user-visible in
 the manifest) require re-reading `f4milia-design-system.md` first, and stating
 which sections of the design language the PR actually applies.
 
-## 2. Tranche A — do now, no decisions
+## 2. Tranche 0 — C2, which runs before all of it
+
+C2 is Wave 3 and the next session due, and three of its PRs are things later
+sessions are waiting on. Detail lives in `c2-pr-plan.md`, which was revised in the
+same pass as this document; only what changed and what it unblocks is here.
+
+**Sequence: C2 PR 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8**, unchanged from its own plan.
+
+**What the rulings changed in it:**
+
+| C2 PR | Change |
+|---|---|
+| **3** | Now also carries **N1's requirements** for `notifications` — folded in as its §5.5 rather than living as a separate spec, because C2's PR 3 already owns the table. **`'mention'` is C2's to add, not N1's** |
+| **5** | Ruled: `message_reactions` as its own table, keyed on `membership_id`. The legacy table's CHECK makes a message-keyed row impossible outright, so this was never the small option |
+| **6** | Quota numbers ruled — **5 MB per file, on the bucket row too · 100 MB per Family · blob deleted with the message** — and given **new scope**: a per-Family quota does not bound the 1 GB project total. `8 × 100 MB = 800 MB` is the usable budget exactly, so the PR needs a project-level check as well |
+| all | Slots reallocated: `20260903101701`+ and pgTAP `230`+. Both original reservations had gone stale |
+
+**What C2 unblocks:** the `notifications` table and the `'mention'` enum value,
+which **N1 (Wave 4) cannot start without** and which no other session in the run
+doc creates. That is why C2 sits ahead of every PR below rather than beside them.
+
+**Still open inside C2:** decision 14 — how the 8-Family cap is enforced. It lands
+on C2 PR 6, since nothing in the repo limits how many Families exist and an
+`organizations` INSERT can break the storage ceiling with no upload involved.
+
+## 3. Tranche A — do now, no decisions
 
 ### PR 1 · Invariant 12 — Sentry DSN to the environment, `dataCollection` explicitly off
 
@@ -159,7 +210,7 @@ the design language the PR actually applies — per the scripted-migration lesso
 PR that converts surfaces without applying the language has not finished the
 session's job.
 
-## 3. Tranche B — make the test signal honest
+## 4. Tranche B — make the test signal honest
 
 Neither PR here fixes a product blocker. Both fix the instruments, and every PR
 after them inherits the benefit. They are **split despite both being test
@@ -192,7 +243,7 @@ Until this lands, the Stop hook and `npm test` both report failures that are not
 this tree's, and the only honest command is
 `npx vitest run --exclude '.claude/**'`.
 
-## 4. Tranche C — close the structural gaps, docs only
+## 5. Tranche C — close the structural gaps, docs only
 
 ### PR 6 · Write the equity-engine schema session
 
@@ -253,13 +304,13 @@ That needs Stream B's awareness, not only your approval. Amendments 1, 3 and 4 a
 Stream A's own and can go ahead on your word alone; amendment 2 should not land as
 a surprise in the other stream's prompt.
 
-## 5. Tranche E — make Wave 4 runnable
+## 6. Tranche E — make Wave 4 runnable
 
 N1's blockers, worked from the outside in. The two that are yours stay yours; what
 lands here is the plumbing they drop into, built so that **every unset key is a
 clean no-op rather than a crash**.
 
-### PR 8 · The `notifications` interface C2 must build
+### PR 8 · ~~The `notifications` interface C2 must build~~ — **folded into C2 PR 3**
 
 **Docs only, and first in this tranche because C2 is the next session to run.**
 Verified: there is no `notifications` table anywhere in the migrations, and
@@ -276,10 +327,17 @@ twice.
 
 No table is built here. This exists so N1 does not discover a mismatch in Wave 4.
 
-**Confirmed 2026-09-02: C2 has not started**, so this PR still does what it is for.
-Had C2 already built the table, this would have become a review of someone else's
-schema rather than a specification, and would have lost its place at the front of
-the order.
+**Superseded.** C2's own plan already assigns *"`notifications` + `'mention'` enum
+value"* to **C2 PR 3**, explicitly so that *"N1 inherits this table"* rather than
+finding it buried in a mentions feature. A standalone spec document would have been
+a second description of one table, and two specs for one table is how they drift.
+
+The content survives as **`c2-pr-plan.md` §5.5** — what N1 needs from the table,
+written before it is built, including the ruling that **C2 owns the `'mention'`
+enum value** and N1 adds none. That ambiguity, left alone, is how an enum gets
+extended twice.
+
+C2 not having started is what made folding it in possible rather than too late.
 
 ### PR 9 · Environment manifest
 
@@ -346,7 +404,7 @@ which is exactly why a notification badge is the wrong place to discover it.
 - Isolation test asserting per-Family counts for the dual-Family fixture, and
   asserting the count against the **visible-row count** rather than a constant.
 
-### 5.1 · The one thing in Wave 4 I cannot decide
+### 6.1 · The one thing in Wave 4 I cannot decide
 
 The read mark is a **timestamp high-water**, so a message that commits after the
 mark but carries an earlier `created_at` is counted as read without ever being
@@ -358,14 +416,14 @@ per-message read receipts — and the two differ in cost and in what they can
 answer later. **Raised as decision 15** rather than picked here, because a
 notification center built on the wrong one is expensive to move.
 
-## 6. Tranche D — pull-forward, still recommended against
+## 7. Tranche D — pull-forward, still recommended against
 
 - **F1's `search_vector` migration** (`table_entries`, `bricks`). Decision 3 ruled
   the scope, so it is buildable — but it is F1's entire migration, and building it
   here means F1 spends its session reviewing someone else's schema instead of
   writing its own.
 
-## 7. How the state claims were verified
+## 8. How the state claims were verified
 
 ```bash
 grep -n "dsn\|dataCollection" sentry.*.config.ts instrumentation-client.ts
@@ -380,22 +438,26 @@ find .claude/worktrees -name '*.test.ts*' | wc -l                        # 146
 npx vitest run --exclude '.claude/**'         # 37 files, 1015 tests, green
 ```
 
-## 8. Suggested order
+## 9. Suggested order
 
-**PR 8 first of everything** — it is docs, and C2 is the next session to run, so
-the `notifications` spec has to exist before C2 builds the table rather than after.
+**Tranche 0 first, whole.** C2 PRs 1–8, in its own order. Nothing below is more
+urgent than the `notifications` table, because N1 cannot start without it and no
+other session builds it.
 
-Then **PR 1 → PR 2 → PR 3**, the overdue invariant and the two things other
-sessions are waiting on. PR 1 leads because decision 9 moved invariant 12 ahead of
-Wave 5 and F2 is now the first code in the repo that calls a model — that gap is
-live, not scheduled. PR 3 is third because it is cross-stream and W2 is blocked
-on it.
+Then **PR 1 → PR 2 → PR 3** — the overdue invariant and the two things other
+sessions are waiting on. PR 1 leads that group because decision 9 moved invariant
+12 ahead of Wave 5 and F2 is now the first code in the repo that calls a model, so
+the gap is live rather than scheduled. PR 3 follows because it is cross-stream and
+W2 is blocked on it.
 
-Then the Wave 4 chain: **PR 9 → PR 10 → PR 11 → PR 12 → PR 13.** PR 9 before the
-rest so that every key those PRs read is already recorded and guarded.
+Then the Wave 4 chain: **PR 9 → PR 10 → PR 11 → PR 12 → PR 13**, with PR 9 first so
+every key the others read is already recorded and guarded.
 
-Then **PR 6**, and **PR 7** once you confirm the run-doc edit. PR 4 whenever the
-shared stack is free. PR 5 when the hold lifts.
+Then **PR 6**, and **PR 7** once you confirm the run-doc edit and Stream B knows
+about amendment 2. PR 4 whenever the shared stack is free. PR 5 when the hold lifts.
 
-Nothing in this order waits on decision 15 — PR 13 fixes the org argument, and the
-read mark stays as it is until you rule.
+**PR 8 is gone** — folded into C2 PR 3.
+
+Nothing in this order waits on decisions 4, 5, 7, 13, 15 or 16. Decision 14 lands
+inside C2 PR 6; decision 16 lands inside PR 3, where a provisional token-only mark
+keeps it moving.

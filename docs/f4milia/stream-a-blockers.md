@@ -13,8 +13,10 @@ Everything that would halt a Stream A session, session by session, in wave order
 
 ---
 
-**Companion documents.** `ai-model-and-cost.md` carries the pricing and usage
-model behind decisions 4 and 5. `secrets-and-env.md` records every key James
+**Companion documents.** `c2-pr-plan.md` is the next session's PR plan, revised
+2026-09-02 for the rulings below and now sequenced as tranche 0 of the unblock
+plan. `ai-model-and-cost.md` carries the pricing and usage model behind decisions
+4 and 5. `secrets-and-env.md` records every key James
 configures, which store it belongs in, and why invariant 2 decides that.
 `stream-a-unblock-plan.md` is the ordered PR plan for the blockers that can be
 removed **without** any of the open decisions — including tranche E, which takes

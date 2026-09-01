@@ -4,13 +4,17 @@ Wave 3 · Stream A. Mentions, reactions, threading, media in messages, and the
 broadcast-authorization debt C1 carried forward.
 
 Written before any code, per CLAUDE.md's standing workflow item 1. Each PR below
-is under 200 lines, independently mergeable, and green on its own.
+is independently mergeable and green on its own. **The 200-line cap is waived** at
+James's instruction — PRs are sized by cohesion — but migrations still ship
+standalone per §3 of the workflow.
 
 | | |
 |---|---|
 | **Written** | 2026-09-02 |
+| **Revised** | 2026-09-02 — six rulings folded in (§5.1 and §5.4 are now closed), and **both reserved slot ranges reallocated: they had gone stale.** See §4 |
 | **Session** | `F4milia — Complete Run Doc`, Wave 3, Stream A |
-| **Status** | **Not started.** Plan only |
+| **Status** | **Not started**, confirmed 2026-09-02. Plan only |
+| **Sequenced in** | `stream-a-unblock-plan.md` — C2 runs first of everything, ahead of the Stream A unblocking work |
 | **Required reading** | `docs/f4milia/c2-realtime-broadcast-authorization.md` (the carried finding), `docs/f4milia/c1-conversations-and-realtime.md` §3 and §6 (the decisions C2 inherits, and the four ways a suite lied) |
 | **Named edge case** | B @mentions A after A blocked B — no notification reaches A; the room is unaffected |
 
@@ -92,10 +96,10 @@ already on `main`.
 |---|---|---|
 | **1** | **Realtime Authorization.** RLS on `realtime.messages` keyed on `is_conversation_participant()`, plus `private: true` on the channel. pgTAP for the policy; the §7 probe as an isolation test with all three assertions from §2 | The carried C1 finding. Touches no new table, and a regression here breaks a merged feature — it must not be entangled with new schema |
 | **2** | **Threading.** `messages.parent_message_id`, self-referencing, with a trigger asserting the parent is in the same conversation | Reuses C1's child-matches-parent shape. One column, one trigger, one test file |
-| **3** | **`notifications` + `'mention'` enum value.** Table, audit trigger in the same migration (invariant 5), RLS, and the enum extension | N1 inherits this table. Landing it alone means N1 reviews a schema, not a schema buried in a mentions feature |
+| **3** | **`notifications` + `'mention'` enum value.** Table, audit trigger in the same migration (invariant 5), RLS, and the enum extension. **Also carries N1's requirements** — see §5.5 | N1 inherits this table. Landing it alone means N1 reviews a schema, not a schema buried in a mentions feature |
 | **4** | **`message_mentions` + the write path.** The trigger or function that turns a mention into a notification row, with `member_blocks` applied. **This PR carries the named edge case** | Depends on 3. The blocks × mentions decision is the reviewable unit |
 | **5** | **`message_reactions`.** Table, RLS, aggregate | Depends on nothing but `messages`. See §5.1 and §5.2 before writing it |
-| **6** | **Storage: bucket, RLS, quota, size cap.** Migration only, no UI | The largest single risk surface and the acceptance criterion most likely to be assumed rather than proven. Reviewed alone |
+| **6** | **Storage: bucket, RLS, quota, size cap, and the project-level ceiling.** Migration only, no UI | The largest single risk surface and the acceptance criterion most likely to be assumed rather than proven. The Free plan added the ceiling check to it — §5.4. Reviewed alone |
 | **7** | **Data access layer.** `lib/` functions for mentions, reactions, threads and attachments, with isolation tests through the SDK | Mirrors C1 `#71`. Proves the policies hold through the client, not only in pgTAP |
 | **8** | **UI.** Mention autocomplete, reaction picker, thread view, attachment upload; copy deck; unit tests | The only PR touching `app/` and `components/`. Keeps the ZeroStep path filter meaningful for 1–7 |
 
@@ -105,14 +109,30 @@ Stream B holds `schema/bricks` (towers, builds, bricks) and will follow with
 `table_entries`, `vows` and a seed extension. Collisions are avoidable if C2
 takes the slots below and no others.
 
-| | Stream A (C2) takes | Stream B holds |
-|---|---|---|
-| **Migrations** | `20260903100801`+ — the `x01` slot | `x11`/`x12` at minutes 1006/1007/1008, and onward |
-| **pgTAP files** | **`140`+** | `110_towers`, `120_builds`, `130_bricks` |
+**🔴 Both ranges this section originally reserved have gone stale.** They were
+correct when written; Stream B kept adding migrations and pgTAP files afterwards
+and overtook them. Verified against the tree on 2026-09-02:
 
-`110`–`114` are C1's and already on `main`. **Starting C2 at `120` or `130`
-collides with Stream B's unmerged files**, which is invisible until the merge —
-so `140`.
+| Originally reserved | Why it no longer works |
+|---|---|
+| Migrations from `20260903100801` | The slot is still *free*, but the highest version on the branch is now **`20260903101311`** — so taking it would create an **out-of-order migration**, applied below versions already present |
+| pgTAP from `140` | **Taken.** `140_brick_release_on_departure`, `150_table_entries`, `160_vows`, `170_family_streak`, `180_seed_domain_data`, `190_qa_fixtures` all exist |
+
+**The allocation now lives in one place for both plans** —
+`stream-a-unblock-plan.md` §1.1 — because C2 and the unblocking PRs are Stream A
+migrations competing for the same lane, and two documents allocating
+independently is how the original collision happened. C2's slots:
+
+| | Stream A (C2) takes | Stream B's lane |
+|---|---|---|
+| **Migrations** | `20260903101701` … `20260903102201`, one per migration PR, `x01` offset | `x11` at each minute |
+| **pgTAP files** | **`230`+** | unchanged |
+
+Two standing rules that produced the mess above, both still in force: `version` is
+the primary key of `schema_migrations`, so a duplicate makes the merged branch
+unable to reset at all and neither branch shows it alone; and **a slot reservation
+is only true as of a named commit** — re-check the max before writing the file,
+not when writing the plan.
 
 ### The conflict to expect, and its wrong resolution
 
@@ -161,8 +181,14 @@ constraint reactions_exactly_one_target check ((post_id is null) <> (comment_id 
 ```
 
 Adding `message_id` means widening that CHECK to a three-way exclusive-or and
-teaching `set_reaction_org_and_cohort()` a third branch. **Recommendation: a
-separate `message_reactions`.** The legacy table is keyed on `profile_id`;
+teaching `set_reaction_org_and_cohort()` a third branch.
+
+> **✅ RULED (2026-09-02, decision 2): a separate `message_reactions`, keyed on
+> `membership_id`.** The CHECK is the decisive part — as written, a message-keyed
+> row **cannot satisfy it at all** and is rejected outright, so "extend the legacy
+> table" was never a small change. Full reasoning in `stream-a-blockers.md` §3.
+
+**Recommendation, now the ruling: a separate `message_reactions`.** The legacy table is keyed on `profile_id`;
 everything in C1 is keyed on `membership_id`, deliberately — C1 `#67`'s comment
 is explicit that a `profile_id` key makes every read path responsible for
 re-checking which Family it is in. Mixing the two keying schemes in one table is
@@ -191,10 +217,62 @@ path of least resistance.
 The acceptance criterion is *"quota exceeded fails with a plain message, not a
 broken upload."* That needs the quota checked **before** the object is written,
 which means summing `storage.objects.metadata->>'size'` for the Family's path
-prefix. Two open questions the prompt does not answer: **what the quota is**, and
-whether a soft-deleted message's attachment still counts against it. Both are
-James's calls, not inventions — CLAUDE.md's honest-empty-states and
-no-invented-placeholders rules cut against guessing either.
+prefix.
+
+> **✅ RULED (2026-09-02, decision 1) — on the Supabase FREE plan**, which gives
+> **1 GB across the whole project, not per Family:**
+>
+> | | Value |
+> |---|---|
+> | Per-file cap | **5 MB** — set on the **bucket row** as well as in the app, so the platform enforces it too |
+> | Per-Family quota | **100 MB** |
+> | Deleting a message | **deletes the blob** |
+>
+> 5 MB because on a 1 GB project a 10 MB attachment is 1% of everything; 5 MB still
+> covers a phone photo or a document. 100 MB budgets ~800 MB usable with headroom,
+> because M1 (Wave 5, Stream B) adds photos on Table entries and attachments on
+> Bricks *"same quotas, same caps"*, and K1 generates PDFs.
+
+**🔴 NEW SCOPE the Free plan creates — a per-Family quota does not bound the
+project total.** Decision 12 fixed the Family count at **8**, and
+`8 × 100 MB = 800 MB` is the usable budget **exactly** — the ceiling invariant
+holds with equality and carries no slack.
+
+So the failure this PR must handle is not only "a Family exceeds 100 MB". It is
+**a Family comfortably under its own quota whose upload fails anyway**, because the
+project is full — and that surfaces as a raw Supabase error, not as this PR's plain
+message, which breaks the acceptance criterion in a way the per-Family check
+structurally cannot catch.
+
+PR 6 therefore needs **either a project-level check alongside the per-Family one,
+or the invariant `max_families × per_family_quota ≤ usable budget` enforced
+somewhere real** — not merely true by arithmetic today. Related and still open:
+**decision 14**, how the 8-Family cap itself is enforced, since nothing in the
+repo limits how many Families exist and an `organizations` INSERT can therefore
+break the storage ceiling without any upload occurring.
+
+### 5.5 What N1 needs from `notifications`, stated before it is built
+
+N1 (Wave 4) inherits this table and adds delivery. Written here rather than in a
+separate document because C2's PR 3 already owns the table, and two specs for one
+table is how they drift.
+
+- **`'mention'` must land in `notification_type` in PR 3.** E1's migration comment
+  reserves the extension for N1, but C2 needs the value a wave earlier. **C2 owns
+  it**; N1 adds no enum values. That ambiguity, left alone, is how the enum gets
+  extended twice.
+- **Keyed on `membership_id`**, per C1's convention, so no read path has to
+  re-derive which Family a notification belongs to.
+- **A row carries no content** — a type, a target, and the ids needed to build a
+  link, never message text. §5.3 already argues this for the row; the point here
+  is that it is also what makes invariant 3 achievable **downstream**: N1 renders
+  pushes and emails from this row, so a row that carries text makes leaking it the
+  path of least resistance.
+- **Read state on the row** (`read_at`), not inferred from a separate high-water
+  mark — see decision 15, which is the same class of bug in C1's message read mark.
+- **`member_blocks` applied at write time in PR 4**, so a blocked member's mention
+  never becomes a row rather than being filtered at read. N1 must not have to
+  re-check blocks to be correct.
 
 ## 6. Invariants this session touches, and where each is proven
 
