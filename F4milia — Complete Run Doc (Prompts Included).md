@@ -366,12 +366,33 @@ Commit: "feat: family task board and calendar"
 ```
 Read CLAUDE.md before starting. Consumes E1's preference schema.
 
+AMENDED 2026-09-02 (decision 10). THE PWA SHELL ALREADY EXISTS — do
+NOT create one. public/manifest.webmanifest, the icon set and a
+REGISTERED BUT EMPTY public/sw.js shipped in #107, before this wave,
+owned by neither this session nor W2. Add a `push` listener and a
+`notificationclick` listener to that file. W2 does the same for its
+own needs. Neither session creates it, so neither can silently win a
+collision the other never sees.
+
+Also already built, so this session extends rather than starts:
+  push_subscriptions      #112, keyed per Family so one Family can be
+                          silenced without silencing the other
+  lib/push                #113, VAPID config, send helper, and the
+                          payload builder that IS invariant 3
+  Inngest client + route  #114, boots and sends nothing without keys
+
+INVARIANT 3 IS THE ACCEPTANCE CRITERION HERE, not a background rule. A
+push arrives on a lock screen that may be someone else's. lib/push's
+payload builder has no parameter that can carry content -- keep it that
+way, and note that a "helpful" preview is the single most likely way
+this session breaks the invariant.
+
 In-app notification inbox aggregating: mentions, DMs, Care Actions,
 Brick nudges, Vow events, Family Night reminders — with per-type,
 per-Family preferences extending E1's schema.
 
-Web push (PWA) for DMs, mentions, and the daily Table prompt,
-respecting the same preferences.
+Web push for DMs, mentions, and the daily Table prompt, respecting the
+same preferences.
 
 Calendar reminders from D2's toggles delivered through this center
 via Inngest.
@@ -400,6 +421,32 @@ invite members. The Tower prompt arrives later per the progressive-
 disclosure pacing — do not front-load it.
 
 PWA: installable, app icon, offline-tolerant shell.
+
+AMENDED 2026-09-02 (decision 10) — CROSS-STREAM, READ THIS. THE SHELL
+ALREADY EXISTS and this session does NOT create it. #107 shipped
+public/manifest.webmanifest, the icon set, a REGISTERED BUT EMPTY
+public/sw.js and the layout wiring, before this wave, owned by neither
+W2 nor N1 (Stream A). Both sessions needed it, both run in Wave 4, in
+parallel worktrees, and the wave note mentioned the dependency
+nowhere — so both would have created the same file. That is not a merge
+conflict that surfaces cleanly: one worker silently wins while the
+other session's registration path assumes behaviour that is no longer
+there.
+
+So this session ADOPTS the shell and adds to it:
+  - "installable" is already true; verify it rather than build it.
+  - THE APP ICON IS PROVISIONAL and is decision 16, still open. It is
+    the masonry motif in locked tokens (parchment / deep-slate /
+    terracotta, zero radius) — deliberately NOT an invented logo,
+    because that is James's call. Replace it only if he has ruled.
+  - "offline-tolerant" is the part genuinely left to build. sw.js has
+    NO fetch handler on purpose: what a Family sees when the network is
+    gone is a product decision nobody had made, and a caching worker
+    nobody specified would serve stale Family content. Decide it here,
+    deliberately.
+
+N1 adds only a `push` listener to the same file. Coordinate the merge
+order; do not both rewrite sw.js.
 
 Acceptance: signup blocks without consent checkboxes. First-run
 completes end to end for a new user. Lighthouse reports installable.
@@ -434,6 +481,29 @@ Commit: "feat: keyword search, RLS-enforced"
 write via Edge Function. Embedding tables carry org_id and the same
 RLS as their source rows. Semantic results merge alongside keyword
 results.
+
+AMENDED 2026-09-02 (decision 9). F2 CREATES THE FIRST EDGE FUNCTION IN
+THE REPO — a wave before A1, the session whose 09:30 gate exists to get
+Edge Function isolation right. The wave order stands; four conditions
+make it safe, and they are obligations, not notes:
+
+1. THE FUNCTION IS WRITE-ONLY AND SINGLE-ROW. It takes a row id, embeds
+   it, writes the vector. It never assembles context, never spans
+   records, never returns content. State that in the PR description as
+   a constraint, not as a description of what you happened to build --
+   it is the reason this session was allowed to go first.
+2. The embedding table carries the SAME RLS as its source table
+   (invariant 5), proven with the dual-Family fixture.
+3. A1's gate will review this function. Write it to be read.
+4. Invariant 12 lands BEFORE this session, not before A1 -- F2 is the
+   first code in the repo that calls a model, so it is the first that
+   could ship a prompt to a third party. (Done: #103.)
+
+The EMBEDDING half of decision 4 is due before this session, not before
+A1: the vector dimension goes into this migration, and vector(1536)
+bakes the model choice into the schema. Changing it later means
+re-embedding everything. Anthropic ships no embedding endpoint, so this
+is a second vendor and a second key -- see docs/f4milia/ai-model-and-cost.md.
 
 Acceptance: embeddings inherit RLS — the Family A/B test passes on
 the vector path too. A meaning-based query ("times we struggled")
@@ -480,6 +550,16 @@ assembler: if A1's isolation is subtly wrong, it is wrong in six
 sessions. The gate is here so the inheritors don't need one — they
 reuse already-reviewed scoping and James merges them himself. Get
 the pattern right once.
+
+AMENDED 2026-09-02 (decision 9). THE GATE COVERS ALL OF
+supabase/functions/, NOT ONLY THIS SESSION'S OWN FILES. F2 runs a wave
+EARLIER and creates the first Edge Function in the repo — the embedding
+writer — so by the time A1 opens, the directory already has a file in
+it that no gate has reviewed. Read it at 09:30 alongside A1's own.
+
+F2's function is write-only and single-row by design: it takes a row
+id, embeds it, writes the vector, assembles no context and returns no
+content. That is why it was allowed to go first. Confirm it still is.
 
 A server-side AI utility (Edge Function): assembles context strictly
 from the calling member's own Family, calls the model, returns a
@@ -536,6 +616,24 @@ Commit: "feat: member card suggestions"
 # **WAVE 7**
 
 ## **Stream A — A5: AI-equity assists**
+
+> **AMENDED 2026-09-02 (decision 11).** A5 assumes a
+> `contribution_ledger` that no session in this document creates, and a
+> `bricks` estimate column that does not exist. A schema session is
+> slotted UPSTREAM of this wave to build both:
+> `docs/f4milia/equity-engine-schema-session.md`. Run it first.
+>
+> Note what that changes about A5's own acceptance criterion. *"grep
+> proves no AI code path writes to `contribution_ledger` numeric
+> columns"* passes today **vacuously**, because the table does not
+> exist. After the schema session it passes because it is true, and the
+> guard has been seen to fail. Do not treat a green grep here as
+> evidence until that session has run.
+>
+> The slice formula is settled (decision 6): standard Slicing Pie,
+> non-cash x2, cash x4, with the rate and multiplier frozen onto each
+> row at insert. A5 suggests estimates; it does not compute slices and
+> it never writes a numeric column.
 
 ```
 Read CLAUDE.md before starting. Highest-stakes session in this doc.
