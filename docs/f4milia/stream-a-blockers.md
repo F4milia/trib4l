@@ -5,7 +5,7 @@ Everything that would halt a Stream A session, session by session, in wave order
 | | |
 |---|---|
 | **Written** | 2026-09-02 |
-| **Revised** | 2026-09-02 — decisions 1, 2, 3, 6, 9, 10, 11, 12 ruled on; the Supabase **Free** plan opened 13 and 14. See §10 |
+| **Revised** | 2026-09-02 — decisions 1, 2, 3, 6, 8, 9, 10, 11, 12 ruled on; the Supabase **Free** plan opened 13 and 14. See §10 |
 | **Against** | `F4milia — Complete Run Doc (Prompts Included).md`, Stream A column |
 | **Repo state** | `origin/main` @ `8ed81dc` (after `#91`) |
 | **Scope** | Waves 3–10. Waves 0–2 (S1, S2, C1) are merged |
@@ -27,9 +27,8 @@ Everything that would halt a Stream A session, session by session, in wave order
 **The short version, as of the 2026-09-02 revision.** Both sessions that could not
 run as written now have a ruled path: **A5** gets a schema session slotted upstream of
 Wave 7, and **F2** keeps Wave 5 and builds the first Edge Function itself under four
-conditions (§10). **Five decisions are still open** — the model provider and keys, the
-AI cost ceiling, PostHog hosting, the Vercel plan, and how a Family-count cap is
-enforced — the last opened by the ruling that storage sits on Supabase **Free**,
+conditions (§10). **Four decisions are still open** — the model provider and keys, the
+AI cost ceiling, PostHog hosting, and how a Family-count cap is enforced — the last opened by the ruling that storage sits on Supabase **Free**,
 which also adds real scope to C2. Everything else is a dependency to install
 or a scope surprise.
 
@@ -47,7 +46,7 @@ or a scope surprise.
 | 8 | **K1** | 🔴 depends on A5's ledger · 🔑 `@react-pdf/renderer` not installed · 🟡 no completed Tower in seed | A5 first |
 | 9 | **Q2** | 🔵 carried rate-limit debt | — |
 | 9 | **Q3** | 🔑 PostHog not installed, no project | Account |
-| 10 | **R1** | 🔑 hobby plan, one Vercel project doing both preview and production | Plan + project split |
+| 10 | **R1** | ✅ staying on **Hobby** — so no named staging environment, and R1's staging/production difference rides on Preview-vs-Production env vars | Clear to run |
 
 ---
 
@@ -360,6 +359,25 @@ that choice determines where event payloads land.
   production. R1 wants *"staging and production differ only where the X1 README
   already says they do"* — that needs two environments to differ.
 
+> **✅ DECIDED (2026-09-02) — stay on Hobby (Free) for now.** Four consequences,
+> the first verified against Vercel's docs and the rest to plan around:
+>
+> 1. **Preview deployments can still be protected.** Vercel Authentication
+>    (Standard Protection) is available on Hobby, so previews are not public by
+>    URL — invariant 9 survives. The production domain stays public, which is
+>    intended. **Confirm it is switched on**, since a preview will carry seeded
+>    Family content.
+> 2. **Named/custom environments are a Pro feature.** So R1's *"staging and
+>    production differ only where the X1 README says"* has to ride on
+>    **Preview-vs-Production environment variables inside the one project** —
+>    which Hobby does scope separately. There is no third, stable `staging` URL.
+> 3. **The quota already ran out once** (`b3204cc`), and nothing about that
+>    changed. Expect it again; R1's *"one-command deploy from main, gated on green
+>    CI"* should not also spend preview builds on every push.
+> 4. **Hobby is documented as being for personal, non-commercial projects.** A
+>    platform with an equity engine is not that, so this needs revisiting before
+>    F4milia is commercial — a plan decision deferred, not a plan decision closed.
+
 **Not a blocker, better than expected:** R1's *"grep for undecided migrations
 returns zero"* is already satisfied — **all 75 migrations carry a `-- Reverse:`
 header.** What is missing is that none has been *executed*; R1's rollback drill
@@ -381,19 +399,19 @@ the ruling, not the recommendation that produced it.
 | 2 | `message_reactions` as its own table, not the legacy `reactions` | C2 | **Its own table, keyed on `membership_id`.** Plan-independent. Extending the legacy table would mean rewriting stage-gating across `posts_rls` and `content_gating` so a chat reaction is not silently gated by a Trib4l stage — a bug that looks like it works. A new table is one migration reusing `is_conversation_participant()`. Reasoning in §3 |
 | 3 | What search covers | F1, Wave 5 | `table_entries` and `bricks` gain a `search_vector`; legacy `posts`/`comments` stay in scope; **`ledger_events` is cut.** F1 is a two-table migration. The cut is a knowingly unmet acceptance criterion, recorded in §5 |
 | 6 | The slice formula | A5, Wave 7 | Standard Slicing Pie, unmodified: **non-cash × 2, cash × 4.** `rate_cents` and `multiplier` freeze onto the ledger row at insert; `value_cents` derives from the frozen pair; slice % computed at read time and never stored; a rate change applies forward only |
+| 8 | Vercel plan and project shape | R1, Wave 10 | **Hobby (Free), one project, for now.** Preview protection is available on Hobby so invariant 9 holds; named staging environments are not, so R1 uses Preview-vs-Production env vars in the single project. Revisit before F4milia is commercial — Hobby is documented as non-commercial. Consequences in §9 |
 | 9 | F2 / A1 ordering | Wave 5 | **No swap — the run doc's wave order is followed.** F2 keeps Wave 5 and builds the first Edge Function itself, under the four conditions below |
 | 10 | Service worker ownership | N1, Wave 4 | The PWA shell — manifest, icons, a registered but empty service worker — ships as **its own small PR before Wave 4.** W2 builds its UI on it; N1 adds only a `push` handler |
 | 11 | The equity engine | A5, Wave 7 | A **schema session is slotted upstream of Wave 7**: `contribution_ledger`, the `bricks` estimate columns, the deterministic slice function, pgTAP, RLS, in the schema sandbox. Unblocked by row 6. **Its prompt is unwritten** |
 | 12 | Expected concurrent Families | C2 | **8.** Fixes the per-Family quota at 100 MB — and `8 × 100 MB = 800 MB` is the usable budget exactly, so the ceiling invariant holds with equality and has no slack. Also makes `max_families = 8` a real constraint, which nothing in the system enforces; see decision 14 |
 
-### 🟠 Open — five
+### 🟠 Open — four
 
 | # | Decision | Blocks | Recommendation on the table |
 |---|---|---|---|
 | 4 | Model provider, model, and the API keys | **F2, Wave 5** (see note) · A1, Wave 6 | Claude `claude-sonnet-5` for generation, called from a Supabase Edge Function. **OpenAI `text-embedding-3-small`, 1536 dimensions**, for embeddings — Anthropic has no embedding endpoint, so this is two vendors and two keys, both in Supabase secrets, neither in a Vercel env or the client bundle |
 | 5 | AI cost ceiling | A1, Wave 6 | 10 suggestions/member/hour · 100/Family/day · `max_tokens: 1024` per call · an `AI_DISABLED` kill switch returning a plain refusal. Reuse `lib/email`'s rate-limit pattern rather than inventing one |
 | 7 | PostHog cloud or self-hosted | Q3, Wave 9 | Cloud, EU region. Self-hosting means running ClickHouse to receive event names and counts; invariant 4 already bounds the payload in code |
-| 8 | Vercel plan and project shape | R1, Wave 10 | Pro, **one** project, three environments (Production / Staging / Preview). Two projects doubles env-var drift, which is the opposite of what R1 asks for |
 | 13 | **Ledger durability on Free** | the equity-engine schema session, before Wave 7 | Supabase Free does not include point-in-time recovery, and its backup guarantees are weaker than Pro's — **believed, not verified against your dashboard.** CLAUDE.md calls the Ledger *"a system of record for eventual ownership"*, so this wants deciding before it holds real slices: accept Free for pre-production, or upgrade when the engine ships |
 | 14 | **How the 8-Family cap is enforced** | **C2, now** · every signup path | Decision 12 makes `max_families = 8` load-bearing, and nothing in migrations, `app` or `lib` implements any such limit — so an `organizations` INSERT can break the storage ceiling, and the symptom lands on an unrelated Family's upload. **Recommended: a hard cap at Family creation with a plain refusal**, reversible by one constant. The alternative, monitor-and-alert, leaves the invariant as prose |
 
