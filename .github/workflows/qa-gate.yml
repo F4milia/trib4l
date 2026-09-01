@@ -1,0 +1,51 @@
+name: qa-gate
+
+# Enforces docs/qa-previous-session-sop.md: a PR does not merge until the
+# previous session's QA doc has been executed against a preview URL and the
+# Loom recording is linked.
+#
+# NOT a required check yet. Making it required is a branch-protection change
+# (Settings -> Branches), and turning it on while PRs are in flight would block
+# every one of them. See the SOP's prerequisites 1 and 2 -- preview deploys and
+# seed fixtures both have to land first.
+
+on:
+  pull_request:
+    # `labeled`/`unlabeled` matter: without them, adding the skip-qa label does
+    # not re-run this check and the PR stays red until someone pushes a commit.
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    # Docs-only and infrastructure PRs opt out with the skip-qa label.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-qa') }}
+    steps:
+      - name: Require Loom + QA checkbox
+        # The PR body is untrusted input. It goes through `env:` so it is never
+        # interpolated into the shell -- a body containing backticks or $() must
+        # not become a command.
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          fail=0
+
+          if ! printf '%s' "$BODY" | grep -Eq 'https://(www\.)?loom\.com/share/'; then
+            echo "::error::No Loom link in the PR body. Record the QA run and paste the share URL."
+            fail=1
+          fi
+
+          if ! printf '%s' "$BODY" | grep -Eq '^\- \[[xX]\] `docs/qa/'; then
+            echo "::error::The 'docs/qa/<SESSION>.md executed' box is not ticked in the PR body."
+            fail=1
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::notice::Docs-only or infra PR? Add the 'skip-qa' label."
+            exit 1
+          fi
+
+          echo "QA block present."
