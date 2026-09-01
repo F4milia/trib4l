@@ -92,7 +92,7 @@ independently mergeable and green on its own."* C2 will be well over 200 lines.
 The rule is not being reinterpreted; it is being overridden for this session, by
 the person whose call it is.
 
-### What it costs, and what it buys
+### 3.1 What it costs, and what it buys
 
 Both directions honestly, because the mitigations in §3.2 only make sense
 against the costs.
