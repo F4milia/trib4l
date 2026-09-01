@@ -454,3 +454,11 @@ than week one.
   in a broadcast payload, and treat a conversation id in someone's URL history
   as a permanent capability until Realtime Authorization gates the join. Owed to
   C2: docs/f4milia/c2-realtime-broadcast-authorization.md.
+- 2026-09-02 · C2 doc · a CLAUDE.md append anchored on a previous ENTRY silently
+  did nothing, because that entry lives on an unmerged branch and this one was
+  cut from main — and the commit succeeded anyway, because the assertion ran in
+  the same command as `git add && git commit` · append to END OF FILE. Learned
+  constraints is the last section and is append-only, so EOF needs no anchor and
+  cannot go stale. Then confirm with `git diff --cached --name-only`: an edit
+  that matches nothing is indistinguishable from one that worked, and the shell
+  exit code will not tell you.
