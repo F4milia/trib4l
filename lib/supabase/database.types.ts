@@ -419,6 +419,38 @@ export type Database = {
           },
         ]
       }
+      ledger_events: {
+        Row: {
+          created_at: string
+          event_type: Database["public"]["Enums"]["ledger_event_type"]
+          id: string
+          org_id: string
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          event_type: Database["public"]["Enums"]["ledger_event_type"]
+          id?: string
+          org_id: string
+          payload: Json
+        }
+        Update: {
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["ledger_event_type"]
+          id?: string
+          org_id?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_stream_credentials: {
         Row: {
           created_at: string
@@ -2209,6 +2241,13 @@ export type Database = {
     }
     Enums: {
       invitation_status: "pending" | "accepted" | "revoked"
+      ledger_event_type:
+        | "table_entry"
+        | "brick_complete"
+        | "build_complete"
+        | "tower_event"
+        | "care_action"
+        | "vow_event"
       meetup_rsvp_status: "going" | "maybe" | "not_going"
       membership_role: "member" | "mentor" | "organizer" | "org_owner"
       mentor_pairing_status: "proposed" | "active" | "completed" | "declined"
@@ -2350,6 +2389,14 @@ export const Constants = {
   public: {
     Enums: {
       invitation_status: ["pending", "accepted", "revoked"],
+      ledger_event_type: [
+        "table_entry",
+        "brick_complete",
+        "build_complete",
+        "tower_event",
+        "care_action",
+        "vow_event",
+      ],
       meetup_rsvp_status: ["going", "maybe", "not_going"],
       membership_role: ["member", "mentor", "organizer", "org_owner"],
       mentor_pairing_status: ["proposed", "active", "completed", "declined"],
