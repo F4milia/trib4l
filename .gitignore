@@ -53,3 +53,8 @@ docs/session-notes/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Worktrees live inside the repo, so an unqualified `git add -A` would commit
+# them as embedded repositories, and root-anchored test globs collect their
+# specs. Ignoring the directory fixes the first; vitest.config.mts fixes the second.
+.claude/worktrees/
