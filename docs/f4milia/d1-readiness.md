@@ -1,18 +1,26 @@
-# D1 — readiness
+# The F4milia domain model — readiness
 
-What D1 needs, what has been built for it, and what is left. Wave 2 · Stream B.
+What the domain model needs, what has been built, and what is left.
+Stream B, opened at Wave 2 by D1.
 
 Not a session record — D1 has not run. This is the document that says why, and
 what has to be true before it can.
 
+**Retitled 2026-09-02.** This began as "D1 — readiness", and that framing was
+too small. D1 is the first session to hit the missing domain model, not the only
+one: §8 traces the same gap through **D2, A3, A4, K2 and Q4**, and the run doc
+schedules no session that closes it. Sections 1–7 are unchanged in substance and
+still read from D1's point of view, which is the right way in — §8 is where the
+scope is stated honestly.
+
 | | |
 |---|---|
-| **Written** | 2026-09-01 |
+| **Written** | 2026-09-01 · **§8 and corrections added** 2026-09-02 |
 | **Session** | `F4milia — Complete Run Doc`, Wave 2, Stream B |
 | **D1's status** | **Not started.** No branch, no PR in any state |
 | **Blocked by** | Four tables it reads do not exist on `main`, and its acceptance criterion needs seeded rows in all of them |
-| **Distance** | 4 of 7 tables built (1 merged, 3 on `schema/bricks` awaiting one PR); 2 unwritten; seed unextended |
-| **Last verified** | 2026-09-01 — pgTAP 375 pass / 17 files on `schema/bricks` from a clean reset |
+| **Distance** | D1: 4 of 7 tables built (1 merged, 3 on `schema/bricks` awaiting one PR); 2 unwritten; seed unextended. Stream B overall: **7 further entities unscheduled** — §8 |
+| **Last verified** | 2026-09-01 — pgTAP 375 pass / 17 files on `schema/bricks` from a clean reset. **Not re-run 2026-09-02**: the shared stack was holding Stream A's C1 migrations, see §8.5 |
 
 ---
 
@@ -47,6 +55,11 @@ Meanwhile eight sessions read tables nobody builds:
 So the schema work in Stream B is not a detour. It is the precondition the run
 doc never scheduled, and D1 is simply the first session to hit it.
 
+*Added 2026-09-02:* the table above lists the sessions that read tables nobody
+builds. **§8 works the other direction** — it takes each remaining Stream B
+session and asks what its prompt actually needs, which surfaces seven entities
+that are not in the list above because they are not tables D1 reads.
+
 **Two related defects in the same document**, found while resolving this and
 recorded here because nothing else records them:
 
@@ -67,7 +80,7 @@ Its prompt names six things. Status as of this writing:
 | # | D1 element | Needs | Where it is |
 |---|---|---|---|
 | 1 | Recent Ledger highlights | `ledger_events` | ✅ **on `main`** |
-| 2 | Their claimed Bricks with due windows | `bricks` | ⚠️ built, verified — **stranded on `schema/builds`** |
+| 2 | Their claimed Bricks with due windows | `bricks` | ⚠️ built, verified — **stranded on `schema/bricks`** |
 | 3 | Tower progress as stacked masonry | `towers`, `builds` | ⚠️ built, verified — same branch |
 | 4 | Today's Table prompt status | `organizations.table_prompt_time` + `timezone`, and `table_entries` | ◐ half — the schedule columns are **on `main`** (E1 #18); `table_entries` unwritten |
 | 5 | The streak | a definition, then a table or a derived query | ◐ **defined** in the spec, unbuilt |
@@ -195,12 +208,32 @@ one check and asserts `condeferred` separately.
 **Lesson worth carrying:** a passing test proved nothing here, twice. (b) and (c)
 were both found by writing a claim into a PR description and then testing it.
 
-**3 — `table_entries`, with Hurt/Repair.** Needs two open questions answered
-first: **§10.5** (`mood_tag`'s permitted set is unspecified) and **§10.10**
+**3 — `table_entries`, with Hurt/Repair.** Needs **three** open questions
+answered first: **§10.5** (`mood_tag`'s permitted set is unspecified), **§10.10**
 (Hurt/Repair is *"a `table_entry_flags` table or a nullable column"* — F1.4
-offers the choice and nothing decides it). The spec also fixes the visibility
+offers the choice and nothing decides it), and **§10.4** (`prompt_id` implies a
+prompts table, and nothing says whether prompts are platform-authored,
+Family-authored, seasonal or rotating). The spec also fixes the visibility
 rule: a flag is visible **only to the flagging member and the entry's original
 author**, which is an RLS shape, not a UI filter.
+
+*§10.4 was omitted from this step until 2026-09-02.* It is not deferrable past
+D1: element 4 is "today's Table prompt status", which is a claim about a prompt,
+not just about whether an entry exists.
+
+Two further things land in this migration, neither of them optional and neither
+previously recorded here:
+
+- **The memorial-lock RLS.** `20260903100401` adds `profiles.memorialized_at`
+  and `memorialize_profile()` and stops there. Spec §2.9 (F8.1/F8.2) also
+  requires a memorialized member's `table_entries` and Ledger contributions to
+  be locked against editing *except by a designated executor*, scoped to that
+  member's content only. There is no `executor_membership_id` anywhere in the
+  schema. So invariant 8 is today enforceable on the profile row and nowhere
+  else, and the missing half arrives with this table — see §8.4.
+- **The `posts` question.** `posts` already exists (inherited, see §8.3) and
+  carries a `search_vector`. Whether a Table entry IS a post or a separate row
+  has to be decided here rather than discovered by F1/F3 in Wave 5.
 
 **4 — `vows`.** **§10.6 is genuinely open** and D1 reads its answer directly.
 The spec records that J4.3 — *"whose turn it is, the rotation order"* — implies
@@ -218,7 +251,11 @@ cheaper to keep correct and harder to make fast; stored is the reverse.
 **6 — Extend the seed.** See §5. This is the largest remaining piece and the one
 most likely to be underestimated.
 
-**7 — Then D1 runs**, and D2 follows cheaply, because it reads the same tables.
+**7 — Then D1 runs.** ~~And D2 follows cheaply, because it reads the same
+tables.~~ **Corrected 2026-09-02:** D2 does *not* follow cheaply. It reads the
+same tables plus three things nothing builds — the Family Night schedule,
+per-item reminder rows, and a Brick-status reset its named edge case requires.
+See §8.2 and §8.4.
 
 **Also owed, unrelated to D1 but from the same stream:** the two CodeRabbit
 findings on already-merged E1/H1 code — `app/actions/support.ts`'s
@@ -293,14 +330,27 @@ Run these before launching D1. Each is a claim, not a vibe.
 
 | # | Check | Command | Ready when |
 |---|---|---|---|
-| 1 | All four tables are on `main` | `git merge-base --is-ancestor origin/schema/builds origin/main` | exits 0 |
-| 2 | They apply from scratch | `npx supabase db reset` | 60 migrations, no duplicate `version` |
+| 1 | All four tables are on `main` | `git merge-base --is-ancestor origin/schema/bricks origin/main` | exits 0 |
+| 2 | They apply from scratch | `npx supabase db reset` | 62 migrations, no duplicate `version` |
 | 3 | `table_entries` and `vows` exist | `\dt public.table_entries public.vows` | both present |
 | 4 | Organization deletion works | delete a seeded Family holding a verified done Brick | succeeds — asserted in `130`, see §4 step 2 |
 | 5 | No skipped tests remain | `npx supabase test db` | PASS with **zero** skips |
 | 6 | The seed carries domain data | `select count(*) from towers; … from bricks; … from table_entries` | non-zero in `caregiver-circle` **and** `founder-collective` |
 | 7 | The empty Family is empty | same counts for `wellness-guild` | zero — this is what element 6's empty state renders from |
 | 8 | RLS holds on the new surface | `npm run test:isolation` | PASS, and the dual-Family fixture covers the new tables |
+
+**Checks 1 and 2 were both wrong as first written, corrected 2026-09-02.**
+Worth recording rather than silently fixing, because the first one is this
+document's own §6 lesson failing inside its own readiness table:
+
+- Check 1 named `origin/schema/builds`. `builds` is an **ancestor** of
+  `schema/bricks`, so that command can exit 0 while `bricks` — the branch that
+  actually carries all three tables — is still off-trunk. A containment check
+  that names the wrong branch is worse than no check: it reports the exact
+  state it was written to catch as safe.
+- Check 2 said "60 migrations". `main` carries 56 and `schema/bricks` adds six,
+  so the merged tree is **62**; `schema/bricks` alone is 61, because it predates
+  `20260903100602` (PERF-2, #65). Neither number was 60.
 
 Check 5 is the one that catches a half-landed state: a skip is how this repo
 records a known-unfixed defect, so a skip surviving into D1 means D1 is building
@@ -310,3 +360,201 @@ Check 8 is the one that cannot be skipped. pgTAP runs as `postgres` and bypasses
 RLS entirely, so **nothing in the four merged schema PRs proves a policy** —
 their isolation coverage is schema PR 9 and is still owed. Until it lands, the
 new tables' RLS is written but unproven.
+
+---
+
+## 8. The same gap, in five more sessions
+
+Added 2026-09-02, in answer to a direct question: *does the schema work being
+done for D1 also build the schema the rest of Stream B needs?*
+
+### 8.1 The answer
+
+**No.** It covers D1 completely and D2 partially, then stops. Seven further
+entities are read by later Stream B sessions and the run doc schedules no
+session that creates any of them — the same failure §1 describes, one wave at a
+time, rediscovered by whoever runs into it.
+
+This is not an argument for building everything now. It is an argument for
+naming the work correctly: the sessions in §4 steps 3–5 are not "D1's
+prerequisites", they are the first three-sevenths of **the domain-model session
+the run doc never scheduled**. Framed as D1's prerequisites, the remainder gets
+found again by D2 in Wave 3, by A3 and A4 in Wave 6, and by K2 in Wave 8.
+
+### 8.2 Stream B, session by session
+
+Each row's "needs" comes from that session's own prompt text; each verdict from
+the live schema. `✅` = present or already planned in §4. `❌` = nothing builds it.
+
+| Session | Wave | What its prompt reads | Verdict |
+|---|---|---|---|
+| E1 | 1 | `notification_preferences` | ✅ merged |
+| **D1** | 2 | `ledger_events`, `towers`, `builds`, `bricks`, `table_entries`, `vows`, streak, org schedule columns | ✅ **all seven** — four built, three in §4 steps 3–5 |
+| **D2** | 3 | Bricks grouped by member ✅ · Brick due windows ✅ · Vow rotation turns ✅ · Family's timezone ✅ | ⚠️ **three gaps** — Family Night schedule ❌, per-item reminder rows ❌, and its named edge case is not satisfied by `bricks` as built (§8.4) |
+| W2 | 4 | first Table entry ✅ · invite members | ✅ `invitations` already exists and is fully shaped — `token`, `expires_at`, `role`, `status`, `accepted_at`. Only signup-consent storage is missing |
+| F3 | 5 | search results grouped by posts, Bricks, Ledger, members | ✅ all four exist — but see the `posts` question in §8.3 |
+| M1 | 5 | photos on Table entries ✅, attachments on Bricks ✅ | ✅ plus storage, which Stream A owns from Wave 3 |
+| **A3** | 6 | the week's Table entries ✅ · Brick progress ✅ · *"the draft renders only to the convener"* | ❌ **convener rotation and the weekly rollup do not exist** |
+| **A4** | 6 | *"an updated Member Card line"* | ❌ **Member Card exists in neither the schema nor the spec** |
+| O1 | 7 | articulating a Tower ✅ · setting the Table time ✅ · understanding Vows ✅ | ✅ |
+| H1 | 7 | `support_requests` | ✅ already ran, out of wave order |
+| **K2** | 8 | publish / unpublish a completed Tower | ❌ **`towers` has no publication state at all** |
+| Q1 | 8 | — | ✅ no schema |
+| **Q4** | 9 | the full life, including *"slice accrues"* | ❌ `contribution_ledger`, `care_actions` |
+
+### 8.3 What is already there: the inherited Trib4l schema
+
+A finding that cuts the other way, and that §1–§7 did not account for. The
+database carries **39 tables in `public`** (36 on `main`; three more are C1's,
+in flight) and most of them are inherited from Trib4l, not built by any session
+in this doc: `posts`, `comments`, `reactions`, `invitations`, `cohorts`,
+`cohort_members`, `stages`, `member_stages`, `stage_transitions`,
+`mentor_pairings`, `meetups` and its four companions, `live_streams`, `orders`,
+`products`, `video_assets`, `member_reports`.
+
+So two later sessions are **further along than assumed**:
+
+- **W2's invite step** needs no new table. `invitations` is complete.
+- **F1/F3's search** has its targets already, and `posts` even carries a
+  `search_vector` generated column with a GIN index (`posts_search_vector_idx`).
+
+But it forces a decision that belongs in §4 step 3, not in Wave 5:
+
+> **Is a Table entry a `post`, or its own row?**
+
+`posts` is Trib4l-shaped — `cohort_id`, `required_stage_id`, `video_asset_id`,
+and RLS gated by `can_see_gated_content(org_id, cohort_id, required_stage_id)` —
+and it has no `prompt_id`, no `date`, no `mood_tag`. Building `table_entries`
+beside it gives F1 two content tables for one concept and F3 two result groups
+for one idea. Building Table entries *into* `posts` inherits three foreign keys
+to a product F4milia is not. Neither is obviously right; what is wrong is
+deciding it by accident.
+
+The rest of the inherited set is unreferenced by any session in the run doc and
+should be treated as noise, not as model — but it is noise that a future session
+can mistake for precedent.
+
+### 8.4 The seven unscheduled entities
+
+In the order a Stream B session hits them.
+
+**1 — `care_actions`** · spec §2.5 (F5.1): `id`, `type`, `from_membership_id`,
+`target` (a `membership_id` **or** a `brick_id`); `type` ∈ `cover_task` ·
+`offer_bandwidth` · `reminder`. F4.6 is the coupling: *"need help" converts the
+Brick to an open, claimable task **and creates a linked Care Action***. So
+**D2** renders them in Wave 3 and N1 (Stream A) puts them in the inbox in Wave
+4. `grep "Care Action"` on the run doc returns **one hit — N1's consumer list at
+line 369.** Nothing builds it.
+
+**2 — Family Night: convener rotation and the weekly rollup** · spec §2.2:
+the convener rotates round-robin, *"stored so nobody is picked twice before
+everyone has had a turn"* (F2.2), and an Inngest cron aggregates the week's
+`table_entries` and Brick progress (F2.1). Read by **D2** (*"Calendar view:
+Family Night schedule"*), by **A3** (*"the draft renders only to the convener"* —
+which has no way to resolve who that is), and by N1's Family Night reminders.
+`grep "convener"` hits only A3, which reads it. Note this is **not**
+`organizations.table_prompt_time`: that is the daily Table prompt, and Family
+Night is weekly.
+
+**3 — Member Card** · read by **A4**, which suggests *"an updated Member Card
+line the member can accept, edit, or dismiss."* `org_profiles` carries
+`display_name` and `avatar_url` and nothing else. **`grep "Member Card"` on
+`f4milia-product-narrative-and-spec.md` returns zero hits** — the concept is in
+the run doc's wave table and A4's prompt, and in no specification anywhere. This
+is a product gap before it is a schema gap, and A4 is the session most likely to
+invent its way out of one: see the seed entry in CLAUDE.md's Learned constraints
+about auto-updating Member Cards being rejected as too presumptuous.
+
+**4 — Suggestion-dismissal state** · A2's *"dismissing the draft writes
+nothing"* and A4's *"dismissed suggestions do not reappear for the same entry"*
+are both invariant 2 (*"a dismissed suggestion writes nothing and does not
+re-prompt"*). "Does not re-prompt" requires remembering the dismissal, which is
+a row. Nothing defines where it lives.
+
+**5 — Tower publication state** · `towers` is `id`, `org_id`, `title`,
+`description`, `status`, `created_at`, `updated_at`. **K2** needs published /
+unpublished, a public slug, and a snapshot of *approved* content — its named
+edge case is *"publish, change approved content, unpublish, republish — the page
+reflects current approved state, never a stale snapshot."* Invariant 9 rides
+entirely on columns that do not exist.
+
+**6 — Memorial-lock executor** · spec §2.9 (F8.1/F8.2) requires an
+`executor_membership_id`, *"on the membership record or a small dedicated
+table"*, and the lock applied to that member's `table_entries` and Ledger
+contributions. `20260903100401` built the `profiles` flag and stopped. See §4
+step 3 — the lock lands with `table_entries`; the executor reference is still
+unowned.
+
+**7 — `contribution_ledger`** · already noted in §1 and confirmed absent.
+Q4's *"slice accrues"* and all of A5.
+
+**And one that is in no session in either stream:** the **"I'm not aligned"
+flag** — spec §2.7 (F7.1/F7.2), attachable to any Tower, Vow or Build decision,
+visible only to the organizer and the flag's creator, and notifying the
+organizer when raised. `grep -c "aligned"` on the run doc returns **0**. This is
+not a scheduling gap like the seven above; it is a feature of the model that the
+run doc dropped. Recorded here because nothing else records it.
+
+**And one defect in a table already built.** D2's named edge case is:
+
+> A member with claimed Bricks leaves the Family — their Bricks revert to open,
+> not attributed to a ghost.
+
+`bricks` has `on delete set null (assignee)`, which nulls the pointer and leaves
+`status` untouched. The row lands as `assignee = null, status = 'in_progress'` —
+a Brick nobody holds that is not open, which is precisely the ghost the edge
+case names. `bricks` carries only two triggers, `bricks_set_updated_at` and
+`bricks_audit`; nothing resets the status. This belongs in the schema work, not
+in D2's UI session, and it is the second time a `SET NULL` on this table has
+behaved differently from how it read (§4 step 2c was the first).
+
+### 8.5 What was verified on 2026-09-02, and what could not be
+
+Per the alignment rule — per claim, against what authority.
+
+**Verified by execution:** branch containment for all four schema branches
+(`ledger-events` exits 0; `towers`, `builds`, `bricks` exit 1) · the file and
+migration inventory of `schema/bricks` · migration counts (56 / 61 / 62) · no
+duplicate `version` in the merged set · every column, index, policy and trigger
+quoted in §8.2–§8.4, read from the running database with `\d` · every `grep`
+count quoted, run against the two documents named · `git merge-tree` for both
+merge directions in §8.6.
+
+**Not verified, and not claimed:** the 2026-09-01 "375 pass / 17 files" line.
+§7's checks 2, 4, 5, 6 and 8 were **not run.** The shared local stack was
+holding 62 applied migrations ending at `20260903100706` — Stream A's complete
+C1 stack — with `towers`, `builds` and `bricks` absent, and the `db`, `auth`,
+`realtime` and `storage` containers had all restarted seconds earlier. Running
+`supabase db reset` would have destroyed a live Stream A run mid-flight. That is
+the 2026-08-30 Learned constraint about the single shared stack, occurring rather
+than being anticipated.
+
+### 8.6 A merge window that closes on its own
+
+Verified 2026-09-02 and time-sensitive, so acted on before anything in §8.4.
+
+Stream A has **seven open PRs**, #67–#73, the C1 conversations stack, all based
+on `main`. Right now `schema/bricks` → `main` is a **clean auto-merge**
+(`git merge-tree` returns a tree and no conflict). Once any C1 PR lands it
+becomes **three conflicts**: `CLAUDE.md`, `lib/supabase/database.types.ts`, and
+`supabase/tests/database/030_audit_triggers_special_cases.sql`.
+
+The third is the one that matters, because it is semantic rather than textual.
+Both branches change the *same line* of `030` from `33` to `36` — Stream B for
+`towers`, `builds`, `bricks`; Stream A for `conversations`,
+`conversation_participants`, `messages`. **The correct merged value is 39.**
+Either side's `36`, accepted as-is, fails `030` with a message about audit
+coverage, which points at the wrong problem — the same shape as the
+metadata-allowlist entry in CLAUDE.md's Learned constraints.
+
+Migration versions do **not** collide: Stream A took `20260903100701`–`100706`,
+Stream B took `100711`/`100712`, so the `x01`/`x11` convention held on both
+sides this time. Test-file numbering overlaps cosmetically only —
+`110_towers.sql` beside `110_conversations_schema.sql`.
+
+**Still owed on the merge PR:** two Learned-constraint lines that §4 step 2
+documents here but that `CLAUDE.md` on `schema/bricks` does not carry — that a
+bare `ON DELETE SET NULL` on a composite foreign key nulls **every** referencing
+column, and that a foreign key can be `DEFERRABLE` where a CHECK cannot. Both
+are exactly what that section's append rule exists for, and (c) was the deepest
+of the three defects.
