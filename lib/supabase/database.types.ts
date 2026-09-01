@@ -2258,6 +2258,14 @@ export type Database = {
         Args: { check_org_id: string; check_required_stage_id: string }
         Returns: boolean
       }
+      is_conversation_creator: {
+        Args: { check_conversation_id: string }
+        Returns: boolean
+      }
+      is_conversation_participant: {
+        Args: { check_conversation_id: string }
+        Returns: boolean
+      }
       is_in_cohort: { Args: { check_cohort_id: string }; Returns: boolean }
       is_org_member: { Args: { check_org_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
@@ -2385,6 +2393,10 @@ export type Database = {
       }
       unmemorialize_profile: {
         Args: { p_profile_id: string }
+        Returns: boolean
+      }
+      viewer_blocks_membership: {
+        Args: { check_membership_id: string }
         Returns: boolean
       }
     }

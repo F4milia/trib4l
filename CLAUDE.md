@@ -374,3 +374,25 @@ than week one.
   CLI's "a new version is available" notice into database.types.ts, which then
   fails tsc with TS1005 at the last line · redirect stderr to /dev/null, not into
   the file. The generator itself is fine; the notice is not on stdout.
+- 2026-09-01 · C1 PR2 · a test file that only asserts REFUSALS passes with the
+  INSERT policy deleted entirely — no policy means no permission means every
+  "cannot post" assertion goes green for the worst possible reason. Measured:
+  dropping messages_insert failed nothing until a positive "a participant CAN
+  post" assertion existed · every policy needs at least one assertion that fails
+  when the policy is REMOVED, not only ones that fail when it is too permissive.
+  Run the drop-and-count control; do not assume the suite covers it.
+- 2026-09-01 · C1 PR2 · `create or replace function` CANNOT rename an input
+  parameter — it errors — so a negative control that stubs a helper with a
+  differently-named argument silently does nothing and reports "0 assertions
+  fail", which reads as "the test does not cover this" · match the original
+  parameter name when stubbing, and treat a control that fails NOTHING as a
+  broken control until proven otherwise.
+- 2026-09-01 · C1 PR2 · a BEFORE trigger runs before a policy's WITH CHECK, so a
+  write blocked by PR1's child-matches-parent trigger never reaches RLS and
+  raises P0001, not 42501 · when asserting "refused by policy", pick a case the
+  triggers ALLOW, or the assertion keeps passing with the policy deleted.
+- 2026-09-01 · C1 PR2 · `revoke execute ... from public` on an RLS helper also
+  strips `authenticated`, which inherits from PUBLIC — every policy calling it
+  then fails with "permission denied for function", which looks like a policy
+  bug · revoke from public, then grant explicitly to authenticated and
+  service_role.
