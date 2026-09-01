@@ -16,6 +16,22 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(20);
 
+-- PROBE FAMILIES OF THIS FILE'S OWN, rather than the seeded ones.
+--
+-- This file used to reach for caregiver-circle and founder-collective, which
+-- worked only while those Families were empty. The moment the seed gained
+-- domain data they each had an active Tower, and the very first insert here hit
+-- towers_one_active_per_org_idx -- which ABORTS the transaction, so every
+-- assertion after it emitted neither `ok` nor `not ok` and the file silently
+-- ran 10 of its 20 and reported green.
+--
+-- The lesson is CLAUDE.md's, twice over: a test establishes its own
+-- preconditions and asserts transitions, never a starting state it did not
+-- create; and a new automatic write is a cross-file change to fixtures.
+insert into public.organizations (id, slug, name) values
+  ('00000000-0000-0000-0000-0000000011a0', 'towers-probe-a', 'Towers Probe A'),
+  ('00000000-0000-0000-0000-0000000011b0', 'towers-probe-b', 'Towers Probe B');
+
 -- ------------------------------------------------------------------- shape
 select has_table('public', 'towers', 'towers exists');
 select col_not_null('public', 'towers', 'org_id', 'a Tower belongs to a Family');
@@ -55,8 +71,8 @@ select is(
 
 -- ----------------------------------------------------------------- probes
 create temporary table _tw as
-  select '00000000-0000-0000-0000-00000000000a'::uuid as org_a,
-         '00000000-0000-0000-0000-00000000000b'::uuid as org_b,
+  select '00000000-0000-0000-0000-0000000011a0'::uuid as org_a,
+         '00000000-0000-0000-0000-0000000011b0'::uuid as org_b,
          '00000000-0000-0000-0000-0000000000e1'::uuid as tower_a,
          '00000000-0000-0000-0000-0000000000e2'::uuid as tower_b;
 
@@ -80,7 +96,7 @@ select is(
 -- ------------------------------------------- one active Tower per Family
 select throws_ok(
   $$insert into public.towers (org_id, title)
-    values ('00000000-0000-0000-0000-00000000000a', 'A second simultaneous goal')$$,
+    values ('00000000-0000-0000-0000-0000000011a0', 'A second simultaneous goal')$$,
   '23505',
   null,
   'a Family cannot have two active Towers at once'
@@ -92,7 +108,7 @@ update public.towers set status = 'pivoted' where id = (select tower_a from _tw)
 
 select lives_ok(
   $$insert into public.towers (org_id, title)
-    values ('00000000-0000-0000-0000-00000000000a', 'What we actually meant')$$,
+    values ('00000000-0000-0000-0000-0000000011a0', 'What we actually meant')$$,
   'once the first is pivoted, a new active Tower is allowed'
 );
 
@@ -109,7 +125,7 @@ select tower_b, org_b, 'A different Family''s goal' from _tw;
 select lives_ok(
   $$update public.organizations
        set active_tower_id = '00000000-0000-0000-0000-0000000000e2'
-     where id = '00000000-0000-0000-0000-00000000000b'$$,
+     where id = '00000000-0000-0000-0000-0000000011b0'$$,
   'a Family can point at its own Tower'
 );
 
@@ -119,7 +135,7 @@ select lives_ok(
 select throws_ok(
   $$update public.organizations
        set active_tower_id = '00000000-0000-0000-0000-0000000000e2'
-     where id = '00000000-0000-0000-0000-00000000000a'$$,
+     where id = '00000000-0000-0000-0000-0000000011a0'$$,
   '23503',
   null,
   'a Family cannot point at another Familys Tower -- the composite key refuses it'
