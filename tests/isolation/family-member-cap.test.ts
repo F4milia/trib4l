@@ -1,8 +1,45 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { ORG_IDS, SEEDED_USERS, createServiceRoleClient, signInAs, signUpNewUser } from "./helpers";
 import { assertFamilyMemberCapNotExceeded, FamilyMemberCapExceeded } from "../../lib/family-cap";
 
 const CAREGIVER_CIRCLE = ORG_IDS.caregiverCircle;
+
+/**
+ * Every membership and invitation this file creates, removed after each test.
+ *
+ * WITHOUT THIS THE FILE IS NOT RE-RUNNABLE, and the way it failed was not the
+ * way you would guess. It does not merely leave rows behind: the
+ * designate-a-mentor test PERMANENTLY CONVERTS a plain member into a mentor,
+ * and freeOneCapSlot DELETES non-mentor rows to get back to the boundary. So
+ * each run consumed the org's plain members and accumulated mentors, until a
+ * second run failed with "no spendable plain member found in caregiverCircle"
+ * -- an error about the fixture, three steps downstream of the cause.
+ *
+ * Measured on the shared stack before this fix: caregiver-circle held THREE
+ * orphaned mentors and ZERO plain members, and alice's seeded role had drifted
+ * from member to organizer. That last one is not this file's doing, but it is
+ * the same class, and it breaks every other file that assumes she is a plain
+ * member.
+ *
+ * Q4's edge case is "run the suite twice; run 2 passes on run 1's residue".
+ * Cleaning up here is what makes that true for this file.
+ */
+const createdProfileIds: string[] = [];
+const createdInvitationEmails: string[] = [];
+
+afterEach(async () => {
+  const service = createServiceRoleClient();
+  for (const profileId of createdProfileIds.splice(0)) {
+    await service
+      .from("memberships")
+      .delete()
+      .eq("org_id", CAREGIVER_CIRCLE)
+      .eq("profile_id", profileId);
+  }
+  for (const email of createdInvitationEmails.splice(0)) {
+    await service.from("invitations").delete().eq("org_id", CAREGIVER_CIRCLE).eq("email", email);
+  }
+});
 
 /**
  * Adds a fresh, disposable member directly via the service-role client
@@ -15,6 +52,7 @@ async function addRawMember(emailPrefix: string, role: "member" | "mentor" = "me
   const { data: personUser } = await person.auth.getUser();
   const { error } = await service.from("memberships").insert({ org_id: CAREGIVER_CIRCLE, profile_id: personUser.user!.id, role });
   if (error) throw new Error(`addRawMember failed: ${error.message}`);
+  createdProfileIds.push(personUser.user!.id);
   return personUser.user!.id;
 }
 
@@ -33,6 +71,7 @@ async function addTemporaryOrgOwner() {
   const { data: personUser } = await person.auth.getUser();
   const { error } = await service.from("memberships").insert({ org_id: CAREGIVER_CIRCLE, profile_id: personUser.user!.id, role: "org_owner" });
   if (error) throw new Error(`addTemporaryOrgOwner failed: ${error.message}`);
+  createdProfileIds.push(personUser.user!.id);
   return person;
 }
 
@@ -160,9 +199,11 @@ describe("Family member cap (app-layer, F4milia retroactive fix item 0.2)", () =
 
     await expect(assertFamilyMemberCapNotExceeded(bob, CAREGIVER_CIRCLE, "member")).resolves.toBeUndefined();
 
+    const pendingEmail = `cap-pending-${Date.now()}@f4milia.test`;
+    createdInvitationEmails.push(pendingEmail);
     await bob.from("invitations").insert({
       org_id: CAREGIVER_CIRCLE,
-      email: `cap-pending-${Date.now()}@f4milia.test`,
+      email: pendingEmail,
       role: "member",
       invited_by_profile_id: bobId.user!.id,
     });
@@ -186,7 +227,14 @@ describe("Family member cap (app-layer, F4milia retroactive fix item 0.2)", () =
     // to where it was before that member was added. Excludes alice, the
     // only permanently-seeded plain member here: other test files rely on
     // her staying one, so she isn't this test's data to promote away.
-    const targetProfileId = await pickAnyPlainMemberId([bobId.user!.id, aliceId.user!.id]);
+    // Promote a member THIS FILE created, never one it found. designate_mentor
+    // is irreversible in the product -- there is no "demote to member" flow --
+    // so spending a seeded plain member costs the whole suite one, permanently.
+    // A disposable member added inside fillToCap is already counted among the
+    // at-cap membership, which is what the test needs; picking one arbitrarily
+    // was only ever a way of finding such a row.
+    const targetProfileId = createdProfileIds.find((id) => id !== bobId.user!.id)
+      ?? await pickAnyPlainMemberId([bobId.user!.id, aliceId.user!.id]);
 
     // designate_mentor's own RLS requires an org_owner caller -- bob,
     // caregiverCircle's organizer, isn't authorized to call it himself

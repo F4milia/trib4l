@@ -1,5 +1,60 @@
-import { describe, expect, it } from "vitest";
-import { ORG_IDS, SEEDED_USERS, signInAs, signUpNewUser } from "./helpers";
+import { afterAll, describe, expect, it } from "vitest";
+import {
+  ORG_IDS,
+  SEEDED_USERS,
+  createServiceRoleClient,
+  signInAs,
+  signUpNewUser,
+} from "./helpers";
+
+/**
+ * THIS FILE USED TO BREAK ITSELF ON A SECOND RUN, and it broke other files too.
+ *
+ * "re-inviting someone who already has a membership updates their role" invites
+ * alice as an ORGANIZER and accepts it -- permanently promoting a seeded plain
+ * member. On the next run, the first test here ("a non-staff member cannot
+ * create an invitation") then fails, because alice IS staff by then and her
+ * insert succeeds. The failure reads as a broken RLS policy; the cause is this
+ * file's own previous run.
+ *
+ * cohorts.test.ts already carried a comment naming this ("promoted to organizer
+ * by an invitations.test.ts test in this same run"), which is a fixture problem
+ * documented instead of fixed.
+ *
+ * Restoring alice here is what makes Q4's edge case -- "run the suite twice,
+ * run 2 passes on run 1's residue" -- true for this file and for the ones
+ * downstream of it. A spec establishes its preconditions and RETURNS THE WORLD
+ * to the state it borrowed.
+ */
+afterAll(async () => {
+  const service = createServiceRoleClient();
+  const alice = await signInAs(SEEDED_USERS.alice);
+  const { data: aliceUser } = await alice.auth.getUser();
+
+  await service
+    .from("memberships")
+    .update({ role: "member" })
+    .eq("org_id", ORG_IDS.caregiverCircle)
+    .eq("profile_id", aliceUser.user!.id);
+
+  // The invitations this file creates otherwise accumulate against the org's
+  // member cap forever -- 103 of them had built up on caregiver-circle, which
+  // is what made family-member-cap.test.ts unable to find a spendable member.
+  await service
+    .from("invitations")
+    .delete()
+    .eq("org_id", ORG_IDS.caregiverCircle)
+    .in("email", [
+      SEEDED_USERS.alice.email,
+      "nobody@f4milia.test",
+      "someone-else@f4milia.test",
+    ]);
+  await service
+    .from("invitations")
+    .delete()
+    .eq("org_id", ORG_IDS.caregiverCircle)
+    .like("email", "new-invitee-%");
+});
 
 describe("invitations", () => {
   it("a non-staff member cannot create an invitation for their org", async () => {
