@@ -110,14 +110,12 @@ test.describe("dual-Family user", () => {
     // org_owner scope, not organizer, and redirects to the Family home -- so a
     // bounce to `/`, to another Family, or to an error page would all be wrong
     // and all used to satisfy this test.
-    // `(/feed)?` is TEMPORARY and belongs to this PR only. The Family home
-    // currently redirects to /feed while D1's dashboard is not there yet, so
-    // the refusal lands one hop further on than it used to. The intent above is
-    // unchanged and still enforced: she ends up inside FAMILY B, at its home,
-    // with a 200 -- not at `/`, not in another Family, not on an error page.
-    // The next PR puts the dashboard on the org root and restores the strict
-    // `$` form, so this alternation must not outlive that.
-    await expect(page).toHaveURL(new RegExp(`/o/${ORG.founderCollective}(/feed)?$`));
+    // Strict `$` again. The previous PR widened this to `(/feed)?` because its
+    // temporary redirect sent the Family home one hop further on; this PR puts
+    // the dashboard on the org root and deletes that redirect, so the refusal
+    // lands exactly where it used to and the alternation would now hide a real
+    // regression rather than describe one.
+    await expect(page).toHaveURL(new RegExp(`/o/${ORG.founderCollective}$`));
     expect(res?.status()).toBe(200);
     // And she is still genuinely inside Family B, not bounced out of it.
     await expect(page.getByRole("navigation", { name: "Main navigation" }).first()).toBeVisible();
