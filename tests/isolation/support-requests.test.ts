@@ -2,7 +2,14 @@ import { createClient } from "@supabase/supabase-js";
 import { afterAll, describe, expect, it } from "vitest";
 import type { Database } from "../../lib/supabase/database.types";
 import { withAdminAudit } from "../../lib/audit";
-import { ORG_IDS, SEEDED_USERS, createServiceRoleClient, elevateToAal2, signInAs } from "./helpers";
+import {
+  ORG_IDS,
+  SEEDED_USERS,
+  TEST_CAPTCHA,
+  createServiceRoleClient,
+  elevateToAal2,
+  signInAs,
+} from "./helpers";
 
 // H1's named edge case for the 09:30 review:
 //
@@ -97,6 +104,12 @@ async function signInAsStaffWithMfa(user: { email: string; password: string }) {
  * itself still goes through the normal password flow, so the session and its
  * JWT are exactly what a real member would hold -- this shortcut is about
  * account setup, never about the access being tested.
+ *
+ * The sign-in carries TEST_CAPTCHA because [auth.captcha] is now enabled in
+ * local and CI (S2, merged from main). There is no widget here to produce a
+ * token, and GoTrue guards password sign-in, so without it every case in this
+ * file fails with `captcha protection: request disallowed`. admin.createUser
+ * above needs none -- the admin API is not guarded.
  */
 async function signUpWithNoFamily() {
   const email = `h1-nofamily-${Date.now()}-${Math.random().toString(36).slice(2)}@f4milia.test`;
@@ -113,7 +126,11 @@ async function signUpWithNoFamily() {
   }
 
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { error: signInError } = await client.auth.signInWithPassword({ email, password });
+  const { error: signInError } = await client.auth.signInWithPassword({
+    email,
+    password,
+    options: TEST_CAPTCHA,
+  });
   if (signInError) throw new Error(`sign-in failed for ${email}: ${signInError.message}`);
 
   return { client, profileId: created.user.id };
