@@ -2205,6 +2205,10 @@ export type Database = {
         Args: { p_bucket: string; p_limit: number; p_window_seconds: number }
         Returns: boolean
       }
+      create_direct_conversation: {
+        Args: { check_org_id: string; other_membership_ids: string[] }
+        Returns: string
+      }
       current_user_email: { Args: never; Returns: string }
       delete_my_account: { Args: never; Returns: boolean }
       designate_mentor: {
