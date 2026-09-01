@@ -33,6 +33,8 @@ export type Message = {
   body: string;
   createdAt: string;
   editedAt: string | null;
+  /** C2. The message this replies to, or null for a top-level message. */
+  parentMessageId?: string | null;
 };
 
 export class NotAMemberOfThisFamily extends Error {
@@ -156,7 +158,20 @@ export class MessageEmpty extends Error {
 
 export async function sendMessage(
   supabase: SupabaseClient<Database>,
-  args: { orgId: string; conversationId: string; body: string },
+  args: {
+    orgId: string;
+    conversationId: string;
+    body: string;
+    /**
+     * C2. The message this one replies to, if any.
+     *
+     * Not validated here. A BEFORE trigger asserts the parent is in the same
+     * conversation, and re-checking in TypeScript would restate that guarantee
+     * somewhere it can drift -- and somewhere a service-role caller would skip
+     * entirely.
+     */
+    parentMessageId?: string;
+  },
 ): Promise<Message> {
   // Trimmed before measuring, so a message of 1000 characters plus a trailing
   // newline is not refused for being 1001 long.
@@ -173,8 +188,11 @@ export async function sendMessage(
       conversation_id: args.conversationId,
       author_membership_id: authorMembershipId,
       body,
+      parent_message_id: args.parentMessageId ?? null,
     })
-    .select("id, conversation_id, author_membership_id, body, created_at, updated_at")
+    .select(
+      "id, conversation_id, author_membership_id, body, created_at, updated_at, parent_message_id",
+    )
     .single();
 
   if (error) throw error;
@@ -185,6 +203,7 @@ export async function sendMessage(
     body: data.body,
     createdAt: data.created_at,
     editedAt: null,
+    parentMessageId: data.parent_message_id,
   };
 }
 
