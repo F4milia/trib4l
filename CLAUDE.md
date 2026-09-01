@@ -446,6 +446,39 @@ than week one.
   subscriber was allowed to see it · any published table whose updates matter
   needs REPLICA IDENTITY FULL. C1 soft-deletes messages via UPDATE, so without
   it a deleted message stays on every open screen until a refresh.
+- 2026-09-02 · schema sandbox · the shared-stack collision now has an ESCAPE, not
+  just a warning: scripts/schema-sandbox.sh runs migrations and pgTAP in its own
+  `supabase/postgres` container (f4milia_streamb_verify, port 54432), so a schema
+  session never needs `supabase db reset` on supabase_db_Trib4l · use it for any
+  migration work. It CANNOT replace `npm run test:isolation` — no GoTrue and no
+  PostgREST, so tests/isolation/** cannot run, and pgTAP still connects as
+  `postgres` and bypasses RLS. Green there means "the schema applies and its
+  assertions hold", never "RLS is correct".
+- 2026-09-02 · schema sandbox · the bare `supabase/postgres` image ships an
+  auth schema as it stood BEFORE GoTrue's migrations: auth.jwt() is missing
+  (loud — every migration from 20260821131845 fails), but auth.uid(),
+  auth.role() and auth.email() are present and STALE, reading only
+  `current_setting('request.jwt.claim.sub')` and not the `request.jwt.claims`
+  JSON that every pgTAP test here sets · so auth.uid() returned NULL for all of
+  them and 26 assertions failed with diagnostics like `is_platform_staff() =
+  false` for a profile that IS in platform_staff — which reads as an app bug,
+  not a fixture gap. A function that EXISTS with the wrong body is worse than a
+  missing one. Overwrite all four; see scripts/sandbox-bootstrap-auth.sql.
+- 2026-09-02 · schema sandbox · config.toml's `auto_expose_new_tables` is unset,
+  so the CLI narrows `postgres`'s DEFAULT PRIVILEGES in `public` before the first
+  migration runs — anon/authenticated/service_role get `Dxtm`, not `arwdDxtm`.
+  The bare image does not, so every table a migration creates is silently
+  readable and writable by anon · 38 assertions across seven files failed,
+  ledger_events' grant-layer append-only guarantee among them. The dangerous
+  direction is the inverse: a NEW table would be exposed to anon with no
+  assertion to fail. Default privileges apply at CREATE time, so this must be
+  replayed BEFORE migrating, never after.
+- 2026-09-02 · schema sandbox · `pg_isready` answers yes during initdb, because
+  the image runs a TEMPORARY server on the same socket to execute its bootstrap
+  scripts, then shuts it down · a migration run started in that gap dies with
+  `connection to server on socket ... failed: No such file or directory`, which
+  reads as a container that never started rather than one that started twice.
+  Wait for the image's own `init process complete` log line first.
 - 2026-09-02 · C1 · Supabase Realtime BROADCAST has no access control: a channel
   is a string, and any authenticated client may join any name. Measured — a
   member of Family B received Family A's typing events on
