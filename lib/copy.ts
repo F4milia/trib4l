@@ -477,6 +477,11 @@ export const copy = {
     },
     items: {
       home: { label: "Home", description: "The shared feed" },
+      // The inherited Trib4l posts feed, moved off `/o/[slug]` so D1's
+      // dashboard can take the route a member lands on daily. `home`'s
+      // description above stops being true when the dashboard lands and is
+      // corrected in that PR, not this one.
+      feed: { label: "Feed", description: "Posts and comments" },
       mentorship: { label: "Mentorship", description: "Pairings and requests" },
       meetups: { label: "Meetups", description: "Gatherings and RSVPs" },
       videos: { label: "Videos", description: "Recorded sessions" },

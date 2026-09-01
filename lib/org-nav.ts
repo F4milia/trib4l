@@ -48,6 +48,11 @@ type Def = [suffix: string, key: keyof typeof items, icon: OrgNavIcon];
 /** Path suffix -> deck key -> §10.1 icon. "" is the org home. */
 const COMMUNITY: ReadonlyArray<Def> = [
   ["", "home", "House"],
+  // Added with the move in this PR: once the dashboard takes `/o/[slug]`, the
+  // posts feed is otherwise reachable by URL only. The wider question -- that
+  // nine of these items are Trib4l concepts F4milia does not have -- is a
+  // separate PR, deliberately.
+  ["/feed", "feed", "LayoutGrid"],
   ["/mentorship", "mentorship", "HeartHandshake"],
   ["/meetups", "meetups", "CalendarDays"],
   ["/videos", "videos", "Video"],

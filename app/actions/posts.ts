@@ -25,7 +25,7 @@ export async function createPost(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
 
   if (!body) {
-    redirect(`/o/${orgSlug}?error=${encodeURIComponent("Post body is required.")}`);
+    redirect(`/o/${orgSlug}/feed?error=${encodeURIComponent("Post body is required.")}`);
   }
 
   const supabase = await createClient();
@@ -42,11 +42,11 @@ export async function createPost(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/o/${orgSlug}?error=${encodeURIComponent(error.message)}`);
+    redirect(`/o/${orgSlug}/feed?error=${encodeURIComponent(error.message)}`);
   }
 
-  revalidatePath(`/o/${orgSlug}`);
-  redirect(`/o/${orgSlug}`);
+  revalidatePath(`/o/${orgSlug}/feed`);
+  redirect(`/o/${orgSlug}/feed`);
 }
 
 export async function createComment(formData: FormData) {
@@ -55,7 +55,7 @@ export async function createComment(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
 
   if (!body) {
-    redirect(`/o/${orgSlug}?error=${encodeURIComponent("Comment body is required.")}`);
+    redirect(`/o/${orgSlug}/feed?error=${encodeURIComponent("Comment body is required.")}`);
   }
 
   const supabase = await createClient();
@@ -69,11 +69,11 @@ export async function createComment(formData: FormData) {
   } as unknown as CommentInsert);
 
   if (error) {
-    redirect(`/o/${orgSlug}?error=${encodeURIComponent(error.message)}`);
+    redirect(`/o/${orgSlug}/feed?error=${encodeURIComponent(error.message)}`);
   }
 
-  revalidatePath(`/o/${orgSlug}`);
-  redirect(`/o/${orgSlug}`);
+  revalidatePath(`/o/${orgSlug}/feed`);
+  redirect(`/o/${orgSlug}/feed`);
 }
 
 export async function toggleLike(formData: FormData) {
@@ -99,8 +99,8 @@ export async function toggleLike(formData: FormData) {
       .insert({ post_id: postId, profile_id: userData.user!.id } as unknown as ReactionInsert);
   }
 
-  revalidatePath(`/o/${orgSlug}`);
-  redirect(`/o/${orgSlug}`);
+  revalidatePath(`/o/${orgSlug}/feed`);
+  redirect(`/o/${orgSlug}/feed`);
 }
 
 export async function moderatePost(formData: FormData) {
@@ -111,11 +111,11 @@ export async function moderatePost(formData: FormData) {
   const { error } = await supabase.rpc("moderate_post", { target_post_id: postId, reason: "removed by organizer" });
 
   if (error) {
-    redirect(`/o/${orgSlug}?error=${encodeURIComponent(error.message)}`);
+    redirect(`/o/${orgSlug}/feed?error=${encodeURIComponent(error.message)}`);
   }
 
-  revalidatePath(`/o/${orgSlug}`);
-  redirect(`/o/${orgSlug}`);
+  revalidatePath(`/o/${orgSlug}/feed`);
+  redirect(`/o/${orgSlug}/feed`);
 }
 
 export async function moderateComment(formData: FormData) {
@@ -129,9 +129,9 @@ export async function moderateComment(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/o/${orgSlug}?error=${encodeURIComponent(error.message)}`);
+    redirect(`/o/${orgSlug}/feed?error=${encodeURIComponent(error.message)}`);
   }
 
-  revalidatePath(`/o/${orgSlug}`);
-  redirect(`/o/${orgSlug}`);
+  revalidatePath(`/o/${orgSlug}/feed`);
+  redirect(`/o/${orgSlug}/feed`);
 }

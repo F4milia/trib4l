@@ -19,7 +19,10 @@ const COMMUNITY = [
   // than exempted from it -- the census is the point of the file, and a nav
   // item nobody pinned is a nav item that can silently appear for the wrong
   // role.
-  "", "/mentorship", "/meetups", "/videos", "/live", "/members", "/messages", "/shop",
+  // /feed is D1's move: the inherited posts feed left `/o/[slug]` so the
+  // dashboard can take the route a member lands on daily. Added to the census
+  // rather than exempted from it, for the same reason /messages was.
+  "", "/feed", "/mentorship", "/meetups", "/videos", "/live", "/members", "/messages", "/shop",
 ].map((p) => `/o/${SLUG}${p}`);
 
 const MANAGE = [
