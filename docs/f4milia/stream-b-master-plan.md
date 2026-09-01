@@ -7,11 +7,11 @@ after it and what has to be true first.
 |---|---|
 | **Written** | 2026-09-02, after D1 |
 | **Reads from** | `stream-b-blockers.md` (#98) for what is blocked · `d1-readiness.md` §8 for what nobody builds · the run doc for session scope |
-| **Verified against** | `origin/main` @ `590ccd7`. Commands in §7 |
-| **Shape** | §2 is yours to decide. §3–§5 are PRs I can start without you |
+| **Verified against** | `origin/main` @ `590ccd7`. Commands in §6 |
+| **Shape** | §2 is yours to decide. §3 is nine PRs, slotted by wave |
 
 `stream-b-blockers.md` says what is blocked. This says what to build, in what
-order, and which parts need you first. Where the two disagree, §6 says so.
+order, and which parts need you first. Where the two disagree, §5 says so.
 
 ---
 
@@ -23,12 +23,11 @@ first needs you:
 | | Count | Who clears it |
 |---|---|---|
 | **A decision nobody has made** | 9 | You (§2) |
-| **A table nobody builds** | 7 | Me (§3) |
-| **A write path nobody builds** | 2 | Me (§4) |
-| **Another stream, or an account** | 5 | Coordination (§5) |
+| **A table or write path nobody builds** | 9 | Me (§3) |
+| **Another stream, or an account** | 5 | Coordination (§4) |
 
-The middle two are 9 PRs and are the bulk of the work. None of them needs you,
-and none is blocked by the others except where stated.
+The nine PRs are the bulk of the work. Two of them need a decision first; the
+other seven do not, and none is blocked by the others.
 
 ---
 
@@ -43,7 +42,7 @@ platform-authored and Family-authored both fit — but nothing assigns one per
 day, and D1's dashboard says *"No prompt is set for today"* because inventing a
 selection rule would invent product.
 
-**Blocks:** the Table prompt cron (PR 6), and D1's element 4 stays honest-but-empty until it lands.
+**Blocks:** PR 5, the Table prompt cron — which N1 needs in Wave 4. D1's element 4 stays honest-but-empty until it lands.
 **Pick one:** platform-authored rotating pool · Family-authored · seasonal set · one fixed prompt.
 
 ### 2.2 🟠 URGENT — is the convener a rotating position or the organizer?
@@ -82,7 +81,7 @@ column exists. If it must be provable later, it is a column and a migration.
 
 *"Published pages show what the Family approved."* No approval step exists
 anywhere. Either publishing **is** the approval, or a second step needs
-designing. **Blocks:** PR 8's scope, not its schema.
+designing. **Blocks:** PR 7's scope, not its schema.
 
 ### 2.7 🟠 `mood_tag`'s permitted set (§10.5)
 
@@ -102,82 +101,99 @@ Not Stream B's to build, but Stream B's Q4 fails without it.
 
 ---
 
-## 3. Tables nobody builds — 7 PRs, no decisions needed
+## 3. The nine PRs, slotted by wave
 
-Ordered so each unblocks the next session in wave order. Every one is a
-migration plus RLS plus pgTAP, following the pattern `towers`/`bricks` set: a
-composite key to its Family, an audit trigger in the same migration, and
-isolation coverage owed to PR 10.
+**Ordered by the run doc, not by my judgement of value.** The run doc is the
+execution sequence, and V1's own rule governs where a gap goes: *"an item a
+later wave assumes must slot upstream of that wave."* So each PR sits
+immediately before the wave that consumes it.
 
-| PR | What | Unblocks | Spec |
-|---|---|---|---|
-| **1** | `care_actions` | D2, N1 | §2.5 (F5.1) — fields and the three types are given |
-| **2** | Per-item reminders | D2 | Not specified; shape stated as an assumption |
-| **3** | Family Night — convener rotation + schedule | D2, A3, N1 | §2.2 (F2.1/F2.2) |
-| **4** | `towers` publish state | K2 | Invariant 9 |
-| **5** | Memorial-lock executor | Invariant 8 | §2.9 (F8.1/F8.2) |
-| **6** | Table prompt assignment | D1 element 4 | §2.1 (F1.2) — **needs 2.1** |
-| **7** | The "I'm not aligned" flag | Nothing yet | §2.7 (F7.1/F7.2) |
+Two of these are earlier than they look, and both were checked against the
+prompt text rather than assumed:
 
-**PR 1 — `care_actions`.** `id`, `type`, `from_membership_id`, `target` (a
-membership **or** a brick); `type` ∈ `cover_task` · `offer_bandwidth` ·
-`reminder`. F4.6 is the coupling that makes it urgent: *"need help" converts the
-Brick to an open, claimable task **and creates a linked Care Action*** — so D2's
-board shows them in Wave 3.
+- **W2's first-run needs a Table entry composer** — *"create or join a Family
+  → first Table entry → invite members"* (run doc line 398). That is **Wave 4**,
+  not Wave 8. D1 is read-only by its own prompt, so no member can write an
+  entry today.
+- **A2 needs a Tower description to exist** — *"given the Family's Tower
+  description"* (line 499). That is **Wave 6**, not O1's Wave 7.
+
+| PR | What | Slot | Consumed by | Needs |
+|---|---|---|---|---|
+| **1** | `care_actions` | before W3 | D2, N1 | — |
+| **2** | Per-item reminders | before W3 | D2 | — |
+| **3** | Family Night — schedule + convener rotation | before W3 | D2, A3, N1 | 2.2 |
+| **4** | Table entry composer | before W4 | W2, Q1 | — |
+| **5** | Table prompt assignment (cron) | before W4 | N1, D1 | **2.1** |
+| **6** | Tower definition form | before W6 | A2, O1, K2 | — |
+| **7** | `towers` publish state | before W8 | K2 | 2.6 for scope |
+| **8** | Memorial-lock executor | unslotted | invariant 8 | — |
+| **9** | The "I'm not aligned" flag | **backlog** | nothing | — |
+
+### Before Wave 3 — D2's whole blocker set
+
+**PR 1 — `care_actions`.** §2.5 (F5.1) gives the fields and the three types:
+`cover_task` · `offer_bandwidth` · `reminder`. F4.6 is the coupling — *"need
+help" converts the Brick to an open, claimable task **and creates a linked Care
+Action*** — so D2's board shows them, and N1's inbox lists them a wave later.
 
 **PR 2 — per-item reminders.** `notification_preferences` is keyed
-`(org_id, profile_id, notification_type, channel)` and cannot hold "remind me
+`(org_id, profile_id, notification_type, channel)` and cannot express "remind me
 about *this* Brick". A new table keyed on `(membership_id, target_type,
-target_id)`. Nothing specifies this; the shape is my assumption and will be
-stated as one.
+target_id)`. **Nothing specifies this**; the shape is my assumption and the PR
+will say so.
 
 **PR 3 — Family Night.** A schedule on `organizations` (day + time, reusing
 `timezone`) and a convener rotation derived the way `next_vow_holder()` already
-is — never-held first, then longest-ago, then join order. **No new column on
-`memberships`**: the history is the source, as with Vows.
+is. No new column on `memberships` — the history is the source, as with Vows.
 
-**PR 4 — Tower publish state.** `published_at`, a public slug, and RLS allowing
-anonymous read of published Towers only. Invariant 9 wants explicit,
+> After PRs 1–3, **D2 is genuinely "pure UI over existing tables"**, which is
+> what its prompt claims to be. Its named edge case is already built
+> (`20260903100911`), and Vow rotation already exists — see §5.
+
+### Before Wave 4 — W2 and N1
+
+**PR 4 — the Table entry composer.** The Table is the product's daily habit and
+**no member can write to it.** `table_entries` and `retire_table_entry()` are
+both in place; this is UI over them. W2's first-run walks a new member through
+their first entry, so it cannot land without this.
+
+**PR 5 — Table prompt assignment.** An Inngest cron creating one prompt
+opportunity per day per Family in its own timezone (F1.2). N1's acceptance is
+*"the daily Table prompt push fires at the Family's chosen time"*, and D1's
+element 4 stays honest-but-empty until it exists. **Blocked by 2.1.**
+
+### Before Wave 6 — A2, and O1 behind it
+
+**PR 6 — the Tower definition form.** `towers` exists and **nothing writes it**
+— the only reference in `app/` or `lib/` is D1's dashboard, reading. A2 is given
+*"the Family's Tower description"* as an input; O1's acceptance is that the
+guide *"prefills the definition form the member submits"*; K2 publishes
+something nobody can create. Create and edit a Tower, organizer-scoped, with the
+Build breakdown left to A2 where it belongs.
+
+### Before Wave 8 — K2
+
+**PR 7 — `towers` publish state.** `published_at`, a public slug, and RLS
+allowing anonymous read of published Towers only. Invariant 9 wants explicit,
 confirmable, reversible and audited; the audit comes free from the trigger.
-Scope depends on 2.6, the schema does not.
+2.6 decides the scope, not the schema.
 
-**PR 5 — memorial-lock executor.** `executor_membership_id`, and the
+### Unslotted
+
+**PR 8 — memorial-lock executor.** `executor_membership_id`, and the
 `table_entries` UPDATE policy gains an OR branch. #82 shipped the lock as
-**total** on purpose and said so; this is the half that was knowingly deferred.
+**total** on purpose and said so; this is the half knowingly deferred. No
+session waits on it, but invariant 8 is only half-met until it lands.
 
-**PR 6 — Table prompt assignment.** An Inngest cron creating one prompt
-opportunity per day per Family in its own timezone (F1.2). **Blocked by 2.1.**
-
-**PR 7 — the alignment flag.** Attachable to a Tower, Vow or Build decision,
-visible only to the organizer and the flag's creator, notifying the organizer.
-Fully specified and in **no session in either stream** — `grep -c "aligned"` on
-the run doc returns 0.
+**PR 9 — the alignment flag.** Fully specified in §2.7 (F7.1/F7.2) and in **no
+session in either stream**. By V1's rule — *"an item nothing depends on is
+backlog"* — it stays backlog rather than being slotted. Recorded so it is not
+lost.
 
 ---
 
-## 4. Write paths nobody builds — 2 PRs
-
-`stream-b-blockers.md` found the first; the second follows from it.
-
-**PR 8 — the Tower definition form.** `towers` exists and **nothing writes it**
-— the only reference in `app/` or `lib/` is D1's dashboard, reading. O1's
-acceptance is *"the guide cannot write a Tower directly — it prefills the
-definition form the member submits"*, and that form does not exist. A2 assumes a
-description is already there. K2 publishes something nobody can create.
-
-Create and edit a Tower, organizer-scoped, with the Build breakdown left to A2.
-**This is the highest-value item in the whole plan** — three later sessions
-consume it and it is two days of nobody's schedule.
-
-**PR 9 — the Table entry composer.** D1 is read-only by its own prompt, so a
-member currently cannot write a Table entry at all. `table_entries` and
-`retire_table_entry()` are both in place; this is UI over them. Q1's named edge
-case (*keyboard-only through a full Table entry*) needs it, and so does the
-graduation of D1's QA steps into ZeroStep tests.
-
----
-
-## 5. Coordination and accounts — not code
+## 4. Coordination and accounts — not code
 
 | | What | Who |
 |---|---|---|
@@ -189,7 +205,7 @@ graduation of D1's QA steps into ZeroStep tests.
 
 ---
 
-## 6. Corrections to `stream-b-blockers.md`
+## 5. Corrections to `stream-b-blockers.md`
 
 Recorded so the two documents do not disagree silently.
 
@@ -212,7 +228,7 @@ this plan does not close any of them.
 
 ---
 
-## 7. How this was verified
+## 6. How this was verified
 
 ```
 # Vow rotation shipped
@@ -234,7 +250,7 @@ grep -c aligned "F4milia — Complete Run Doc (Prompts Included).md"   # -> 0
 
 ---
 
-## 8. Carried defects, still owed
+## 7. Carried defects, still owed
 
 Neither belongs to a session; both are real and confirmed against the code.
 
@@ -248,20 +264,28 @@ Neither belongs to a session; both are real and confirmed against the code.
 
 ---
 
-## 9. Suggested order
+## 8. What this changes about the wave table
 
-Assuming decisions 2.1–2.4 land soon:
+Nothing is reordered. Every session stays in its wave; the nine PRs above slot
+in front of the wave that consumes them, which is what V1's rule prescribes.
 
-1. **PR 8** — the Tower definition form. Highest value, three sessions waiting, no decision needed.
-2. **PRs 1–3** — `care_actions`, per-item reminders, Family Night. This is D2's whole blocker set; D2 runs after.
-3. **D2** — now genuinely "UI over existing tables".
-4. **PR 9** — the Table entry composer. Unblocks Q1's edge case and the QA graduation.
-5. **PRs 4, 5, 7** — publish state, executor, alignment flag. Independent; slot wherever.
-6. **PR 6** — the prompt cron, once 2.1 is answered.
+| Wave | Stream B session | Runs after |
+|---|---|---|
+| 3 | **D2** | PRs 1–3 |
+| 4 | **W2** | PR 4 · decisions 2.5, 2.8 |
+| 5 | **F3**, then **M1** | F1 merges (Stream A) · decision 2.4 · C2's storage |
+| 6 | **A3**, then **A4** | A1 merges (Stream A) · PR 3 for the convener · **decision 2.3 for A4** |
+| 7 | **O1**, then **H1** | A1 merges · PR 6 · H1 may be a no-op, verify first |
+| 8 | **K2**, then **Q1** | PR 7 · decision 2.6 · Q1 needs M1 for its edge case |
+| 9 | **Q4** | Everything, plus a ZeroStep token and a staging project |
 
-W2, F3, M1, A3, A4, O1 and Q4 stay blocked on §2 and §5 regardless of the above.
+PRs 5, 8 and 9 have no session gating them: PR 5 waits on decision 2.1, PR 8 is
+owed to invariant 8, PR 9 is backlog.
 
-## 10. Related
+**The immediate work is PRs 1–3**, which is D2's entire blocker set and needs
+nothing from you beyond confirming 2.2 — and the spec already answers that one.
+
+## 9. Related
 
 - `stream-b-blockers.md` — what stops each session
 - `d1-readiness.md` §8 — how the domain-model gap was found
