@@ -1414,6 +1414,41 @@ export type Database = {
           },
         ]
       }
+      mood_tags: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          org_id: string | null
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          org_id?: string | null
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          org_id?: string | null
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_tags_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           channel: Database["public"]["Enums"]["notification_channel"]
@@ -2146,6 +2181,102 @@ export type Database = {
           },
         ]
       }
+      table_entries: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          entry_date: string
+          id: string
+          member_id: string
+          mood_tag_id: string | null
+          org_id: string
+          prompt_id: string | null
+          response_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          entry_date: string
+          id?: string
+          member_id: string
+          mood_tag_id?: string | null
+          org_id: string
+          prompt_id?: string | null
+          response_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          entry_date?: string
+          id?: string
+          member_id?: string
+          mood_tag_id?: string | null
+          org_id?: string
+          prompt_id?: string | null
+          response_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_entries_member_id_org_id_fkey"
+            columns: ["member_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "table_entries_mood_tag_id_fkey"
+            columns: ["mood_tag_id"]
+            isOneToOne: false
+            referencedRelation: "mood_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_entries_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "table_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      table_prompts: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          id: string
+          org_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          body: string
+          created_at?: string
+          id?: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          id?: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_prompts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       towers: {
         Row: {
           created_at: string
@@ -2263,6 +2394,60 @@ export type Database = {
             columns: ["uploader_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vows: {
+        Row: {
+          assigned_at: string
+          commitment: string
+          completed_at: string | null
+          created_at: string
+          holder_id: string
+          id: string
+          org_id: string
+          renegotiation_reason: string | null
+          status: Database["public"]["Enums"]["vow_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          commitment: string
+          completed_at?: string | null
+          created_at?: string
+          holder_id: string
+          id?: string
+          org_id: string
+          renegotiation_reason?: string | null
+          status?: Database["public"]["Enums"]["vow_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          commitment?: string
+          completed_at?: string | null
+          created_at?: string
+          holder_id?: string
+          id?: string
+          org_id?: string
+          renegotiation_reason?: string | null
+          status?: Database["public"]["Enums"]["vow_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vows_holder_id_org_id_fkey"
+            columns: ["holder_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "vows_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2447,6 +2632,10 @@ export type Database = {
         Args: { check_conversation_id: string }
         Returns: string
       }
+      membership_is_memorialized: {
+        Args: { check_membership_id: string }
+        Returns: boolean
+      }
       memorialize_profile: { Args: { p_profile_id: string }; Returns: boolean }
       moderate_comment: {
         Args: { reason?: string; target_comment_id: string }
@@ -2530,6 +2719,7 @@ export type Database = {
           user_agent: string
         }[]
       }
+      next_vow_holder: { Args: { p_org_id: string }; Returns: string }
       notification_preference_enabled: {
         Args: {
           p_channel?: Database["public"]["Enums"]["notification_channel"]
@@ -2608,6 +2798,7 @@ export type Database = {
       report_target_type: "post" | "comment" | "member"
       support_request_status: "open" | "handled"
       tower_status: "active" | "stalled" | "pivoted" | "complete"
+      vow_status: "assigned" | "active" | "renegotiation_requested" | "complete"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2768,6 +2959,7 @@ export const Constants = {
       report_target_type: ["post", "comment", "member"],
       support_request_status: ["open", "handled"],
       tower_status: ["active", "stalled", "pivoted", "complete"],
+      vow_status: ["assigned", "active", "renegotiation_requested", "complete"],
     },
   },
 } as const
