@@ -11,6 +11,13 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(15);
 
+-- Probe Families of this file's own; see the note in 110_towers.sql. The
+-- seeded Families now carry a Tower each, and a test that depends on them
+-- being empty asserts a starting state it did not create.
+insert into public.organizations (id, slug, name) values
+  ('00000000-0000-0000-0000-0000000011a0', 'builds-probe-a', 'Builds Probe A'),
+  ('00000000-0000-0000-0000-0000000011b0', 'builds-probe-b', 'Builds Probe B');
+
 -- ------------------------------------------------------------------- shape
 select has_table('public', 'builds', 'builds exists');
 select col_not_null('public', 'builds', 'tower_id', 'a Build belongs to a Tower');
@@ -43,8 +50,8 @@ select is(
 
 -- ----------------------------------------------------------------- probes
 create temporary table _bd as
-  select '00000000-0000-0000-0000-00000000000a'::uuid as org_a,
-         '00000000-0000-0000-0000-00000000000b'::uuid as org_b,
+  select '00000000-0000-0000-0000-0000000011a0'::uuid as org_a,
+         '00000000-0000-0000-0000-0000000011b0'::uuid as org_b,
          '00000000-0000-0000-0000-0000000000e1'::uuid as tower_a,
          '00000000-0000-0000-0000-0000000000e2'::uuid as tower_b,
          '00000000-0000-0000-0000-0000000000f1'::uuid as build_1;
@@ -74,7 +81,7 @@ select is(
 select lives_ok(
   $$insert into public.builds (tower_id, org_id, type, title)
     values ('00000000-0000-0000-0000-0000000000e1',
-            '00000000-0000-0000-0000-00000000000a', 'commerce', 'Sell the first meals')$$,
+            '00000000-0000-0000-0000-0000000011a0', 'commerce', 'Sell the first meals')$$,
   'a Tower can carry several Builds at once'
 );
 
@@ -86,14 +93,14 @@ select lives_ok(
 select throws_ok(
   $$insert into public.builds (tower_id, org_id, type, title)
     values ('00000000-0000-0000-0000-0000000000e2',
-            '00000000-0000-0000-0000-00000000000a', 'custom', 'Claiming the wrong Family')$$,
+            '00000000-0000-0000-0000-0000000011a0', 'custom', 'Claiming the wrong Family')$$,
   '23503',
   null,
   'a Build cannot claim a Family its Tower is not in'
 );
 
 select throws_ok(
-  $$update public.builds set org_id = '00000000-0000-0000-0000-00000000000b'
+  $$update public.builds set org_id = '00000000-0000-0000-0000-0000000011b0'
      where id = '00000000-0000-0000-0000-0000000000f1'$$,
   '23503',
   null,
@@ -104,7 +111,7 @@ select throws_ok(
 select throws_ok(
   $$insert into public.builds (tower_id, org_id, type, title)
     values ('00000000-0000-0000-0000-0000000000e1',
-            '00000000-0000-0000-0000-00000000000a', 'marketing', 'Not a real type')$$,
+            '00000000-0000-0000-0000-0000000011a0', 'marketing', 'Not a real type')$$,
   '22P02',
   null,
   'a Build type outside F4.1s four is rejected'

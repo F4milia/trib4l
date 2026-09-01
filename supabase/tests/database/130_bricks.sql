@@ -12,6 +12,23 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(28);
 
+-- Probe Families of this file's own, with their own memberships; see the note
+-- in 110_towers.sql. The seeded Families now carry a Tower each, so building
+-- on them made this file assert a starting state it did not create -- and it
+-- truncated silently, 12 of 28, reporting green.
+--
+-- Alice and Bob are re-created here as members of the probe Family. dave_m
+-- below still reads wellness-guild, which is seeded EMPTY on purpose and is
+-- therefore safe to depend on -- that emptiness is an asserted property of the
+-- fixture (D1's second acceptance clause), not an accident.
+insert into public.organizations (id, slug, name) values
+  ('00000000-0000-0000-0000-0000000011a0', 'bricks-probe-a', 'Bricks Probe A'),
+  ('00000000-0000-0000-0000-0000000011b0', 'bricks-probe-b', 'Bricks Probe B');
+
+insert into public.memberships (org_id, profile_id, role) values
+  ('00000000-0000-0000-0000-0000000011a0', '00000000-0000-0000-0000-0000000000a1', 'member'),
+  ('00000000-0000-0000-0000-0000000011a0', '00000000-0000-0000-0000-0000000000a2', 'organizer');
+
 -- ------------------------------------------------------------------- shape
 select has_table('public', 'bricks', 'bricks exists');
 select col_not_null('public', 'bricks', 'build_id', 'a Brick belongs to a Build');
@@ -53,16 +70,16 @@ select is(
 
 -- ----------------------------------------------------------------- probes
 create temporary table _bk as
-  select '00000000-0000-0000-0000-00000000000a'::uuid as org_a,
-         '00000000-0000-0000-0000-00000000000b'::uuid as org_b,
+  select '00000000-0000-0000-0000-0000000011a0'::uuid as org_a,
+         '00000000-0000-0000-0000-0000000011b0'::uuid as org_b,
          '00000000-0000-0000-0000-0000000000e1'::uuid as tower_a,
          '00000000-0000-0000-0000-0000000000f1'::uuid as build_a,
          '00000000-0000-0000-0000-0000000000f9'::uuid as build_b,
          '00000000-0000-0000-0000-0000000000d5'::uuid as brick_1,
          -- alice and bob are both in caregiver-circle; dave is in wellness-guild
-         (select id from public.memberships where org_id = '00000000-0000-0000-0000-00000000000a'
+         (select id from public.memberships where org_id = '00000000-0000-0000-0000-0000000011a0'
            and profile_id = '00000000-0000-0000-0000-0000000000a1') as alice_m,
-         (select id from public.memberships where org_id = '00000000-0000-0000-0000-00000000000a'
+         (select id from public.memberships where org_id = '00000000-0000-0000-0000-0000000011a0'
            and profile_id = '00000000-0000-0000-0000-0000000000a2') as bob_m,
          (select id from public.memberships where org_id = '00000000-0000-0000-0000-00000000000c'
            and profile_id = '00000000-0000-0000-0000-0000000000a4') as dave_m;
@@ -172,13 +189,13 @@ select is(
 select is(
   (select org_id from public.bricks
     where id = '00000000-0000-0000-0000-0000000000d5'),
-  '00000000-0000-0000-0000-00000000000a'::uuid,
+  '00000000-0000-0000-0000-0000000011a0'::uuid,
   'org_id survives the verifier leaving -- SET NULL touches only the pointer'
 );
 
 -- ------------------------------------ nothing may cross Family lines
 insert into public.towers (id, org_id, title)
-values ('00000000-0000-0000-0000-0000000000e8', '00000000-0000-0000-0000-00000000000b', 'Another goal');
+values ('00000000-0000-0000-0000-0000000000e8', '00000000-0000-0000-0000-0000000011b0', 'Another goal');
 insert into public.builds (id, tower_id, org_id, type, title)
 select build_b, '00000000-0000-0000-0000-0000000000e8', org_b, 'custom', 'Elsewhere' from _bk;
 
@@ -196,7 +213,7 @@ set constraints public.bricks_build_id_org_id_fkey immediate;
 select throws_ok(
   $$insert into public.bricks (build_id, org_id, description)
     values ('00000000-0000-0000-0000-0000000000f9',
-            '00000000-0000-0000-0000-00000000000a', 'Claiming the wrong Family')$$,
+            '00000000-0000-0000-0000-0000000011a0', 'Claiming the wrong Family')$$,
   '23503',
   null,
   'a Brick cannot claim a Family its Build is not in (checked immediately)'
@@ -217,7 +234,7 @@ set constraints public.bricks_build_id_org_id_fkey deferred;
 select throws_ok(
   format($$insert into public.bricks (build_id, org_id, description, assignee)
             values ('00000000-0000-0000-0000-0000000000f1',
-                    '00000000-0000-0000-0000-00000000000a', 'Assigned to an outsider', %L)$$,
+                    '00000000-0000-0000-0000-0000000011a0', 'Assigned to an outsider', %L)$$,
          (select dave_m from _bk)),
   '23503',
   null,

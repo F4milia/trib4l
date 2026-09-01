@@ -43,12 +43,19 @@ insert into auth.users (
 -- Alice is the overlapping user: a member of Caregiver Circle and a mentor
 -- in Founder Collective, with a different display name in each — proves
 -- the global-identity/per-org-display split from Session 1 actually works.
-insert into memberships (org_id, profile_id, role) values
-  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a1', 'member'),
-  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000000a1', 'mentor'),
-  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a2', 'organizer'),
-  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000000a3', 'org_owner'),
-  ('00000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-0000000000a4', 'member');
+--
+-- Membership ids are EXPLICIT from here on. They were previously left to
+-- gen_random_uuid(), which was fine while nothing referenced them -- but
+-- towers, bricks, vows and table_entries all key off membership_id, and a
+-- fixture whose ids change on every `db reset` cannot be referenced by the
+-- domain rows below, by a Playwright spec, or by a person reading psql output.
+-- Nothing depended on the old random values, so this is additive.
+insert into memberships (id, org_id, profile_id, role) values
+  ('00000000-0000-0000-0000-000000010001', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a1', 'member'),
+  ('00000000-0000-0000-0000-000000010003', '00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000000a1', 'mentor'),
+  ('00000000-0000-0000-0000-000000010002', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a2', 'organizer'),
+  ('00000000-0000-0000-0000-000000010004', '00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000000a3', 'org_owner'),
+  ('00000000-0000-0000-0000-000000010005', '00000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-0000000000a4', 'member');
 
 insert into org_profiles (org_id, profile_id, display_name) values
   ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000a1', 'Alice'),
@@ -58,3 +65,226 @@ insert into org_profiles (org_id, profile_id, display_name) values
 insert into platform_staff (profile_id) values
   ('00000000-0000-0000-0000-0000000000a5'),
   ('00000000-0000-0000-0000-0000000000a6');
+
+-- ===========================================================================
+-- DOMAIN DATA -- the Tower, the Bricks, the Table, the Vow, the Ledger.
+-- ===========================================================================
+--
+-- D1's acceptance has two clauses that pull in opposite directions on purpose:
+--
+--   "every element reflects live seeded data"
+--   "loads correctly for a brand-new Family with no Tower yet -- honest empty
+--    states, no invented placeholders"
+--
+-- So the seed has to contain a Family with a full history AND a Family with
+-- nothing. It also has to make D1's named edge case mean something:
+--
+--   "Dual-Family member switches Families -- Tower, streak, Vow holder all
+--    switch with zero bleed."
+--
+-- Alice is that member. IDENTICAL DATA IN BOTH FAMILIES WOULD PASS THAT CHECK
+-- WHILE PROVING NOTHING, so everything she can see is deliberately different
+-- on each side:
+--
+--                        Caregiver Circle        Founder Collective
+--   Tower                Bring Mum home          Ship the pilot
+--   Streak               6                       3
+--   Vow holder           Bob                     Carol
+--   Her claimed Bricks   2 open (1 overdue)      none
+--   The Family's today   nobody has written      Carol has written
+--
+-- Element 4, "today's Table prompt status", is the one thing that does NOT
+-- differ for Alice: family_table_day() answers per MEMBER, and she has not
+-- written today in either Family, so it reads "not written" on both sides.
+-- Said plainly rather than engineered away -- making it differ would mean
+-- either having her write today in Caregiver Circle, which shows element 4's
+-- finished state forever and never its actionable one, or seeding mentor
+-- activity in Founder Collective, which decides an open question. The four
+-- elements above are what carry the edge case.
+--
+-- Wellness Guild is deliberately empty: no Tower, no Builds, no Bricks, no
+-- entries, no Vow, no Ledger. That is what element 6's empty state renders
+-- from, and an empty Family is a real state (F3.5's "quiet season"), not a
+-- gap in the fixture.
+--
+-- TWO THINGS THIS SEED DELIBERATELY DOES NOT DO:
+--
+--   mood_tags stays EMPTY. Spec 10.5 does not specify the permitted set, and
+--   20260903101011 ships the table unseeded on purpose -- inventing a mood
+--   vocabulary here would put invented product into the fixture that every
+--   future session reads. Entries carry a null mood_tag_id.
+--
+--   Alice, a MENTOR in Founder Collective, writes no Table entries and holds
+--   no Bricks there. Whether a mentor participates in the Table, or even sees
+--   the dashboard, is unspecified anywhere -- spec 10.1 excludes mentors from
+--   the twelve-member cap, so they are already a distinct kind of participant.
+--   Seeding mentor activity would bake an answer into the fixture. The
+--   question stays open and visible instead; D1 has to answer it, or say
+--   plainly that it is not answering it.
+--
+-- Dates are RELATIVE to current_date, so the fixture is always "now" and
+-- today's-prompt state is real rather than a date that went stale. Both
+-- populated Families are on the default UTC timezone, so current_date and
+-- family_table_day()'s (now() at time zone o.timezone)::date agree. Give a
+-- Family a non-UTC timezone and that stops being true near midnight -- a
+-- legitimate thing to test, but not silently, and not here.
+
+-- --------------------------------------------------------------- prompts
+-- Two platform-wide (org_id null) and one Family-authored, which exercises
+-- both halves of 20260903101011's nullable-org design and gives the
+-- cross-Family prompt trigger something real to be right about.
+insert into table_prompts (id, org_id, body) values
+  ('00000000-0000-0000-0000-000000060001', null,
+   'What did today take out of you, and what put something back?'),
+  ('00000000-0000-0000-0000-000000060002', null,
+   'Who did you lean on this week?'),
+  ('00000000-0000-0000-0000-000000060003', '00000000-0000-0000-0000-00000000000a',
+   'What would make tomorrow on the ward easier?');
+
+-- =================================================== CAREGIVER CIRCLE (org a)
+insert into towers (id, org_id, title, description, status) values
+  ('00000000-0000-0000-0000-000000020001', '00000000-0000-0000-0000-00000000000a',
+   'Bring Mum home',
+   'Get the house ready and the care rota covered so she can be discharged.',
+   'active');
+
+update organizations set active_tower_id = '00000000-0000-0000-0000-000000020001'
+ where id = '00000000-0000-0000-0000-00000000000a';
+
+insert into builds (id, tower_id, org_id, type, title, status) values
+  ('00000000-0000-0000-0000-000000030001', '00000000-0000-0000-0000-000000020001',
+   '00000000-0000-0000-0000-00000000000a', 'custom', 'Adapt the house', 'open'),
+  ('00000000-0000-0000-0000-000000030002', '00000000-0000-0000-0000-000000020001',
+   '00000000-0000-0000-0000-00000000000a', 'custom', 'Build the care rota', 'complete');
+
+-- Bricks in four different states, so the dashboard has something to render
+-- for each and the masonry is partially filled rather than 0% or 100%.
+-- Alice holds two, and ONE OF THEM IS OVERDUE -- D1 renders "their claimed
+-- Bricks with due windows", and a fixture where every date sits comfortably
+-- in the future never shows the overdue treatment to anyone reviewing it.
+insert into bricks (id, build_id, org_id, description, assignee, due_at, status) values
+  ('00000000-0000-0000-0000-000000040001', '00000000-0000-0000-0000-000000030001',
+   '00000000-0000-0000-0000-00000000000a', 'Fit the stair rail',
+   '00000000-0000-0000-0000-000000010001', now() + interval '3 days', 'in_progress'),
+  ('00000000-0000-0000-0000-000000040002', '00000000-0000-0000-0000-000000030001',
+   '00000000-0000-0000-0000-00000000000a', 'Order the shower seat',
+   '00000000-0000-0000-0000-000000010001', now() - interval '1 day', 'in_progress'),
+  ('00000000-0000-0000-0000-000000040004', '00000000-0000-0000-0000-000000030001',
+   '00000000-0000-0000-0000-00000000000a', 'Clear the hallway',
+   '00000000-0000-0000-0000-000000010002', now() + interval '5 days', 'needs_help');
+
+-- Unclaimed, and it must render as open rather than attributed to anyone --
+-- that is D2's first acceptance criterion.
+insert into bricks (id, build_id, org_id, description, due_at, status) values
+  ('00000000-0000-0000-0000-000000040003', '00000000-0000-0000-0000-000000030001',
+   '00000000-0000-0000-0000-00000000000a', 'Ask the OT about the ramp',
+   now() + interval '7 days', 'open');
+
+-- The completed Build's two Bricks. Peer-verified in both directions, because
+-- bricks_verifier_is_not_assignee refuses self-verification and a fixture that
+-- only ever verified one way round would not notice if that broke.
+insert into bricks (id, build_id, org_id, description, assignee, verified_by, verified_at, status) values
+  ('00000000-0000-0000-0000-000000040005', '00000000-0000-0000-0000-000000030002',
+   '00000000-0000-0000-0000-00000000000a', 'Draft the week one rota',
+   '00000000-0000-0000-0000-000000010001', '00000000-0000-0000-0000-000000010002',
+   now() - interval '9 days', 'done'),
+  ('00000000-0000-0000-0000-000000040006', '00000000-0000-0000-0000-000000030002',
+   '00000000-0000-0000-0000-00000000000a', 'Confirm Thursday cover',
+   '00000000-0000-0000-0000-000000010002', '00000000-0000-0000-0000-000000010001',
+   now() - interval '7 days', 'done');
+
+-- The Vow: Bob holds the open one, and Alice holds a COMPLETED one so
+-- next_vow_holder() has real rotation history to read rather than falling
+-- back on join order.
+insert into vows (id, org_id, holder_id, commitment, status, assigned_at, completed_at) values
+  ('00000000-0000-0000-0000-000000050002', '00000000-0000-0000-0000-00000000000a',
+   '00000000-0000-0000-0000-000000010001', 'I will keep the shared calendar current',
+   'complete', now() - interval '25 days', now() - interval '12 days'),
+  ('00000000-0000-0000-0000-000000050001', '00000000-0000-0000-0000-00000000000a',
+   '00000000-0000-0000-0000-000000010002', 'I will ring the ward every morning before work',
+   'active', now() - interval '10 days', null);
+
+-- The Table. Distinct days: 1, 2, 3, 5, 6, 8 back -> STREAK OF 6.
+-- Alice has NOT written today, deliberately: element 4 is "today's Table
+-- prompt status", and its interesting state is the actionable one. A seed
+-- where the demo user has already written shows the finished state forever.
+insert into table_entries (org_id, member_id, entry_date, prompt_id, response_text) values
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000010001', current_date - 1, '00000000-0000-0000-0000-000000060001', 'Ward round moved again. Took the afternoon off and slept.'),
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000010001', current_date - 2, '00000000-0000-0000-0000-000000060003', 'A proper handover sheet would save an hour every visit.'),
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000010001', current_date - 3, '00000000-0000-0000-0000-000000060001', 'Good day. She knew me straight away.'),
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000010001', current_date - 5, '00000000-0000-0000-0000-000000060002', 'Bob did the Tuesday run so I could work.'),
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000010002', current_date - 1, '00000000-0000-0000-0000-000000060001', 'Long one. The rail arrives Thursday.'),
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000010002', current_date - 3, '00000000-0000-0000-0000-000000060002', 'Alice, mostly. As usual.'),
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000010002', current_date - 6, '00000000-0000-0000-0000-000000060003', 'Somewhere to park.'),
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000010002', current_date - 8, '00000000-0000-0000-0000-000000060001', 'Nothing left. Tomorrow is another one.');
+
+-- The Ledger: the Family's own narrative history, in plain language (F3.4).
+-- Explicitly NOT audit_log -- a member reads this one.
+insert into ledger_events (org_id, event_type, payload, created_at) values
+  ('00000000-0000-0000-0000-00000000000a', 'tower_event',
+   '{"summary": "Caregiver Circle set its Tower: bring Mum home."}', now() - interval '30 days'),
+  ('00000000-0000-0000-0000-00000000000a', 'vow_event',
+   '{"summary": "Alice completed her Vow to keep the shared calendar current."}', now() - interval '12 days'),
+  ('00000000-0000-0000-0000-00000000000a', 'vow_event',
+   '{"summary": "Bob took the Vow: ring the ward every morning before work."}', now() - interval '10 days'),
+  ('00000000-0000-0000-0000-00000000000a', 'brick_complete',
+   '{"summary": "Alice drafted the week one rota. Bob confirmed it."}', now() - interval '9 days'),
+  ('00000000-0000-0000-0000-00000000000a', 'brick_complete',
+   '{"summary": "Bob confirmed Thursday cover. Alice signed it off."}', now() - interval '7 days'),
+  ('00000000-0000-0000-0000-00000000000a', 'build_complete',
+   '{"summary": "The care rota is covered."}', now() - interval '7 days');
+
+-- ================================================= FOUNDER COLLECTIVE (org b)
+-- Alice's OTHER Family. Everything she can see here differs from above; that
+-- difference is the entire point of the fixture.
+insert into towers (id, org_id, title, description, status) values
+  ('00000000-0000-0000-0000-000000020002', '00000000-0000-0000-0000-00000000000b',
+   'Ship the pilot to ten families',
+   'Get the first ten Families onto the pilot and hear what breaks.',
+   'active');
+
+update organizations set active_tower_id = '00000000-0000-0000-0000-000000020002'
+ where id = '00000000-0000-0000-0000-00000000000b';
+
+insert into builds (id, tower_id, org_id, type, title, status) values
+  ('00000000-0000-0000-0000-000000030003', '00000000-0000-0000-0000-000000020002',
+   '00000000-0000-0000-0000-00000000000b', 'propagation',
+   'Close the first ten conversations', 'open');
+
+-- Carol holds both. No done Bricks here, and that is not laziness: the only
+-- other membership in this Family is Alice's MENTOR row, so verifying one
+-- would decide whether a mentor can peer-verify -- F4.7 says "any member other
+-- than the assignee", and whether that includes a mentor is unspecified.
+insert into bricks (id, build_id, org_id, description, assignee, due_at, status) values
+  ('00000000-0000-0000-0000-000000040007', '00000000-0000-0000-0000-000000030003',
+   '00000000-0000-0000-0000-00000000000b', 'Write the outreach note',
+   '00000000-0000-0000-0000-000000010004', now() + interval '2 days', 'in_progress'),
+  ('00000000-0000-0000-0000-000000040008', '00000000-0000-0000-0000-000000030003',
+   '00000000-0000-0000-0000-00000000000b', 'List ten candidate Families',
+   '00000000-0000-0000-0000-000000010004', now() + interval '6 days', 'pending_verification');
+
+insert into vows (id, org_id, holder_id, commitment, status, assigned_at) values
+  ('00000000-0000-0000-0000-000000050003', '00000000-0000-0000-0000-00000000000b',
+   '00000000-0000-0000-0000-000000010004', 'I will send the Friday update, every Friday',
+   'active', now() - interval '4 days');
+
+-- Distinct days: 0, 2, 4 back -> STREAK OF 3, against Caregiver Circle's 6.
+-- Somebody HAS written today here, where Alice has not written today there,
+-- so element 4 differs across the switch as well as elements 3, 5 and 6.
+insert into table_entries (org_id, member_id, entry_date, prompt_id, response_text) values
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000010004', current_date, '00000000-0000-0000-0000-000000060001', 'Three calls, two yeses. Good day.'),
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000010004', current_date - 2, '00000000-0000-0000-0000-000000060002', 'Alice talked me out of rewriting the deck. Again.'),
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000010004', current_date - 4, '00000000-0000-0000-0000-000000060001', 'Slow. Nobody replied.');
+
+insert into ledger_events (org_id, event_type, payload, created_at) values
+  ('00000000-0000-0000-0000-00000000000b', 'tower_event',
+   '{"summary": "Founder Collective set its Tower: ship the pilot to ten families."}', now() - interval '14 days'),
+  ('00000000-0000-0000-0000-00000000000b', 'vow_event',
+   '{"summary": "Carol took the Vow: send the Friday update, every Friday."}', now() - interval '4 days');
+
+-- ==================================================== WELLNESS GUILD (org c)
+-- Nothing, on purpose. Dave is its only member and it has no Tower, no
+-- Builds, no Bricks, no Table entries, no Vow and no Ledger events. This is
+-- what D1's second acceptance clause renders from, and there is nothing to
+-- add here -- an empty Family is a state the product has to be honest about,
+-- not a hole in the fixture.

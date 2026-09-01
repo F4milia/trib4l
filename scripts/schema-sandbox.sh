@@ -153,12 +153,21 @@ cmd_test() {
     out="$(docker exec -i "$CONTAINER" psql -U postgres -tA -q -f - < "$f" 2>&1 || true)"
     ok="$(printf '%s\n' "$out" | grep -c '^ok ' || true)"
     notok="$(printf '%s\n' "$out" | grep -c '^not ok ' || true)"
+    # THE PLANNED COUNT IS THE ONLY HONEST DENOMINATOR. A pgTAP file dies whole:
+    # one bad statement aborts the transaction and every assertion after it
+    # emits `current transaction is aborted` -- neither `ok` nor `not ok`. So a
+    # file that ran 10 of its 20 assertions and then died reports 10 ok, 0 not
+    # ok, and reads as PASS. Measured: seeding a Tower into a Family that
+    # 110_towers assumed was empty truncated it 20 -> 10 and this script called
+    # it green. Compare against `1..N` instead.
+    planned="$(printf '%s\n' "$out" | sed -n 's/^1\.\.\([0-9]*\)$/\1/p' | head -1)"
+    planned="${planned:-0}"
     files=$((files + 1))
     total_ok=$((total_ok + ok))
     total_notok=$((total_notok + notok))
-    if [ "$notok" -gt 0 ] || [ "$ok" -eq 0 ]; then
+    if [ "$notok" -gt 0 ] || [ "$ok" -eq 0 ] || [ "$((ok + notok))" -ne "$planned" ]; then
       failed+=("$name")
-      printf '  FAIL  %-52s %3s ok  %3s not ok\n' "$name" "$ok" "$notok"
+      printf '  FAIL  %-52s %3s ok  %3s not ok  (planned %s)\n' "$name" "$ok" "$notok" "$planned"
       printf '%s\n' "$out" | grep -E '^not ok |^# |ERROR' | head -20 | sed 's/^/        /'
     else
       printf '  ok    %-52s %3s ok\n' "$name" "$ok"
