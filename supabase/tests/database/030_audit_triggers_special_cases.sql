@@ -42,8 +42,8 @@ select is(
   -- coverage, which points at the wrong problem. Same shape as the
   -- metadata-allowlist entry in CLAUDE.md: a closed-set guard two streams edit
   -- independently needs its total re-derived, never merged.
-  39,
-  '39 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, C1''s conversations, conversation_participants and messages, and towers, builds and bricks'
+  42,
+  '42 triggers total -- 25 org-scoped from PR 2/5, these five, notification_preferences (E1), support_requests (H1), ledger_events, C1''s conversations, conversation_participants and messages, towers, builds and bricks, and mood_tags, table_prompts and table_entries'
 );
 
 -- The same claim from the other direction, and the one that actually holds the
