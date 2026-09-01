@@ -2398,6 +2398,60 @@ export type Database = {
           },
         ]
       }
+      vows: {
+        Row: {
+          assigned_at: string
+          commitment: string
+          completed_at: string | null
+          created_at: string
+          holder_id: string
+          id: string
+          org_id: string
+          renegotiation_reason: string | null
+          status: Database["public"]["Enums"]["vow_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          commitment: string
+          completed_at?: string | null
+          created_at?: string
+          holder_id: string
+          id?: string
+          org_id: string
+          renegotiation_reason?: string | null
+          status?: Database["public"]["Enums"]["vow_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          commitment?: string
+          completed_at?: string | null
+          created_at?: string
+          holder_id?: string
+          id?: string
+          org_id?: string
+          renegotiation_reason?: string | null
+          status?: Database["public"]["Enums"]["vow_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vows_holder_id_org_id_fkey"
+            columns: ["holder_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "vows_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_events: {
         Row: {
           created_at: string
@@ -2665,6 +2719,7 @@ export type Database = {
           user_agent: string
         }[]
       }
+      next_vow_holder: { Args: { p_org_id: string }; Returns: string }
       notification_preference_enabled: {
         Args: {
           p_channel?: Database["public"]["Enums"]["notification_channel"]
@@ -2743,6 +2798,7 @@ export type Database = {
       report_target_type: "post" | "comment" | "member"
       support_request_status: "open" | "handled"
       tower_status: "active" | "stalled" | "pivoted" | "complete"
+      vow_status: "assigned" | "active" | "renegotiation_requested" | "complete"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2903,6 +2959,7 @@ export const Constants = {
       report_target_type: ["post", "comment", "member"],
       support_request_status: ["open", "handled"],
       tower_status: ["active", "stalled", "pivoted", "complete"],
+      vow_status: ["assigned", "active", "renegotiation_requested", "complete"],
     },
   },
 } as const
