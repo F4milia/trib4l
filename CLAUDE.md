@@ -315,3 +315,17 @@ than week one.
   that one function changes. Ferenz 0.8's test cannot be written as specified;
   that is knowingly unmet, not forgotten. Full reasoning:
   f4milia-product-narrative-and-spec.md §10.1.
+- 2026-09-01 · demo→main sync · both streams numbered migrations upward from the
+  same date in the same stride, so `20260903100101`, `100201` and `100301` each
+  existed twice · `version` is the PRIMARY KEY of
+  supabase_migrations.schema_migrations and IS the timestamp prefix, so the
+  merged branch could not `db reset` at all. Neither branch showed it alone.
+  Streams pick distinct minute offsets (Stream A `x01`, Stream B `x11`), and a
+  cross-branch merge checks `ls supabase/migrations | sed 's/_.*//' | uniq -d`
+  before anything else.
+- 2026-09-01 · demo→main sync · enabling `[auth.captcha]` on main broke all nine
+  cases in the other stream's tests/isolation/support-requests.test.ts, which
+  predated it and signed in with no token · a config.toml change is a
+  cross-stream API change. Text-merging cleanly proves nothing; the RLS gate on
+  the MERGED tree is the only thing that finds this class, so run it before
+  opening a sync PR, not after.
