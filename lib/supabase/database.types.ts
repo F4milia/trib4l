@@ -2575,6 +2575,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      family_streak: { Args: { p_org_id: string }; Returns: number }
+      family_table_day: {
+        Args: { p_org_id: string }
+        Returns: {
+          entry_id: string
+          family_date: string
+          written: boolean
+        }[]
+      }
       generate_meetup_occurrences: {
         Args: { occurrence_count?: number; target_series_id: string }
         Returns: {
@@ -2729,6 +2738,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      retire_table_entry: { Args: { p_entry_id: string }; Returns: boolean }
       revoke_all_my_sessions: { Args: never; Returns: number }
       revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
