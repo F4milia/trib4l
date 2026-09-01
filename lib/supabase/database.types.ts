@@ -332,6 +332,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          last_read_at: string | null
           membership_id: string
           org_id: string
         }
@@ -339,6 +340,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          last_read_at?: string | null
           membership_id: string
           org_id: string
         }
@@ -346,6 +348,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          last_read_at?: string | null
           membership_id?: string
           org_id?: string
         }
@@ -2275,6 +2278,10 @@ export type Database = {
         Args: { local_date: string; local_time: string; tz: string }
         Returns: string
       }
+      mark_conversation_read: {
+        Args: { check_conversation_id: string }
+        Returns: string
+      }
       memorialize_profile: { Args: { p_profile_id: string }; Returns: boolean }
       moderate_comment: {
         Args: { reason?: string; target_comment_id: string }
@@ -2394,6 +2401,13 @@ export type Database = {
       unmemorialize_profile: {
         Args: { p_profile_id: string }
         Returns: boolean
+      }
+      unread_message_counts: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          unread_count: number
+        }[]
       }
       viewer_blocks_membership: {
         Args: { check_membership_id: string }

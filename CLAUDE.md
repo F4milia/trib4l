@@ -409,3 +409,16 @@ than week one.
   automatic write is a cross-PR change to fixtures. Either have fixtures use the
   auto-created row, or delete it first and note why; and expect the collision to
   surface as a unique violation in a file the PR never touched.
+- 2026-09-01 · C1 PR4 · RLS cannot restrict WHICH COLUMNS an UPDATE touches, so
+  `grant update` + a policy saying "only your own row" on a join table means
+  "you may edit any column of your own row" — including conversation_id, which
+  moves you into a DM you were never in, inside your own Family, where the
+  child-matches-parent trigger sees nothing wrong · never grant UPDATE on a
+  membership/participant join table; expose one SECURITY DEFINER function that
+  writes the single column and filters on auth.uid().
+- 2026-09-01 · C1 PR4 · a derived COUNT is a read path and needs the same policy
+  as the rows it counts. `unread_message_counts()` as SECURITY DEFINER counts
+  messages the viewer cannot see, so a blocker's unread badge reports how much
+  the blocked member is posting — invariant 6 defeated by a number rather than
+  by content · SECURITY INVOKER on anything that aggregates RLS-protected rows,
+  and assert the count against the visible-row count, not against a constant.
