@@ -446,6 +446,22 @@ than week one.
   subscriber was allowed to see it · any published table whose updates matter
   needs REPLICA IDENTITY FULL. C1 soft-deletes messages via UPDATE, so without
   it a deleted message stays on every open screen until a refresh.
+- 2026-09-02 · C1 · Supabase Realtime BROADCAST has no access control: a channel
+  is a string, and any authenticated client may join any name. Measured — a
+  member of Family B received Family A's typing events on
+  `conversation:<uuid>`, while `postgres_changes` on the same channel for the
+  same user delivered nothing · RLS covers the row paths only. Never put content
+  in a broadcast payload, and treat a conversation id in someone's URL history
+  as a permanent capability until Realtime Authorization gates the join. Owed to
+  C2: docs/f4milia/c2-realtime-broadcast-authorization.md.
+- 2026-09-02 · C2 doc · a CLAUDE.md append anchored on a previous ENTRY silently
+  did nothing, because that entry lives on an unmerged branch and this one was
+  cut from main — and the commit succeeded anyway, because the assertion ran in
+  the same command as `git add && git commit` · append to END OF FILE. Learned
+  constraints is the last section and is append-only, so EOF needs no anchor and
+  cannot go stale. Then confirm with `git diff --cached --name-only`: an edit
+  that matches nothing is indistinguishable from one that worked, and the shell
+  exit code will not tell you.
 - 2026-09-01 · C1 PR7 · `vi.fn(impl)` INFERS the mock's signature from that
   impl, so a later `mockImplementation` reading a different argument stops
   typechecking — and the obvious workaround, an unused rest parameter, trips

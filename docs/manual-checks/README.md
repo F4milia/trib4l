@@ -64,6 +64,17 @@ writes: it scopes by Family, it is not obviously careless, and it passes every
 cross-Family test in the suite. It only fails **inside** a Family — which is
 why this check exists.
 
+### The browser version of this check lives elsewhere
+
+`tests/e2e/dual-family-conversations.spec.ts` runs the same five assertions
+through a real browser. It is NOT here, because it drives
+`/o/[slug]/messages`, and that UI is still on an unmerged branch — a spec
+asserting a 404-by-policy against a route that 404s because it does not exist
+would pass for the wrong reason. It lands with the UI.
+
+Until then this shell check is the reproducible one: it goes straight to
+PostgREST and needs no app at all.
+
 ### It talks to PostgREST directly, not through supabase-js
 
 The SDK is under suspicion as much as the policy is. A client library that
