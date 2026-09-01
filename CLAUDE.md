@@ -372,3 +372,110 @@ than week one.
   rather than pre-checking on DELETE only. Two streams reached the same defect
   from opposite ends within an hour; the entry is kept because the reasoning
   ("a cascade UPDATE is not a DELETE") is what generalises.
+- 2026-09-01 · C1 PR1 · a plpgsql trigger shared by two tables cannot branch on
+  `case tg_table_name when 'messages' then new.author_membership_id else
+  new.membership_id end` — plpgsql resolves EVERY field reference against the
+  actual record, not just the branch taken, so it raises 42703 on whichever
+  table lacks the other column · read the field through `to_jsonb(new) ->> ...`.
+  The trap is not the error, it is that `throws_ok(sql, null, null, desc)`
+  accepts ANY error: two cross-Family assertions passed on that 42703 instead of
+  on the guard they name. Assert the guard's own message (`throws_like`), never
+  bare "it threw".
+- 2026-09-01 · C1 PR1 · the shared-stack collision now has a third shape: Stream
+  B ran `db reset` on ITS branch mid-session, so `supabase test db` ran against a
+  database carrying x11/x12 migrations and none of Stream A's · before trusting
+  any local pgTAP result, assert your own migration version is in
+  supabase_migrations.schema_migrations. A green run on the other branch's schema
+  is indistinguishable from a green run on yours.
+- 2026-09-01 · C1 PR1 · `supabase gen types typescript --local 2>&1` writes the
+  CLI's "a new version is available" notice into database.types.ts, which then
+  fails tsc with TS1005 at the last line · redirect stderr to /dev/null, not into
+  the file. The generator itself is fine; the notice is not on stdout.
+- 2026-09-01 · C1 PR2 · a test file that only asserts REFUSALS passes with the
+  INSERT policy deleted entirely — no policy means no permission means every
+  "cannot post" assertion goes green for the worst possible reason. Measured:
+  dropping messages_insert failed nothing until a positive "a participant CAN
+  post" assertion existed · every policy needs at least one assertion that fails
+  when the policy is REMOVED, not only ones that fail when it is too permissive.
+  Run the drop-and-count control; do not assume the suite covers it.
+- 2026-09-01 · C1 PR2 · `create or replace function` CANNOT rename an input
+  parameter — it errors — so a negative control that stubs a helper with a
+  differently-named argument silently does nothing and reports "0 assertions
+  fail", which reads as "the test does not cover this" · match the original
+  parameter name when stubbing, and treat a control that fails NOTHING as a
+  broken control until proven otherwise.
+- 2026-09-01 · C1 PR2 · a BEFORE trigger runs before a policy's WITH CHECK, so a
+  write blocked by PR1's child-matches-parent trigger never reaches RLS and
+  raises P0001, not 42501 · when asserting "refused by policy", pick a case the
+  triggers ALLOW, or the assertion keeps passing with the policy deleted.
+- 2026-09-01 · C1 PR2 · `revoke execute ... from public` on an RLS helper also
+  strips `authenticated`, which inherits from PUBLIC — every policy calling it
+  then fails with "permission denied for function", which looks like a policy
+  bug · revoke from public, then grant explicitly to authenticated and
+  service_role.
+- 2026-09-01 · C1 PR3 · `create trigger ... after insert or update OF deleted_at`
+  means a role-only UPDATE never fires the trigger at all, so an assertion like
+  "a role change does not re-add someone who left" is carried by the column
+  list, NOT by the guard inside the function · to test an in-function guard,
+  write the listed column without changing its value (deleted_at null -> null).
+  Measured: removing the `old.deleted_at is null` guard failed nothing until
+  that case existed.
+- 2026-09-01 · C1 PR3 · a trigger that auto-creates a row breaks every EARLIER
+  test that created that row by hand — 110 and 111 both pinned a family_channel
+  id and started colliding with the unique index the moment PR3 landed · a new
+  automatic write is a cross-PR change to fixtures. Either have fixtures use the
+  auto-created row, or delete it first and note why; and expect the collision to
+  surface as a unique violation in a file the PR never touched.
+- 2026-09-01 · C1 PR4 · RLS cannot restrict WHICH COLUMNS an UPDATE touches, so
+  `grant update` + a policy saying "only your own row" on a join table means
+  "you may edit any column of your own row" — including conversation_id, which
+  moves you into a DM you were never in, inside your own Family, where the
+  child-matches-parent trigger sees nothing wrong · never grant UPDATE on a
+  membership/participant join table; expose one SECURITY DEFINER function that
+  writes the single column and filters on auth.uid().
+- 2026-09-01 · C1 PR4 · a derived COUNT is a read path and needs the same policy
+  as the rows it counts. `unread_message_counts()` as SECURITY DEFINER counts
+  messages the viewer cannot see, so a blocker's unread badge reports how much
+  the blocked member is posting — invariant 6 defeated by a number rather than
+  by content · SECURITY INVOKER on anything that aggregates RLS-protected rows,
+  and assert the count against the visible-row count, not against a constant.
+- 2026-09-01 · C1 PR5 · an isolation spec that asserts a LIST LENGTH asserts a
+  starting state: `listConversations(alice, A)` had length 1 alone and 2 once a
+  sibling test opened a DM, and bob's unread count read alice's earlier messages
+  · count by a property (kind, author) or assert a transition, never the size of
+  a shared collection. Both failures here were green when each test ran alone,
+  which is the whole trap. Verify by running the file TWICE with no reset --
+  Q4's edge case, worth applying to every isolation file as it is written rather
+  than in Wave 9.
+- 2026-09-01 · C1 PR6 · Realtime readiness has THREE levels and only the third
+  is real: `channel.state === "joined"` (socket up), the SUBSCRIBED ack
+  (postgres_changes bindings created), and messages actually streaming. After
+  `supabase db reset` the service re-establishes its replication slot and for a
+  few seconds acks subscriptions while streaming nothing · a realtime test must
+  warm up by waiting for a PROBE MESSAGE to arrive, not for any status the
+  client reports. Measured: the first test failed on the run straight after a
+  reset and passed on every warm run, both before and after switching from
+  state to the ack — and CI resets immediately before the suite, so this is a
+  coin toss there and green locally.
+- 2026-09-01 · C1 PR6 · REPLICA IDENTITY DEFAULT makes Realtime DROP update and
+  delete events rather than error: RLS for those is evaluated against the OLD
+  row, which holds only the primary key, so the server cannot decide if the
+  subscriber was allowed to see it · any published table whose updates matter
+  needs REPLICA IDENTITY FULL. C1 soft-deletes messages via UPDATE, so without
+  it a deleted message stays on every open screen until a refresh.
+- 2026-09-02 · C1 · Supabase Realtime BROADCAST has no access control: a channel
+  is a string, and any authenticated client may join any name. Measured — a
+  member of Family B received Family A's typing events on
+  `conversation:<uuid>`, while `postgres_changes` on the same channel for the
+  same user delivered nothing · RLS covers the row paths only. Never put content
+  in a broadcast payload, and treat a conversation id in someone's URL history
+  as a permanent capability until Realtime Authorization gates the join. Owed to
+  C2: docs/f4milia/c2-realtime-broadcast-authorization.md.
+- 2026-09-02 · C2 doc · a CLAUDE.md append anchored on a previous ENTRY silently
+  did nothing, because that entry lives on an unmerged branch and this one was
+  cut from main — and the commit succeeded anyway, because the assertion ran in
+  the same command as `git add && git commit` · append to END OF FILE. Learned
+  constraints is the last section and is append-only, so EOF needs no anchor and
+  cannot go stale. Then confirm with `git diff --cached --name-only`: an edit
+  that matches nothing is indistinguishable from one that worked, and the shell
+  exit code will not tell you.

@@ -439,6 +439,103 @@ export type Database = {
           },
         ]
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          last_read_at: string | null
+          membership_id: string
+          org_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          membership_id: string
+          org_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          membership_id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string | null
+          deleted_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["conversation_kind"]
+          org_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["conversation_kind"]
+          org_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["conversation_kind"]
+          org_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_created_by_membership_id_fkey"
+            columns: ["created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idempotency_keys: {
         Row: {
           completed_at: string | null
@@ -1258,6 +1355,61 @@ export type Database = {
             columns: ["proposed_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          author_membership_id: string
+          body: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_membership_id: string
+          body: string
+          conversation_id: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_membership_id?: string
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_author_membership_id_fkey"
+            columns: ["author_membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2214,6 +2366,10 @@ export type Database = {
         Args: { p_bucket: string; p_limit: number; p_window_seconds: number }
         Returns: boolean
       }
+      create_direct_conversation: {
+        Args: { check_org_id: string; other_membership_ids: string[] }
+        Returns: string
+      }
       current_user_email: { Args: never; Returns: string }
       delete_my_account: { Args: never; Returns: boolean }
       designate_mentor: {
@@ -2270,6 +2426,14 @@ export type Database = {
         Args: { check_org_id: string; check_required_stage_id: string }
         Returns: boolean
       }
+      is_conversation_creator: {
+        Args: { check_conversation_id: string }
+        Returns: boolean
+      }
+      is_conversation_participant: {
+        Args: { check_conversation_id: string }
+        Returns: boolean
+      }
       is_in_cohort: { Args: { check_cohort_id: string }; Returns: boolean }
       is_org_member: { Args: { check_org_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
@@ -2277,6 +2441,10 @@ export type Database = {
       is_valid_iana_timezone: { Args: { tz: string }; Returns: boolean }
       local_datetime_to_utc: {
         Args: { local_date: string; local_time: string; tz: string }
+        Returns: string
+      }
+      mark_conversation_read: {
+        Args: { check_conversation_id: string }
         Returns: string
       }
       memorialize_profile: { Args: { p_profile_id: string }; Returns: boolean }
@@ -2399,6 +2567,17 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: boolean
       }
+      unread_message_counts: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          unread_count: number
+        }[]
+      }
+      viewer_blocks_membership: {
+        Args: { check_membership_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       brick_status:
@@ -2409,6 +2588,7 @@ export type Database = {
         | "done"
       build_status: "open" | "complete"
       build_type: "commerce" | "permanence" | "propagation" | "custom"
+      conversation_kind: "family_channel" | "direct"
       invitation_status: "pending" | "accepted" | "revoked"
       ledger_event_type:
         | "table_entry"
@@ -2567,6 +2747,7 @@ export const Constants = {
       ],
       build_status: ["open", "complete"],
       build_type: ["commerce", "permanence", "propagation", "custom"],
+      conversation_kind: ["family_channel", "direct"],
       invitation_status: ["pending", "accepted", "revoked"],
       ledger_event_type: [
         "table_entry",
