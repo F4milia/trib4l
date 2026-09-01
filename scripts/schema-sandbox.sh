@@ -125,7 +125,9 @@ cmd_bootstrap() {
   # reason the auth bootstrap above connects as supabase_auth_admin.
   docker exec -i "$CONTAINER" psql -h 127.0.0.1 -U supabase_admin -d postgres \
     -v ON_ERROR_STOP=1 -q -f - < "$ROOT/scripts/sandbox-bootstrap-realtime.sql" >/dev/null
-  echo "bootstrap applied (default privileges, then auth, then realtime)"
+  docker exec -i "$CONTAINER" psql -h 127.0.0.1 -U supabase_admin -d postgres \
+    -v ON_ERROR_STOP=1 -q -f - < "$ROOT/scripts/sandbox-bootstrap-storage.sql" >/dev/null
+  echo "bootstrap applied (default privileges, then auth, realtime, storage)"
 }
 
 cmd_migrate() {
