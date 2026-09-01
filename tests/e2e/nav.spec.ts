@@ -51,7 +51,13 @@ test.describe("org navigation", () => {
     await signIn(page, "bob");
     await page.goto(`/o/${ORG.caregiverCircle}`);
 
-    await expect(page.locator("aside")).toBeHidden();
+    // Scoped to the aside that CONTAINS the main navigation. D1's dashboard
+    // adds a second complementary landmark -- its reference rail -- so a bare
+    // locator("aside") now resolves to two elements and fails strict mode.
+    // This asserts exactly what it did before: the sidebar is hidden on mobile.
+    await expect(
+      page.locator("aside").filter({ has: page.getByRole("navigation", { name: "Main navigation" }) }),
+    ).toBeHidden();
     const summary = page.locator("summary");
     await expect(summary).toBeVisible();
     await summary.click();
