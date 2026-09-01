@@ -13,6 +13,11 @@ Everything that would halt a Stream A session, session by session, in wave order
 
 ---
 
+**Companion documents.** `ai-model-and-cost.md` carries the pricing and usage
+model behind decisions 4 and 5. `stream-a-unblock-plan.md` is the ordered PR plan
+for the blockers that can be removed **without** any of the open decisions — six
+of the eight 🔴 and all three 🔵.
+
 ## 1. How to read this
 
 | | Meaning |
@@ -409,8 +414,8 @@ the ruling, not the recommendation that produced it.
 
 | # | Decision | Blocks | Recommendation on the table |
 |---|---|---|---|
-| 4 | Model provider, model, and the API keys | **F2, Wave 5** (see note) · A1, Wave 6 | Claude `claude-sonnet-5` for generation, called from a Supabase Edge Function. **OpenAI `text-embedding-3-small`, 1536 dimensions**, for embeddings — Anthropic has no embedding endpoint, so this is two vendors and two keys, both in Supabase secrets, neither in a Vercel env or the client bundle |
-| 5 | AI cost ceiling | A1, Wave 6 | 10 suggestions/member/hour · 100/Family/day · `max_tokens: 1024` per call · an `AI_DISABLED` kill switch returning a plain refusal. Reuse `lib/email`'s rate-limit pattern rather than inventing one |
+| 4 | Model provider, model, and the API keys | **F2, Wave 5** (see note) · A1, Wave 6 | **`claude-opus-5`** for generation at `effort: "low"`, called from a Supabase Edge Function. **OpenAI `text-embedding-3-small`, 1536 dimensions**, for embeddings — Anthropic has no embedding endpoint, so this is two vendors and two keys, both in Supabase secrets, never a Vercel env or the client bundle. Costs and the cheaper levers: `ai-model-and-cost.md`. An earlier draft here named `claude-sonnet-5`; that was a cost downgrade made without asking, and is corrected |
+| 5 | AI cost ceiling | A1, Wave 6 | 10 suggestions/member/hour · 100/Family/day · `output_config: {effort: "low"}` with **`max_tokens: ~2048`** · an `AI_DISABLED` kill switch returning a plain refusal. Reuse `lib/email`'s rate-limit pattern. **The cap IS the budget:** 100/Family/day on Opus 5 uncached is ~$1,140/month at 8 Families; prompt caching takes that to ~$276. Set the numbers against `ai-model-and-cost.md` §3, not against intuition. **`max_tokens: 1024` was wrong** — thinking bills as output and counts against the cap, so it can truncate the suggestion |
 | 7 | PostHog cloud or self-hosted | Q3, Wave 9 | Cloud, EU region. Self-hosting means running ClickHouse to receive event names and counts; invariant 4 already bounds the payload in code |
 | 13 | **Ledger durability on Free** | the equity-engine schema session, before Wave 7 | Supabase Free does not include point-in-time recovery, and its backup guarantees are weaker than Pro's — **believed, not verified against your dashboard.** CLAUDE.md calls the Ledger *"a system of record for eventual ownership"*, so this wants deciding before it holds real slices: accept Free for pre-production, or upgrade when the engine ships |
 | 14 | **How the 8-Family cap is enforced** | **C2, now** · every signup path | Decision 12 makes `max_families = 8` load-bearing, and nothing in migrations, `app` or `lib` implements any such limit — so an `organizations` INSERT can break the storage ceiling, and the symptom lands on an unrelated Family's upload. **Recommended: a hard cap at Family creation with a plain refusal**, reversible by one constant. The alternative, monitor-and-alert, leaves the invariant as prose |
