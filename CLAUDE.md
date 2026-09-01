@@ -508,3 +508,12 @@ than week one.
   did not re-run the suite afterwards -- adding a FILE can break a runner that
   discovers by glob, so re-run the suite after any addition to a test tree, not
   only after editing a test.
+- 2026-09-02 · C1 record · a session record that states the merge state of its own
+  PRs is stale the moment one of them moves. This one was accurate when drafted
+  ("the UI is not merged -- `#73` is open by decision"), `#73` merged at 17:48:37
+  UTC, and the record merged as `#77` at 17:52:16 -- four minutes later, carrying
+  the contradiction onto main along with a suite count taken before the UI landed
+  and two now-false notes in the C2 doc it points at · write merge state as of a
+  named commit, not as a present-tense fact, and re-read every doc the record
+  cross-references before merging it. A record is a claim like any other; the
+  2026-08-28 alignment rule applies to it.
