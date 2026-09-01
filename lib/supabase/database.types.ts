@@ -121,6 +121,54 @@ export type Database = {
           },
         ]
       }
+      builds: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          status: Database["public"]["Enums"]["build_status"]
+          title: string
+          tower_id: string
+          type: Database["public"]["Enums"]["build_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          status?: Database["public"]["Enums"]["build_status"]
+          title: string
+          tower_id: string
+          type: Database["public"]["Enums"]["build_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          status?: Database["public"]["Enums"]["build_status"]
+          title?: string
+          tower_id?: string
+          type?: Database["public"]["Enums"]["build_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builds_tower_id_fkey"
+            columns: ["tower_id"]
+            isOneToOne: false
+            referencedRelation: "towers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_tower_id_org_id_fkey"
+            columns: ["tower_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "towers"
+            referencedColumns: ["id", "org_id"]
+          },
+        ]
+      }
       cohort_members: {
         Row: {
           cohort_id: string
@@ -2289,6 +2337,8 @@ export type Database = {
       }
     }
     Enums: {
+      build_status: "open" | "complete"
+      build_type: "commerce" | "permanence" | "propagation" | "custom"
       invitation_status: "pending" | "accepted" | "revoked"
       ledger_event_type:
         | "table_entry"
@@ -2438,6 +2488,8 @@ export const Constants = {
   },
   public: {
     Enums: {
+      build_status: ["open", "complete"],
+      build_type: ["commerce", "permanence", "propagation", "custom"],
       invitation_status: ["pending", "accepted", "revoked"],
       ledger_event_type: [
         "table_entry",
