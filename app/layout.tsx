@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+
 /**
  * The three type voices of f4milia-design-system.md 3.1. The doc notes the
  * source repo loaded no webfonts and both serif and mono fell through to
@@ -38,6 +40,18 @@ const jetBrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "F4milia",
   description: "Community platform for caregivers and mentors.",
+  manifest: "/manifest.webmanifest",
+  // Safari ignores the manifest's icons for the home-screen tile and reads
+  // this instead, so a manifest alone gives an installed iOS app a screenshot
+  // of the page as its icon.
+  appleWebApp: {
+    capable: true,
+    title: "F4milia",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/icons/icon-180.png",
+  },
 };
 
 /**
@@ -67,6 +81,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         suppressHydrationWarning
       >
         {children}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
