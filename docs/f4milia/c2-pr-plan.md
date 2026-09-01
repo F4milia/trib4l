@@ -1,18 +1,19 @@
-# C2 — PR plan
+# C2 — build plan
 
 Wave 3 · Stream A. Mentions, reactions, threading, media in messages, and the
 broadcast-authorization debt C1 carried forward.
 
-Written before any code, per CLAUDE.md's standing workflow item 1. Each PR below
-is under 200 lines, independently mergeable, and green on its own.
+Written before any code, per CLAUDE.md's standing workflow item 1.
 
 | | |
 |---|---|
 | **Written** | 2026-09-02 |
 | **Session** | `F4milia — Complete Run Doc`, Wave 3, Stream A |
 | **Status** | **Not started.** Plan only |
+| **Shape** | **Four PRs**, decided 2026-09-02 (James) — see §3 |
 | **Required reading** | `docs/f4milia/c2-realtime-broadcast-authorization.md` (the carried finding), `docs/f4milia/c1-conversations-and-realtime.md` §3 and §6 (the decisions C2 inherits, and the four ways a suite lied) |
 | **Named edge case** | B @mentions A after A blocked B — no notification reaches A; the room is unaffected |
+| **Open decisions** | **None.** Both closed 2026-09-02 (James) — see §6.1 and §6.4 |
 
 ---
 
@@ -30,7 +31,7 @@ forbid migrations, so C2 builds what it needs.
 | `notifications` | ❌ | **C2 builds it.** N1 (Wave 4) consumes it |
 | `notification_type` value `'mention'` | ❌ — enum has `family_night_digest`, `vow_notification` | **C2 adds it.** E1's migration reserves the extension for N1; C2 needs it first |
 | `message_mentions` | ❌ | C2 |
-| `message_reactions` | ❌ — see §5.1, a legacy `reactions` table exists and is not this | C2 |
+| `message_reactions` | ❌ — see §6.1, a legacy `reactions` table exists and is not this | C2 |
 | `message_attachments` | ❌ | C2 |
 | `messages.parent_message_id` | ❌ — C1 chose soft-delete specifically so replies would not dangle | C2 |
 | Any storage bucket or storage policy | ❌ — **zero of either exist today** | C2 owns storage this wave |
@@ -71,7 +72,7 @@ flipping `private: true` with no policy in place and watching whether
 one clause or two, and getting it wrong in either direction is expensive: too
 narrow breaks C1, too wide re-opens the leak.
 
-So PR 1 must prove three things in one run, not one:
+So the realtime work must prove three things in one run, not one:
 
 | | Must be true after |
 |---|---|
@@ -83,58 +84,151 @@ The third is the one a careless run skips, and it is the expensive one. Per C1's
 §6 lesson — a test showing Carol getting nothing proves nothing, because realtime
 being broken in the environment looks identical.
 
-## 3. The PRs
+## 3. Shape: four PRs
 
-Ordered by dependency. PR 1 is independent and goes first because it is debt
-already on `main`.
+**Decided 2026-09-02 by James.** This replaces an earlier single-PR decision
+made the same day; the reversal is recorded rather than erased, because the
+reasoning that changed is worth keeping.
 
-| # | PR | Why it is separate |
+**The single-PR case rested on one argument, and it was weaker than it looked.**
+It was that `lib/supabase/database.types.ts` and `tests/database/030` are
+cross-stream conflict surfaces, so one landing means one conflict resolution
+rather than five. Two things undercut it:
+
+- **Stream B has finished.** `#80`, `#85`, `#86` and `#88` are all merged, so the
+  trunk churn that made conflicts expensive is over.
+- **Both conflict surfaces live entirely in the schema work.** Splitting the
+  realtime fix and the UI away from them costs nothing on that axis. The single
+  PR was paying a real price for a benefit it could have had anyway.
+
+**The 200-line rule stays overridden.** PR 2 is roughly 900 lines and cannot be
+otherwise for five tables at this repo's comment density. That is still a
+deliberate departure from standing workflow item 1, not a rule being
+reinterpreted back into shape.
+
+### 3.1 The four, and why each boundary is where it is
+
+| # | PR | ~Size | Why it is its own PR |
+|---|---|---|---|
+| **1** | **Realtime Authorization** | ~200 | The only change in C2 that can **break something already merged and working**. If live chat goes dark, the fix is one revert, not a C2-shaped one. It is also debt rather than feature, so it can land while the rest is still being written |
+| **2** | **Schema** — five tables, the threading column, the `'mention'` enum value, the `030` recompute | ~900 | All migrations. The **only** PR touching `database.types.ts` and `030`, which preserves the conflict argument in full. This is the Greptile-tier RLS review and should be readable without 400 lines of React in the diff |
+| **3** | **Storage** — bucket, `storage.objects` RLS, quota, size cap | ~350 | The repo has **zero storage policies today**, so there is no proven pattern to copy — which is precisely why this one cannot ride along unexamined. Its acceptance (*"unreachable from a Family B session — proven, not assumed"*) deserves its own review, not page four of a schema PR |
+| **4** | **Data access + UI** | ~800 | The only PR touching `app/` and `components/`, which keeps the ZeroStep path filter meaningful for 1–3. Carries no migration, so it can iterate without the run doc's *"migrations merge same-day"* pressure |
+
+**Why not eight or nine.** The earlier breakdown was dependency ordering, not
+merge boundaries. `message_mentions` without its write path is dead schema; most
+of those units cannot stand alone as something worth reviewing. Nine landings
+also means nine rounds of type regeneration, census edit, CI and review.
+
+**Why not one.** Beyond the collapsed conflict argument: PRs 2 and 4 have
+genuinely different merge cadences. The run doc forces any PR with a migration
+to merge same-day; the UI wants to iterate. Bundled, one holds the other hostage.
+
+### 3.2 Rules that still apply
+
+1. **PR 1 lands and is proven before PR 3 is written.** Storage is the other
+   place a policy mistake is expensive, and doing them at once means debugging
+   two new policy surfaces against one another.
+2. **PR 1 is self-contained** — its own migration, its own test file, no
+   dependency on any new table — so `git revert` restores C1's behaviour exactly.
+3. **Commits within each PR stay in the dependency order of §4** and each is
+   green on its own. Reviewing PR 2 commit by commit is how a 900-line schema
+   diff stays readable.
+4. **Open PR 1 as a draft early and let CI run.** The realtime non-regression is
+   the assertion most worth knowing first, and it cannot be measured in the
+   schema sandbox.
+
+## 4. The PRs, in order
+
+Dependency-ordered. PR 1 is independent and goes first because it is debt
+already on `main` and the only regression risk in the session.
+
+### PR 1 — Realtime Authorization
+
+Measure §2.1 first, before writing the policy. Then RLS on `realtime.messages`
+keyed on `is_conversation_participant()`, plus `private: true` on the channel.
+
+Proves all three assertions from §2: the leak is closed (Carol receives 0), the
+control still works (Alice receives typing), and **C1 did not regress** (Alice
+still receives `postgres_changes`). Plus a drop-and-count control.
+
+### PR 2 — Schema
+
+| Commit | |
+|---|---|
+| 1 | **Threading.** `messages.parent_message_id`, self-referencing, with a trigger asserting the parent is in the same conversation. Reuses C1's child-matches-parent shape |
+| 2 | **`notifications` + the `'mention'` enum value.** Table, audit trigger in the same migration (invariant 5), RLS. N1 inherits this table |
+| 3 | **`message_mentions` + the write path.** Mention → notification row, with `member_blocks` applied. **Carries the named edge case** |
+| 4 | **`message_reactions`.** Table, RLS, count as `SECURITY INVOKER` — see §6.2 |
+| 5 | **`message_attachments`.** Metadata only; the bucket arrives in PR 3. Ships with RLS enabled and no policies, which denies everything — the same shape C1 `#67` used deliberately |
+| 6 | **The `030` census.** Recompute the audit-trigger total from the tables that actually landed — see §5 |
+
+Five new public tables, so this is where `database.types.ts` is regenerated and
+where `030` moves. Nothing else in C2 touches either.
+
+### PR 3 — Storage
+
+Bucket created by `insert into storage.buckets` inside the migration, **never**
+via `config.toml` (§5). `storage.objects` RLS matching the conversation's
+participant scoping. Per-file cap, per-Family quota **and the project-level
+guard** per §6.4 — the guard is in scope, not deferred.
+
+Carries the acceptance criterion the prompt words most strongly — *"an
+attachment uploaded to Family A's channel is unreachable by URL from a Family B
+session — proven, not assumed"* — and its drop-and-count control.
+
+### PR 4 — Data access and UI
+
+`lib/` functions for mentions, reactions, threads and attachments, with a
+dual-Family isolation file proving the policies hold through the SDK rather than
+only in pgTAP (mirrors C1 `#71`). Then mention autocomplete, reaction picker,
+thread view and attachment upload, with the copy deck.
+
+## 5. Numbering, and where Stream B is standing
+
+**Stream B's `schema/bricks` merged as `#80`** — towers, builds and bricks are on
+`main`. Stream B will follow with `table_entries`, `vows` and a seed extension,
+so the streams still share the trunk. Collisions are avoidable if C2 takes the
+slots below and no others.
+
+| | Stream A (C2) takes | Already on `main` |
 |---|---|---|
-| **1** | **Realtime Authorization.** RLS on `realtime.messages` keyed on `is_conversation_participant()`, plus `private: true` on the channel. pgTAP for the policy; the §7 probe as an isolation test with all three assertions from §2 | The carried C1 finding. Touches no new table, and a regression here breaks a merged feature — it must not be entangled with new schema |
-| **2** | **Threading.** `messages.parent_message_id`, self-referencing, with a trigger asserting the parent is in the same conversation | Reuses C1's child-matches-parent shape. One column, one trigger, one test file |
-| **3** | **`notifications` + `'mention'` enum value.** Table, audit trigger in the same migration (invariant 5), RLS, and the enum extension | N1 inherits this table. Landing it alone means N1 reviews a schema, not a schema buried in a mentions feature |
-| **4** | **`message_mentions` + the write path.** The trigger or function that turns a mention into a notification row, with `member_blocks` applied. **This PR carries the named edge case** | Depends on 3. The blocks × mentions decision is the reviewable unit |
-| **5** | **`message_reactions`.** Table, RLS, aggregate | Depends on nothing but `messages`. See §5.1 and §5.2 before writing it |
-| **6** | **Storage: bucket, RLS, quota, size cap.** Migration only, no UI | The largest single risk surface and the acceptance criterion most likely to be assumed rather than proven. Reviewed alone |
-| **7** | **Data access layer.** `lib/` functions for mentions, reactions, threads and attachments, with isolation tests through the SDK | Mirrors C1 `#71`. Proves the policies hold through the client, not only in pgTAP |
-| **8** | **UI.** Mention autocomplete, reaction picker, thread view, attachment upload; copy deck; unit tests | The only PR touching `app/` and `components/`. Keeps the ZeroStep path filter meaningful for 1–7 |
+| **Migrations** | `20260903100801`+ — the `x01` slot | Stream B's `x11`/`x12` through `20260903100812_bricks_rls` |
+| **pgTAP files** | **`140`+** | `110_conversations_schema`–`114` (C1), `110_towers`, `120_builds`, `130_bricks` (Stream B) |
 
-## 4. Numbering, and where Stream B is standing
+Verified against `origin/main` after `#80`, not predicted: `120` and `130` are
+taken, the highest migration is `20260903100812`, and the highest `x01` slot used
+is `20260903100706`. So `20260903100801`+ and pgTAP `140`+ are both clear.
 
-Stream B holds `schema/bricks` (towers, builds, bricks) and will follow with
-`table_entries`, `vows` and a seed extension. Collisions are avoidable if C2
-takes the slots below and no others.
-
-| | Stream A (C2) takes | Stream B holds |
-|---|---|---|
-| **Migrations** | `20260903100801`+ — the `x01` slot | `x11`/`x12` at minutes 1006/1007/1008, and onward |
-| **pgTAP files** | **`140`+** | `110_towers`, `120_builds`, `130_bricks` |
-
-`110`–`114` are C1's and already on `main`. **Starting C2 at `120` or `130`
-collides with Stream B's unmerged files**, which is invisible until the merge —
-so `140`.
-
-### The conflict to expect, and its wrong resolution
+### The `030` census — resolved on `main`, and the base C2 computes from
 
 `supabase/tests/database/030_audit_triggers_special_cases.sql` hardcodes a total
-audit-trigger count. Both branches independently changed `33` → **`36`**, for
-different reasons:
+audit-trigger count. This was written as a conflict to expect; **`#80` landed
+`schema/bricks` on `main` first and it is now resolved.** The resolution is
+correct — **39** — and it is worth reading, because the trap was sharper than
+predicted:
 
 | Branch | Reasoning | Value |
 |---|---|---|
 | `main` | 33 + C1's `conversations`, `conversation_participants`, `messages` | 36 |
 | `schema/bricks` | 33 + `towers`, `builds`, `bricks` | 36 |
 
-Git will conflict on the prose, and **the correct merged value is 39, not 36.**
-Taking either side's line lands a wrong number. C2 adds four more tables
-(`notifications`, `message_mentions`, `message_reactions`,
-`message_attachments`), so C2's own value is **43** — computed from 39, not from
-whatever the merge left behind. Recompute it; do not increment the number
-already in the file.
+Both streams wrote **the same number on the same line** for different reasons, so
+git **auto-merged the count to 36 without a conflict** and raised one only on the
+descriptive message beside it. Resolving the visible conflict would therefore
+have left a silently wrong total, three too low — and `030` then fails with a
+message about audit coverage, pointing at the wrong problem. The merged file now
+carries a comment saying exactly this.
+
+**What this means for C2:** the base is **39**, on `main`, today. C2 adds four
+tables (`notifications`, `message_mentions`, `message_reactions`,
+`message_attachments`), so C2's value is **43**. Re-derive it from the tables that
+landed; do not increment the number in the file and do not assume a merge got it
+right. PR 2's last commit exists to make this one deliberate act.
 
 Same closed-set shape as `tests/database/050`'s metadata key allowlist
-(CLAUDE.md, 2026-09-01): a fix that forgets it fails with a message about
-content leaks, pointing at the wrong problem.
+(CLAUDE.md, 2026-09-01): a closed-set guard two streams edit independently needs
+its total re-derived, never merged.
 
 ### Two things not to do
 
@@ -147,11 +241,14 @@ content leaks, pointing at the wrong problem.
   dev server while Stream B is active.** `test:isolation` begins with
   `supabase db reset`. CI provisions its own Postgres and is the only safe
   authority while the streams overlap — it verified C1's record's figures that
-  way (PR `#78`).
+  way (PR `#78`). §3.2 item 4's draft PR on PR 1 is how the database suites get
+  exercised early rather than at the end.
 
-## 5. Decisions C2 must make before writing
+## 6. Decisions — all closed
 
-### 5.1 Reactions: extend the legacy table, or a new one
+**Confirmed by James, 2026-09-02.** Nothing here is outstanding; C2 can start.
+
+### 6.1 Reactions: a new table, not the legacy one ✅ CONFIRMED
 
 A `reactions` table already exists from the pre-F4milia schema
 (`20260823191444_posts_comments_reactions.sql`). It is **not** reusable as-is:
@@ -168,7 +265,16 @@ is explicit that a `profile_id` key makes every read path responsible for
 re-checking which Family it is in. Mixing the two keying schemes in one table is
 how that check gets forgotten.
 
-### 5.2 Reaction counts are a read path
+**What settled it was the blast radius, measured rather than argued.** The legacy
+table also carries `cohort_id` and `required_stage_id`, and its policies are
+created in `20260823191544_posts_rls.sql` and then **dropped and recreated** in
+`20260825203301_content_gating.sql`, gated by
+`can_see_gated_content(org_id, cohort_id, required_stage_id)`. Extending it would
+mean rewriting stage-gating policies across three migrations so a Family chat
+reaction is not silently gated by a Trib4l stage — a bug that would look like it
+works. A new table is one migration reusing `is_conversation_participant()`.
+
+### 6.2 Reaction counts are a read path ✅ CONFIRMED
 
 `unread_message_counts()` was C1 `#70`'s worst near-miss: as `SECURITY DEFINER`
 it counted messages the viewer could not see, so a blocker's badge reported how
@@ -178,7 +284,7 @@ than by content.** A reaction count is the identical shape.
 Any aggregate over RLS-protected rows is `SECURITY INVOKER`, and its test
 asserts the count **against the visible-row count, not against a constant.**
 
-### 5.3 A notification row must not carry message text
+### 6.3 A notification row must not carry message text ✅ CONFIRMED
 
 Invariant 3: no Family content in any outbound message. N1 turns these rows into
 emails and pushes. A `notifications` row therefore stores a **reference**
@@ -186,29 +292,50 @@ emails and pushes. A `notifications` row therefore stores a **reference**
 text is in the row, N1 inherits a schema that makes violating invariant 3 the
 path of least resistance.
 
-### 5.4 Per-Family storage quota — where the number comes from
+### 6.4 Storage quota and caps ✅ CONFIRMED
 
 The acceptance criterion is *"quota exceeded fails with a plain message, not a
 broken upload."* That needs the quota checked **before** the object is written,
 which means summing `storage.objects.metadata->>'size'` for the Family's path
-prefix. Two open questions the prompt does not answer: **what the quota is**, and
-whether a soft-deleted message's attachment still counts against it. Both are
-James's calls, not inventions — CLAUDE.md's honest-empty-states and
-no-invented-placeholders rules cut against guessing either.
+prefix.
 
-## 6. Invariants this session touches, and where each is proven
+| | Value | Reasoning |
+|---|---|---|
+| Per-file cap | **5 MB** | A phone photo is 2–5 MB, a document under 5. On a **1 GB project** a 10 MB attachment is 1% of everything, so the earlier 10 MB does not survive the Free plan. Set it on the bucket row too, so the platform enforces it as well as the app. Deliberately excludes video — Mux is already that path (`@mux/mux-node`, `video_assets`, `live_streams`) |
+| Per-Family quota | **100 MB**, across **all** attachment buckets | 8 Families × 100 MB = 800 MB of a 1024 MB plan, leaving ~224 MB for Keepsake PDFs and slack. **Not per feature** — see the box below |
+| Deleting a message | **Deletes the blob** | Rather than deciding whether soft-deleted attachments count, make them not exist. Soft-delete the message *row* — C1 needs that so replies do not dangle — and hard-delete the object. Nothing dangles: the row keeps a reference that no longer resolves, which is exactly what M1's edge case asks for (*"the storage object is unreachable afterward"*). The quota then never lies, and there is no reclaim job to schedule |
+| **Project-level guard** | **In scope for C2** | Per-Family quotas do **not** bound the project total. Eight Families each inside their 100 MB is the entire plan, and the failure is a Family under its own quota whose upload fails with a raw Supabase error — breaking this session's own acceptance criterion in a way the per-Family check structurally cannot catch. Decided 2026-09-02 (James) |
+
+> **Wire the blob delete to MESSAGE deletion only, never to account deletion.**
+> Invariant 8's anonymize-vs-purge policy governs that path and memorial-locked
+> content persists. Different path, different rule.
+
+> **Build the quota as "this Family's total across the attachment buckets", not
+> "this Family's message attachments."** M1 (Wave 5) adds photos on Table entries
+> and attachments on Bricks *"reusing Wave 3's storage policy pattern, same
+> quotas, same caps."* If M1 gets its own 100 MB per Family the budget doubles to
+> 1600 MB and the 1 GB plan is blown before Wave 6. Scoping the quota per Family
+> now means M1 inherits the ceiling instead of adding a second one.
+
+**These numbers are a function of the plan, not of the product.** Supabase Free
+is 1 GB of file storage total, and James fixed the ceiling at 8 Families on
+2026-09-02. On Pro they would be 10 MB / 1 GB and the project guard would stop
+mattering. Full reasoning and the other Free-tier ceilings:
+`docs/f4milia/production-constraints.md`.
+
+## 7. Invariants this session touches, and where each is proven
 
 Named here so none is discovered late.
 
 | Invariant | Where C2 satisfies it |
 |---|---|
-| **3** — no Family content outbound | §5.3; asserted in PR 3's pgTAP on the `notifications` column set |
-| **5** — audit trigger in the creating migration | PRs 3, 4, 5, 6; the `030` census (§4) is what catches an omission |
-| **6** — `member_blocks` on every new social surface | PR 4 (mentions, the named edge case), PR 5 (reactions **and** their counts, §5.2) |
+| **3** — no Family content outbound | §6.3; asserted in PR 2's pgTAP on the `notifications` column set |
+| **5** — audit trigger in the creating migration | Every table in PR 2; the `030` census, PR 2's last commit, is what catches an omission |
+| **6** — `member_blocks` on every new social surface | PR 2 — mentions (the named edge case) and reactions, **including their counts** (§6.2) |
 | **7** — rate limits on anything that costs money or sends | Uploads cost storage. C1 recorded "no rate limit on sending" as Q2's sweep; **an upload endpoint is a new argument for doing it here** — raise it rather than inheriting the deferral silently |
 | **9** — nothing public by default | The bucket is private. A public bucket makes the "unreachable from a Family B session" criterion unprovable |
 
-## 7. What acceptance looks like
+## 8. What acceptance looks like
 
 From the prompt, restated as things that must be measured rather than assumed:
 
@@ -227,7 +354,7 @@ assertions counted. C1 measured that a file asserting only refusals passes with
 its INSERT policy deleted entirely (CLAUDE.md, 2026-09-01 C1 PR2). Storage
 policies are the same shape and there are none in the repo to copy from.
 
-## 8. Related
+## 9. Related
 
 - `docs/f4milia/c2-realtime-broadcast-authorization.md` — the finding, the probe,
   and the policy sketch §2 above completes
