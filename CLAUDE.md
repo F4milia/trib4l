@@ -396,3 +396,16 @@ than week one.
   then fails with "permission denied for function", which looks like a policy
   bug · revoke from public, then grant explicitly to authenticated and
   service_role.
+- 2026-09-01 · C1 PR3 · `create trigger ... after insert or update OF deleted_at`
+  means a role-only UPDATE never fires the trigger at all, so an assertion like
+  "a role change does not re-add someone who left" is carried by the column
+  list, NOT by the guard inside the function · to test an in-function guard,
+  write the listed column without changing its value (deleted_at null -> null).
+  Measured: removing the `old.deleted_at is null` guard failed nothing until
+  that case existed.
+- 2026-09-01 · C1 PR3 · a trigger that auto-creates a row breaks every EARLIER
+  test that created that row by hand — 110 and 111 both pinned a family_channel
+  id and started colliding with the unique index the moment PR3 landed · a new
+  automatic write is a cross-PR change to fixtures. Either have fixtures use the
+  auto-created row, or delete it first and note why; and expect the collision to
+  surface as a unique violation in a file the PR never touched.

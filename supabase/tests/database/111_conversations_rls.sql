@@ -40,6 +40,14 @@ insert into public.memberships (id, org_id, profile_id, role) values
 
 -- Family A's channel (alice, bob, dana), Family B's channel (carol, dana),
 -- and a DM in Family A between alice and bob that dana is NOT in.
+-- PR 3 gives every new Family a channel automatically, so the explicit
+-- family_channel insert below would now collide with it. These files pin
+-- specific conversation ids to keep their assertions readable, so they drop
+-- the auto-created room and install their own. Deleting it cascades away the
+-- participants the membership trigger added, which is why this comes after the
+-- memberships and before the fixture conversations.
+delete from public.conversations where kind = 'family_channel' and org_id in ('00000000-0000-0000-0000-00000000fa02', '00000000-0000-0000-0000-00000000fb02');
+
 insert into public.conversations (id, org_id, kind) values
   ('00000000-0000-0000-0000-0000000000a0', '00000000-0000-0000-0000-00000000fa02', 'family_channel'),
   ('00000000-0000-0000-0000-0000000000b0', '00000000-0000-0000-0000-00000000fb02', 'family_channel'),
