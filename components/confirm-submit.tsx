@@ -58,11 +58,23 @@ export function ConfirmSubmit({
       </Button>
 
       {/* backdrop:bg-deep-slate/50 rather than an opacity animation: §8 keeps
-          motion to colour and position, and a fading scrim is neither. */}
+          motion to colour and position, and a fading scrim is neither.
+
+          `m-auto` is load-bearing and easy to lose. The browser centres a modal
+          <dialog> with its own `inset: 0; margin: auto`, and Tailwind's preflight
+          sets `margin: 0` on every element -- which wins, so the dialog pins
+          itself to the top-left corner of the viewport. Reported on the
+          sign-out-everywhere confirmation; it affected every use of this
+          component, because they all share this element.
+
+          max-h + overflow-y-auto for the same reason it is worth doing once
+          here: the deletion confirmation lists five consequences, which is taller
+          than a small phone in landscape, and a confirmation you cannot read to
+          the bottom is worse than none. */}
       <dialog
         ref={dialog}
         aria-labelledby="confirm-title"
-        className="max-w-md border-2 border-deep-slate bg-parchment p-6 text-deep-slate backdrop:bg-deep-slate/50"
+        className="m-auto max-h-[calc(100dvh-2rem)] max-w-md overflow-y-auto border-2 border-deep-slate bg-parchment p-6 text-deep-slate backdrop:bg-deep-slate/50"
       >
         <h2 id="confirm-title" className="font-serif text-3xl leading-[0.9] tracking-tighter">
           {title}
