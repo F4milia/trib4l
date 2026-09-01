@@ -5,12 +5,22 @@ Everything that would halt a Stream A session, session by session, in wave order
 | | |
 |---|---|
 | **Written** | 2026-09-02 |
+| **Revised** | 2026-09-02 — decisions 1, 2, 3, 6, 8, 9, 10, 11, 12 ruled on; the Free plan opened 13 and 14, and the Wave 4 pass opened 15. See §10 |
 | **Against** | `F4milia — Complete Run Doc (Prompts Included).md`, Stream A column |
 | **Repo state** | `origin/main` @ `8ed81dc` (after `#91`) |
 | **Scope** | Waves 3–10. Waves 0–2 (S1, S2, C1) are merged |
-| **Method** | Every claim below was checked against the repo. Commands in §10 |
+| **Method** | Every claim below was checked against the repo. Commands in §13 |
 
 ---
+
+**Companion documents.** `c2-pr-plan.md` is the next session's PR plan, revised
+2026-09-02 for the rulings below and now sequenced as tranche 0 of the unblock
+plan. `ai-model-and-cost.md` carries the pricing and usage model behind decisions
+4 and 5. `secrets-and-env.md` records every key James
+configures, which store it belongs in, and why invariant 2 decides that.
+`stream-a-unblock-plan.md` is the ordered PR plan for the blockers that can be
+removed **without** any of the open decisions — including tranche E, which takes
+Wave 4 from "cannot start" to "waiting on five values and one C2 table".
 
 ## 1. How to read this
 
@@ -21,26 +31,32 @@ Everything that would halt a Stream A session, session by session, in wave order
 | 🔑 **SECRET** | An account, key or plan that has to exist before the session can run |
 | 🟡 **SCOPE** | Buildable inside the session, but the prompt does not say so. These are the estimate-killers, not the stoppers |
 | 🔵 **CARRIED** | A known defect from a merged session that lands on this one |
+| ✅ **DECIDED** | Was a 🟠 or a sequencing problem; James has ruled. §10 carries the ruling |
 
-**The short version.** Two sessions cannot run as written: **A5** has no equity table and no
-column to hold what it produces, and **F2** needs AI infrastructure a full wave before
-**A1** builds it. Everything else is a decision, a dependency to install, or a scope surprise.
+**The short version, as of the 2026-09-02 revision.** Both sessions that could not
+run as written now have a ruled path: **A5** gets a schema session slotted upstream of
+Wave 7, and **F2** keeps Wave 5 and builds the first Edge Function itself under four
+conditions (§10). **Six decisions are still open** — the model provider and keys, the
+AI cost ceiling, PostHog hosting, how a Family-count cap is enforced, the read
+mark's design, and the app icon — the last opened by the ruling that storage sits on Supabase **Free**,
+which also adds real scope to C2. Everything else is a dependency to install
+or a scope surprise.
 
 ## 2. Summary
 
 | Wave | Session | Hardest blocker | Unblocked by |
 |---|---|---|---|
-| 3 | **C2** | 🟠 storage quota numbers · 🟡 must build the `notifications` table nobody scheduled | You, ~5 min |
-| 4 | **N1** | 🔴 web push needs the PWA that **W2 builds in the same wave, in the other stream** · 🔑 Inngest + VAPID | Sequencing + accounts |
-| 5 | **F1** | 🟠 the doc's search list omits `table_entries`, the product's daily content · 🟡 three tables need a `search_vector` | You, ~5 min |
-| 5 | **F2** | 🔴 **needs A1's Edge Function + model key, which is Wave 6** · 🟡 `vector` extension not enabled | Re-cut the wave table |
-| 6 | **A1** | 🔴 **invariant 12 is unmet and it is dated "before A1"** · 🟠 no model provider chosen · 🔑 API key | You + one PR |
+| 3 | **C2** | ✅ storage caps, reactions and an 8-Family ceiling ruled · 🔴 **per-Family quotas do not bound the 1 GB total, and nothing anywhere caps Family count** · 🟡 must build the `notifications` table nobody scheduled | Decision 14 |
+| 4 | **N1** | ✅ the PWA shell ships as its own PR before the wave · 🔑 Inngest + VAPID still outstanding | Accounts |
+| 5 | **F1** | ✅ scope ruled: `table_entries` + `bricks` in, `ledger_events` cut · 🟡 two tables need a `search_vector` | Clear to run |
+| 5 | **F2** | ✅ builds the first Edge Function itself, under four conditions (§10) · 🔑 **embedding key + dimension now due here** | Decision 4 |
+| 6 | **A1** | 🔴 **invariant 12 unmet — now owed before Wave 5, not Wave 6** · 🟠 no model provider chosen · 🔑 API key | You + one PR |
 | 6 | **A2** | inherits A1 | — |
-| 7 | **A5** | 🔴 **`contribution_ledger` does not exist** · 🔴 `bricks` has no estimate column · 🟠 the slice formula is unspecified | A scheduled schema session |
+| 7 | **A5** | ✅ slice formula ruled · ✅ a schema session upstream of Wave 7 builds `contribution_ledger` and the estimate columns — **its prompt is unwritten** | Writing that session |
 | 8 | **K1** | 🔴 depends on A5's ledger · 🔑 `@react-pdf/renderer` not installed · 🟡 no completed Tower in seed | A5 first |
 | 9 | **Q2** | 🔵 carried rate-limit debt | — |
 | 9 | **Q3** | 🔑 PostHog not installed, no project | Account |
-| 10 | **R1** | 🔑 hobby plan, one Vercel project doing both preview and production | Plan + project split |
+| 10 | **R1** | ✅ staying on **Hobby** — so no named staging environment, and R1's staging/production difference rides on Preview-vs-Production env vars | Clear to run |
 
 ---
 
@@ -48,17 +64,87 @@ column to hold what it produces, and **F2** needs AI infrastructure a full wave 
 
 Full plan in `docs/f4milia/c2-pr-plan.md`. Blockers only here.
 
-**🟠 DECISION — storage quota.** Three numbers, none specified anywhere:
-per-file cap, per-Family quota, and whether a soft-deleted message's attachment
-still counts. C2's acceptance is *"quota exceeded fails with a plain message"*,
-which cannot be built without them. Proposed defaults sit in the plan's §6.4
-(10 MB / 1 GB / yes, they still count) — **say no and they change**; silence
-means they ship.
+**✅ DECIDED (2026-09-02) — storage quota, on the Supabase FREE plan.** The
+earlier proposal (10 MB / 1 GB) assumed Pro. Free gives **1 GB across the whole
+project, not per Family**, which changes the numbers materially:
 
-**🟠 DECISION — reactions table.** A legacy `reactions` table exists from Trib4l,
-keyed on `profile_id` with `check ((post_id is null) <> (comment_id is null))`.
-Everything in C1 is keyed on `membership_id` deliberately. Recommendation: a
-separate `message_reactions`. Cheap to reverse now, expensive later.
+| | Was (assumed Pro) | **Ruled (Free)** |
+|---|---|---|
+| Per-file cap | 10 MB | **5 MB** |
+| Per-Family quota | 1 GB | **100 MB** |
+| Deleting a message | deletes the blob | **deletes the blob**, unchanged |
+
+**5 MB** because on a 1 GB project a single 10 MB attachment is 1% of everything
+there is, and 5 MB still covers a phone photo (2–5 MB) or a document. **Set it on
+the bucket row as well as in the app**, so the platform enforces it and not only
+our code.
+
+**100 MB** budgets ~800 MB usable with headroom held back, because message
+attachments are not the only consumer: M1 (Wave 5, Stream B) adds photos on Table
+entries and attachments on Bricks — *"reusing Wave 3's storage policy pattern,
+same quotas, same caps"* — and K1 (Wave 8) generates PDFs. At 100 MB that is
+**8 Families before the project ceiling**. The number is purely a function of
+expected concurrent Families:
+
+| Concurrent Families | Per-Family quota |
+|---|---|
+| ~8 | 100 MB |
+| ~16 | 50 MB |
+| ~26 | 30 MB |
+
+> **✅ DECIDED (2026-09-02) — 8 concurrent Families.** 100 MB is therefore the
+> ruled quota, not a placeholder. But look at what the arithmetic does:
+> **8 × 100 MB = 800 MB, exactly the usable budget.** The ceiling invariant holds
+> *with equality* — there is no slack in it at all. A ninth Family, or a quota
+> nudged to 125 MB, breaks it the day it happens rather than eventually.
+
+**🔴 NEW SCOPE, created by the Free plan — per-Family quotas do not bound the
+project total.** Eight Families each sitting comfortably inside their own 100 MB
+is exactly 1 GB: the entire plan. The failure is then a Family **under** its own
+quota whose upload fails anyway, with a raw Supabase error instead of C2's plain
+message — which breaks C2's acceptance criterion (*"quota exceeded fails with a
+plain message, not a broken upload"*) in a way the per-Family check structurally
+cannot catch. C2 therefore needs **either a project-level check as well, or the
+invariant `max_families × per_family_quota ≤ usable budget` enforced somewhere
+real** — not merely true by arithmetic today. This problem did not exist on Pro,
+and it is the single biggest thing the Free ruling adds to C2's scope.
+
+**🔴 SECOND NEW SCOPE — nothing caps the number of Families.** `max_families = 8`
+is now a load-bearing platform constraint, and **it exists nowhere in the system**
+— verified: no `max_families`, `family_count` or equivalent in `supabase/migrations`,
+`app` or `lib`. The 12-member cap limits people *inside* a Family; nothing limits
+how many Families a project holds. So the storage ceiling can be broken by an
+`organizations` INSERT rather than by an upload: a ninth Family created through
+ordinary signup puts the project over budget before anyone attaches a single file,
+and the first symptom is **some other Family's upload failing** — a member who did
+nothing wrong, seeing a failure caused by a signup they never saw. That is worse
+than the failure mode the per-Family quota was built to prevent.
+
+Enforcing it is product behaviour C2 cannot infer, so it is decision 14.
+Recommendation: **a hard cap at Family creation with a plain refusal**, the same
+shape as the quota message, reversible by one constant. The alternative —
+monitor and alert — leaves the invariant as documentation and lands the failure
+on the wrong person.
+
+**✅ DECIDED (2026-09-02) — reactions.** `message_reactions` as its own table,
+keyed on `membership_id`. Plan-independent, so Free changes nothing here. Settled
+on blast radius: the legacy `reactions` table carries `cohort_id` and
+`required_stage_id`, and its policies are created in `posts_rls`, then dropped and
+recreated in `content_gating` behind `can_see_gated_content(org_id, cohort_id,
+required_stage_id)`. Extending it would mean rewriting stage-gating across three
+migrations so that a Family chat reaction is not silently gated by a Trib4l stage
+— **a bug that would look like it works.** A new table is one migration reusing
+`is_conversation_participant()`.
+
+Two details checked in the migrations while recording this, both of which make the
+call sharper than the blast-radius argument alone: `required_stage_id` is added to
+`reactions` **by `content_gating` itself**, so the three migrations are
+`posts_comments_reactions` → `posts_rls` → `content_gating`; and
+`reactions_exactly_one_target` is `check ((post_id is null) <> (comment_id is
+null))`, so a message-keyed reaction **cannot satisfy the constraint at all** — the
+row is rejected outright until that CHECK is rewritten. A `set_reaction_org_and_
+cohort()` trigger also derives `org_id`/`cohort_id` from the post or comment
+parent, which a message reaction does not have.
 
 **🟡 SCOPE — C2 has to build a table nobody scheduled.** Its acceptance is
 *"a mention writes a notification row"*, and **there is no `notifications`
@@ -85,9 +171,10 @@ matching is `favicon.ico`. The PWA shell is **W2's**, which the wave table puts 
 **the same wave, in Stream B**. The table's own note for Wave 4 says only *"N1
 consumes E1"* and never mentions this.
 
-> **Needs a call:** either W2 ships its PWA shell before N1's push work starts,
-> or N1 builds a minimal service worker and W2 adopts it. Two sessions writing
-> a service worker in the same wave is the collision.
+> **✅ DECIDED (2026-09-02).** Neither. The PWA shell — manifest, icons, and a
+> registered but empty service worker — ships as its own small PR **before** Wave
+> 4. W2 builds its UI on top of it; N1 adds only a `push` event handler to a file
+> that already exists. Neither session creates it, so neither can collide.
 
 **🔑 SECRET — VAPID keys** for Web Push, or a push provider. Nothing configured.
 
@@ -105,11 +192,21 @@ Account, keys, and install all outstanding.
 - The read mark is a **timestamp high-water**, so a message committing after the
   mark with an earlier `created_at` counts as read unseen.
 
-**Depends on C2** for the `notifications` table.
+**Depends on C2** for the `notifications` table — which is why the unblock plan's
+PR 8 specifies what N1 needs from it *before* C2 runs, rather than letting N1
+discover a mismatch in Wave 4.
+
+> **Tranche E of `stream-a-unblock-plan.md` covers this session.** After it, N1's
+> remaining blockers are five values only you can supply (VAPID pair, subject, two
+> Inngest keys) and one table C2 owns. The first carried defect above is fixed by
+> PR 13; the second is **decision 15**, because picking wrong is expensive to move
+> once a notification center sits on it.
 
 ## 5. Wave 5 — F1, then F2
 
-**🟠 DECISION — what does search actually cover?** The prompt says *"posts,
+**✅ DECIDED — what search actually covers** (ruling in the blockquote below;
+the problem statement is kept because it is why the ruling was needed). The
+prompt says *"posts,
 comments, Bricks, and Ledger events."* That list **omits `table_entries`** — the
 Table is the product's daily habit and its primary content. This is not an
 oversight I am inferring: Stream B's own migration says so in a comment —
@@ -117,18 +214,22 @@ oversight I am inferring: Stream B's own migration says so in a comment —
 > *"F1's keyword search and F3's results UI will read two content tables."*
 
 `posts` and `comments` are live Trib4l-inherited tables (used by
-`app/actions/posts.ts` and the org page), so they are not dead. **Is search
-over Family content, over legacy posts, or both?** The answer changes F1's shape
-and F3's grouping.
+`app/actions/posts.ts` and the org page), so they are not dead.
+
+> **✅ DECIDED (2026-09-02).** Both, minus the Ledger. `table_entries` and
+> `bricks` gain a `search_vector`; legacy `posts` and `comments` stay in scope;
+> **`ledger_events` is cut from F1.** F1 is a two-table migration, not four.
 
 **🟡 SCOPE — F1 is a migration session, not a read-only one.** Only `posts` and
-`comments` carry a `search_vector`. `table_entries`, `bricks` and `ledger_events`
-have none. F1 must add columns, triggers and GIN indexes to three tables.
+`comments` carry a `search_vector`. F1 must add columns, triggers and GIN indexes
+to `table_entries` and `bricks` — two tables, per the decision above.
 
-**🟡 SCOPE — `ledger_events` is not searchable in its current shape.** Its only
-content column is `payload jsonb`, with no text column and no vector. *"Search
-Ledger events"* needs a decision about which payload keys are searchable before
-an index can exist.
+**✅ RESOLVED — `ledger_events` is out of F1's scope.** Its only content column
+is `payload jsonb`, with no text column and no vector, and nothing writes to it
+(below), so an index over it would cover seeded rows and nothing else. Cut
+deliberately: *"search Ledger events"* is a **knowingly unmet acceptance
+criterion**, recorded here rather than forgotten. It returns when a session
+writes the Ledger.
 
 **Worth knowing: `ledger_events` has no writer.** Nothing in `app/` or `lib/`
 inserts into it — only the seed. Searching it returns seeded rows and nothing
@@ -140,13 +241,19 @@ Edge Function, a model provider and an API key — which is **A1's entire job, o
 wave later**. Verified: `supabase/functions/` **does not exist**; there is not a
 single Edge Function in the repo.
 
-> **The wave table has these backwards.** Either A1 moves ahead of F2, or F2
-> moves after Wave 6, or F2 builds throwaway AI plumbing that A1 then replaces —
-> which is exactly the "if A1's isolation is subtly wrong, it is wrong in six
-> sessions" risk the A1 gate exists to prevent.
+> **✅ DECIDED (2026-09-02) — the wave order stands, and F2 builds the real
+> thing.** Not throwaway plumbing. The reasoning: F2's function is the *safest
+> possible* first Edge Function — it takes a row id, embeds it, writes a vector.
+> It assembles no context and spans no records, so its blast radius is close to
+> nil, and A1 inherits a proven pattern instead of inventing one under a gate.
+> **Four conditions apply — §10.**
 
 **🟡 SCOPE — the `vector` extension is not enabled.** The only extension any
-migration creates is `pgcrypto`.
+migration creates is `pgcrypto`. Enabling it is one line; the real blocker is the
+**dimension**, which bakes the embedding model into the schema — `vector(1536)`
+for the recommended `text-embedding-3-small`. Changing it later means
+re-embedding everything, so **decision 4 is due before this migration is
+written**, one wave earlier than the run doc implies.
 
 ## 6. Wave 6 — A1, then A2
 
@@ -162,10 +269,16 @@ A1), not after."* On `main` today:
 
 The third is the one that matters here: the first AI session would ship prompts
 and suggestions to a third party, from CI and staging as well as production, and
-pass every other gate. **One small PR, owed before A1.**
+pass every other gate. **One small PR — and the F2 decision moves it a wave
+earlier. F2 (Wave 5) is now the first code in the repo that calls a model, so
+this is owed before F2, not before A1.**
 
 **🟠 DECISION — which model provider and model.** Specified nowhere. CLAUDE.md's
-stack says only *"Edge Functions for all AI calls."* Needed before A1 can start.
+stack says only *"Edge Functions for all AI calls."* Still open. Recommendation
+in §10, row 4: Claude for generation, OpenAI `text-embedding-3-small` at 1536
+dimensions for embeddings, because **Anthropic has no embedding endpoint** — two
+vendors, not one. **The embedding half is due before F2 in Wave 5, not here**;
+only the generation half waits for A1.
 
 **🔑 SECRET — the model API key**, server-side only. Invariant 2: it must never
 reach the client bundle, and A1's acceptance greps the build output for it.
@@ -180,7 +293,10 @@ leaving `pg_temp` implicitly first — including `is_org_member()` and
 its own migration."* Latent today, but A1's whole gate is that its context
 assembler cannot reach another Family, and it reaches through these functions.
 
-**Gate:** A1 merges only at 09:30 with Ivan present. A2 does not.
+**Gate:** A1 merges only at 09:30 with Ivan present. A2 does not. **Widened by
+the F2 decision: the gate reviews all of `supabase/functions/`, F2's embedding
+function included, not only A1's own.** This has to be written into A1's prompt
+before Wave 6, or it will not happen.
 
 ## 7. Wave 7 — A5 (the worst one)
 
@@ -207,16 +323,21 @@ only the confirmed number enters the ledger."* The table has `description`,
 `due_at`, `status`, `assignee`, `verified_by`, `verified_at` — and **nowhere to
 put an estimate, confirmed or suggested**.
 
-**🟠 DECISION — the slice formula itself.** Invariant 1 says it is deterministic
-and untouchable, but the actual formula — hours, multipliers, which Slicing-Pie
-variant, what a non-cash contribution is worth — is specified nowhere I can find.
-It is the one thing on this project that cannot be inferred from the code,
-because the code does not exist.
+**✅ DECIDED (2026-09-02) — the slice formula.** Standard Slicing Pie,
+unmodified: **non-cash × 2, cash × 4.** Time is `hours × rate × 2`; cash and
+expenses are `amount × 4`. `rate_cents` and `multiplier` **freeze onto the ledger
+row at insert**, and `value_cents` derives from that frozen pair — so a later
+rate change applies forward only and can never rewrite history. Slice
+percentages are computed at read time from the row values and **never stored.**
 
 **Gate:** merges at 09:30 with Ivan present, no exceptions.
 
-> **This needs a scheduled session, not a fix.** It is the largest structural gap
-> in the run doc's Stream A column, and it is three waves out.
+> **✅ DECIDED (2026-09-02) — a schema session is slotted upstream of Wave 7:**
+> `contribution_ledger`, the `bricks` estimate columns, the deterministic slice
+> function, pgTAP and RLS, run in the schema sandbox. Unblocked by the formula
+> decision above. **That session's prompt is not yet written** — this is now the
+> largest remaining piece of work in the run doc's Stream A column, and it is
+> three waves out.
 
 ## 8. Wave 8 — K1
 
@@ -256,6 +377,25 @@ that choice determines where event payloads land.
   production. R1 wants *"staging and production differ only where the X1 README
   already says they do"* — that needs two environments to differ.
 
+> **✅ DECIDED (2026-09-02) — stay on Hobby (Free) for now.** Four consequences,
+> the first verified against Vercel's docs and the rest to plan around:
+>
+> 1. **Preview deployments can still be protected.** Vercel Authentication
+>    (Standard Protection) is available on Hobby, so previews are not public by
+>    URL — invariant 9 survives. The production domain stays public, which is
+>    intended. **Confirm it is switched on**, since a preview will carry seeded
+>    Family content.
+> 2. **Named/custom environments are a Pro feature.** So R1's *"staging and
+>    production differ only where the X1 README says"* has to ride on
+>    **Preview-vs-Production environment variables inside the one project** —
+>    which Hobby does scope separately. There is no third, stable `staging` URL.
+> 3. **The quota already ran out once** (`b3204cc`), and nothing about that
+>    changed. Expect it again; R1's *"one-command deploy from main, gated on green
+>    CI"* should not also spend preview builds on every push.
+> 4. **Hobby is documented as being for personal, non-commercial projects.** A
+>    platform with an equity engine is not that, so this needs revisiting before
+>    F4milia is commercial — a plan decision deferred, not a plan decision closed.
+
 **Not a blocker, better than expected:** R1's *"grep for undecided migrations
 returns zero"* is already satisfied — **all 75 migrations carry a `-- Reverse:`
 header.** What is missing is that none has been *executed*; R1's rollback drill
@@ -263,37 +403,105 @@ is real work, but it starts from documented down-paths rather than from nothing.
 
 ---
 
-## 10. Decisions I need from you, collected
+## 10. Decisions — the checklist
 
-Ordered by when they block. The first two are this week.
+Numbering is stable: a row keeps its number for the life of this document, so
+"decision 4" means the same thing in every doc that cites it. Ruled rows state
+the ruling, not the recommendation that produced it.
 
-| # | Decision | Blocks | Default if you say nothing |
+### ✅ Ruled
+
+| # | Decision | Blocked | The ruling |
 |---|---|---|---|
-| 1 | Storage per-file cap, per-Family quota, and whether soft-deleted attachments count | **C2, now** | 10 MB / 1 GB / yes — ships as written |
-| 2 | `message_reactions` as its own table, not the legacy `reactions` | **C2, now** | Ships as its own table |
-| 3 | Does search cover `table_entries`? Legacy `posts`/`comments` too? | **F1, Wave 5** | — I will not guess this one |
-| 4 | Model provider and model, plus the API key | **A1, Wave 6** | — |
-| 5 | AI cost ceiling / rate limit | **A1, Wave 6** | — |
-| 6 | **The slice formula.** Hours, multipliers, the Slicing-Pie variant | **A5, Wave 7** | — |
-| 7 | PostHog cloud or self-hosted | **Q3, Wave 9** | — |
-| 8 | Vercel plan, and whether staging gets its own project | **R1, Wave 10** | — |
+| 1 | Storage per-file cap, per-Family quota, blob on delete | C2 | **On Supabase Free** — 1 GB project-wide, not per Family: **5 MB per file**, set on the bucket row as well as in the app · **100 MB per Family** · deleting a message **deletes the blob**. Sized for **8 concurrent Families** (decision 12), which consumes the usable budget exactly. **Free adds scope:** per-Family quotas do not bound the project total, so C2 needs a project-level check too. Reasoning in §3 |
+| 2 | `message_reactions` as its own table, not the legacy `reactions` | C2 | **Its own table, keyed on `membership_id`.** Plan-independent. Extending the legacy table would mean rewriting stage-gating across `posts_rls` and `content_gating` so a chat reaction is not silently gated by a Trib4l stage — a bug that looks like it works. A new table is one migration reusing `is_conversation_participant()`. Reasoning in §3 |
+| 3 | What search covers | F1, Wave 5 | `table_entries` and `bricks` gain a `search_vector`; legacy `posts`/`comments` stay in scope; **`ledger_events` is cut.** F1 is a two-table migration. The cut is a knowingly unmet acceptance criterion, recorded in §5 |
+| 6 | The slice formula | A5, Wave 7 | Standard Slicing Pie, unmodified: **non-cash × 2, cash × 4.** `rate_cents` and `multiplier` freeze onto the ledger row at insert; `value_cents` derives from the frozen pair; slice % computed at read time and never stored; a rate change applies forward only |
+| 8 | Vercel plan and project shape | R1, Wave 10 | **Hobby (Free), one project, for now.** Preview protection is available on Hobby so invariant 9 holds; named staging environments are not, so R1 uses Preview-vs-Production env vars in the single project. Revisit before F4milia is commercial — Hobby is documented as non-commercial. Consequences in §9 |
+| 9 | F2 / A1 ordering | Wave 5 | **No swap — the run doc's wave order is followed.** F2 keeps Wave 5 and builds the first Edge Function itself, under the four conditions below |
+| 10 | Service worker ownership | N1, Wave 4 | The PWA shell — manifest, icons, a registered but empty service worker — ships as **its own small PR before Wave 4.** W2 builds its UI on it; N1 adds only a `push` handler |
+| 11 | The equity engine | A5, Wave 7 | A **schema session is slotted upstream of Wave 7**: `contribution_ledger`, the `bricks` estimate columns, the deterministic slice function, pgTAP, RLS, in the schema sandbox. Unblocked by row 6. **Its prompt is unwritten** |
+| 12 | Expected concurrent Families | C2 | **8.** Fixes the per-Family quota at 100 MB — and `8 × 100 MB = 800 MB` is the usable budget exactly, so the ceiling invariant holds with equality and has no slack. Also makes `max_families = 8` a real constraint, which nothing in the system enforces; see decision 14 |
 
-## 11. Sequencing problems, which no decision fixes
+### 🟠 Open — six
 
-Three places where the wave table's own ordering is the blocker.
+| # | Decision | Blocks | Recommendation on the table |
+|---|---|---|---|
+| 4 | Model provider, model, and the API keys | **F2, Wave 5** (see note) · A1, Wave 6 | **`claude-opus-5`** for generation at `effort: "low"`, called from a Supabase Edge Function. **OpenAI `text-embedding-3-small`, 1536 dimensions**, for embeddings — Anthropic has no embedding endpoint, so this is two vendors and two keys, both in Supabase secrets, never a Vercel env or the client bundle. Costs and the cheaper levers: `ai-model-and-cost.md`. An earlier draft here named `claude-sonnet-5`; that was a cost downgrade made without asking, and is corrected |
+| 5 | AI cost ceiling | A1, Wave 6 | 10 suggestions/member/hour · 100/Family/day · `output_config: {effort: "low"}` with **`max_tokens: ~2048`** · an `AI_DISABLED` kill switch returning a plain refusal. Reuse `lib/email`'s rate-limit pattern. **The cap IS the budget:** 100/Family/day on Opus 5 uncached is ~$1,140/month at 8 Families; prompt caching takes that to ~$276. Set the numbers against `ai-model-and-cost.md` §3, not against intuition. **`max_tokens: 1024` was wrong** — thinking bills as output and counts against the cap, so it can truncate the suggestion |
+| 7 | PostHog cloud or self-hosted | Q3, Wave 9 | Cloud, EU region. Self-hosting means running ClickHouse to receive event names and counts; invariant 4 already bounds the payload in code |
+| 13 | **Ledger durability on Free** | the equity-engine schema session, before Wave 7 | Supabase Free does not include point-in-time recovery, and its backup guarantees are weaker than Pro's — **believed, not verified against your dashboard.** CLAUDE.md calls the Ledger *"a system of record for eventual ownership"*, so this wants deciding before it holds real slices: accept Free for pre-production, or upgrade when the engine ships |
+| 16 | **The app icon** | W2 (Stream B, Wave 4) · unblock-plan PR 3 | The only brand asset in the repo is the default `app/favicon.ico`, and a PWA manifest needs 192px and 512px icons to be installable. **Recommended: a provisional mark from locked tokens only** — masonry motif, Deep Slate, zero radius, no invented lettering — shipped labelled as provisional so the shell is testable without a brand decision being made silently. Replace before any public install |
+| 15 | **The read mark's design** | **N1, Wave 4** | The mark is a **timestamp high-water**, so a message committing after the mark but carrying an earlier `created_at` counts as read without being seen — the sibling of the `audit_log.created_at` transaction-time lesson. Either a `seq`-style monotonic column on `messages`, or per-message read receipts. **Recommended: the monotonic column** — cheaper, and it is how `audit_log` already solved this exact ordering problem. Receipts only if *"who has seen this"* is a product requirement rather than a badge |
+| 14 | **How the 8-Family cap is enforced** | **C2, now** · every signup path | Decision 12 makes `max_families = 8` load-bearing, and nothing in migrations, `app` or `lib` implements any such limit — so an `organizations` INSERT can break the storage ceiling, and the symptom lands on an unrelated Family's upload. **Recommended: a hard cap at Family creation with a plain refusal**, reversible by one constant. The alternative, monitor-and-alert, leaves the invariant as prose |
+
+> **Row 4 moved a wave earlier.** Decision 9 keeps F2 in Wave 5, and F2 cannot
+> write its migration without the embedding provider *and* the dimension:
+> `vector(1536)` bakes the model choice into the schema, and changing it later
+> means re-embedding everything. The **generation** half of row 4 — Claude, the
+> model, its key — is still A1's, in Wave 6.
+
+### Conditions attached to decision 9
+
+F2 creates `supabase/functions/` one wave before the session whose 09:30 gate
+exists to get Edge Function isolation right. Four conditions make that safe, and
+all four are obligations on a session, not notes:
+
+1. **F2's function is write-only and single-row** — it takes a row id, embeds it,
+   writes the vector. It never assembles context, never spans records, never
+   returns content. Stated in F2's PR description as a constraint, not as a fact.
+2. **The embedding table carries the same RLS as its source table** (invariant 5),
+   proven with the dual-Family fixture on every read path.
+3. **A1's gate covers all of `supabase/functions/`**, F2's function included — not
+   only A1's own file. This widens A1's gate and must be written into A1's prompt.
+4. **Invariant 12 lands before F2, not before A1.** F2 is the first code in the
+   repo that calls a model, so it is the first that could ship a prompt offsite.
+
+### Owed, no decision needed — awaiting a go-ahead
+
+| Item | Why now | Size |
+|---|---|---|
+| Sentry: DSN to the environment, `dataCollection` options set explicitly off | Invariant 12, and condition 4 above moves it ahead of Wave 5 | One small PR |
+| `search_path` / `pg_temp` on the 16 `SECURITY DEFINER` functions | Every C1 policy calls `is_org_member()` / `has_org_role()` | One migration |
+
+### Accounts and keys only James can create
+
+| Key or account | First needed by |
+|---|---|
+| OpenAI API key (embeddings) | **F2, Wave 5** |
+| Anthropic API key (generation) | A1, Wave 6 |
+| Inngest account and keys | N1, Wave 4 |
+| VAPID keys for web push | N1, Wave 4 |
+| PostHog project | Q3, Wave 9 |
+| Vercel Pro upgrade | R1, Wave 10 — but the hobby quota bites sooner |
+
+`@react-pdf/renderer` (K1, Wave 8) and the `vector` extension (F2, Wave 5) are
+**not** in this table: they need no account, key or spend — an `npm install` and
+one migration line, done by the session that needs them. The only unknown is
+whether the hosted Supabase plan exposes `pgvector`; see §13.
+
+## 11. Sequencing problems — all three ruled on
+
+Three places where the wave table's own ordering was the blocker. None is open.
+Each entry keeps the original problem statement, then the ruling.
 
 1. **F2 (Wave 5) needs A1 (Wave 6).** Semantic search cannot embed anything
-   without the Edge Function and model key A1 establishes. Move A1 earlier, move
-   F2 later, or accept throwaway plumbing in the one area the run doc gates
-   precisely because it must be built once, correctly.
+   without the Edge Function and model key A1 establishes. ✅ **The wave order
+   stands** — the run doc is followed. F2 builds the first Edge Function itself:
+   write-only, single-row, no context assembly, and A1's gate widens to review
+   it. Four conditions in §10. What this pulls forward: the embedding key and
+   vector dimension (decision 4) and the invariant 12 PR, both now due **before
+   Wave 5**.
 2. **N1 (Wave 4) needs W2 (Wave 4, other stream).** Web push needs a service
-   worker; the PWA shell is W2's. Same wave, parallel streams, and the wave
-   table's note does not mention it.
+   worker; the PWA shell is W2's. ✅ **The shell ships as its own PR before Wave
+   4** — manifest, icons, an empty registered service worker. W2 builds on it,
+   N1 adds a `push` handler, neither creates the file.
 3. **No session builds the equity engine**, yet A5 (Wave 7) assists it and K1
-   (Wave 8) reports on it. Slot a schema session upstream of Wave 7 — the wave
-   table's own Wave 0 note describes exactly this remedy: *"a gap that a Wave 4+
-   session silently assumes gets slotted upstream of that wave, or the wave
-   table gets re-cut."*
+   (Wave 8) reports on it. ✅ **A schema session is slotted upstream of Wave 7**,
+   which is the remedy the wave table's own Wave 0 note prescribes: *"a gap that
+   a Wave 4+ session silently assumes gets slotted upstream of that wave, or the
+   wave table gets re-cut."* Its prompt still has to be written; that is the
+   open work, not the decision.
 
 ## 12. What is *not* a blocker
 
@@ -346,7 +554,12 @@ grep -rn "dsn" sentry*.ts instrumentation-client.ts
 grep -n -A6 "dataCollection" sentry.server.config.ts               # all commented out
 ```
 
-Two things I did **not** verify and am flagging as such: whether the Supabase
-plan in use supports `pgvector` on the hosted side (local is a migration away),
-and whether a spec document outside this repo already fixes the slice formula.
-Both are questions for you rather than checks I can run.
+One thing I did **not** verify and am flagging as such: whether the Supabase
+plan in use supports `pgvector` on the hosted side. The plan is now known to be
+**Free** (per the storage ruling in §3), and `pgvector` is believed available on
+every Supabase tier — but that is belief, not a check I ran, and the same applies
+to the Free-plan backup claim in decision 13. Local is a migration away; hosted
+needs the extension enabled in the dashboard, and F2 (Wave 5) needs it.
+The slice formula — the other unverified question in the original draft — is now
+decided outright (§10, row 6), so it is no longer a question about a spec
+document elsewhere.

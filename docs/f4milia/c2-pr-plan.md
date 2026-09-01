@@ -191,14 +191,34 @@ thread view and attachment upload, with the copy deck.
 so the streams still share the trunk. Collisions are avoidable if C2 takes the
 slots below and no others.
 
-| | Stream A (C2) takes | Already on `main` |
-|---|---|---|
-| **Migrations** | `20260903100801`+ — the `x01` slot | Stream B's `x11`/`x12` through `20260903100812_bricks_rls` |
-| **pgTAP files** | **`140`+** | `110_conversations_schema`–`114` (C1), `110_towers`, `120_builds`, `130_bricks` (Stream B) |
+**🔴 CORRECTED 2026-09-02 — the reservation below had gone stale, and its own
+verification line is the evidence.** It read *"the highest migration is
+`20260903100812`, and the highest `x01` slot used is `20260903100706`. So
+`20260903100801`+ and pgTAP `140`+ are both clear."* That was true after `#80`.
+Stream B then landed `table_entries`, `vows`, the streak and the seed fixtures,
+and both statements stopped being true:
 
-Verified against `origin/main` after `#80`, not predicted: `120` and `130` are
-taken, the highest migration is `20260903100812`, and the highest `x01` slot used
-is `20260903100706`. So `20260903100801`+ and pgTAP `140`+ are both clear.
+| Reserved | Reality on `main` today |
+|---|---|
+| Migrations from `20260903100801` | The slot is **free but now below the branch max, `20260903101311`** — taking it applies the migration *out of order*, beneath versions already present. Eight Stream B migrations sit above `100812`: `100911`, `101011`, `101012`, `101111`, `101112`, `101211`, `101311` |
+| pgTAP from `140` | **Taken.** `140_brick_release_on_departure`, `150_table_entries`, `160_vows`, `170_family_streak`, `180_seed_domain_data`, `190_qa_fixtures` |
+
+**Corrected allocation**, verified against the merged tree — max migration
+`20260903101311`, max pgTAP `190`:
+
+| | Stream A (C2) takes | Stream B's lane |
+|---|---|---|
+| **Migrations** | PR 1 → `20260903101401` · PR 2 → `20260903101501`–`101505` · PR 3 → `20260903101601` | `x11` at each of those minutes |
+| **pgTAP files** | **`200`+** — PR 1 `200`, PR 2 `210`–`250`, PR 3 `260` | unchanged |
+
+`stream-a-unblock-plan.md` §1.1 carries the same table plus the Stream A
+unblocking PRs that follow C2, because two documents allocating the one lane
+independently is what produced this correction.
+
+**The lesson, which the original section had right and still lost to:** a slot
+reservation is only true as of a named commit. *"Verified, not predicted"* is not
+enough — re-check the branch max immediately before writing the file. Stream B
+does not stop while a plan is being read.
 
 ### The `030` census — resolved on `main`, and the base C2 computes from
 
