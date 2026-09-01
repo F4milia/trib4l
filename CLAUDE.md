@@ -446,3 +446,11 @@ than week one.
   subscriber was allowed to see it · any published table whose updates matter
   needs REPLICA IDENTITY FULL. C1 soft-deletes messages via UPDATE, so without
   it a deleted message stays on every open screen until a refresh.
+- 2026-09-02 · C1 · Supabase Realtime BROADCAST has no access control: a channel
+  is a string, and any authenticated client may join any name. Measured — a
+  member of Family B received Family A's typing events on
+  `conversation:<uuid>`, while `postgres_changes` on the same channel for the
+  same user delivered nothing · RLS covers the row paths only. Never put content
+  in a broadcast payload, and treat a conversation id in someone's URL history
+  as a permanent capability until Realtime Authorization gates the join. Owed to
+  C2: docs/f4milia/c2-realtime-broadcast-authorization.md.
