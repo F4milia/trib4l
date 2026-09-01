@@ -5,7 +5,7 @@ Everything that would halt a Stream A session, session by session, in wave order
 | | |
 |---|---|
 | **Written** | 2026-09-02 |
-| **Revised** | 2026-09-02 — decisions 1, 2, 3, 6, 9, 10, 11 ruled on; two new ones opened by the Supabase **Free** plan. See §10 |
+| **Revised** | 2026-09-02 — decisions 1, 2, 3, 6, 9, 10, 11, 12 ruled on; the Supabase **Free** plan opened 13 and 14. See §10 |
 | **Against** | `F4milia — Complete Run Doc (Prompts Included).md`, Stream A column |
 | **Repo state** | `origin/main` @ `8ed81dc` (after `#91`) |
 | **Scope** | Waves 3–10. Waves 0–2 (S1, S2, C1) are merged |
@@ -27,17 +27,17 @@ Everything that would halt a Stream A session, session by session, in wave order
 **The short version, as of the 2026-09-02 revision.** Both sessions that could not
 run as written now have a ruled path: **A5** gets a schema session slotted upstream of
 Wave 7, and **F2** keeps Wave 5 and builds the first Edge Function itself under four
-conditions (§10). **Six decisions are still open** — the model provider and keys, the
-AI cost ceiling, PostHog hosting, the Vercel plan, the expected Family count, and
-Ledger durability — the last two opened by the ruling that storage sits on Supabase
-**Free**, which also adds real scope to C2. Everything else is a dependency to install
+conditions (§10). **Five decisions are still open** — the model provider and keys, the
+AI cost ceiling, PostHog hosting, the Vercel plan, and how a Family-count cap is
+enforced — the last opened by the ruling that storage sits on Supabase **Free**,
+which also adds real scope to C2. Everything else is a dependency to install
 or a scope surprise.
 
 ## 2. Summary
 
 | Wave | Session | Hardest blocker | Unblocked by |
 |---|---|---|---|
-| 3 | **C2** | ✅ storage caps and reactions ruled · 🔴 **on Free, per-Family quotas do not bound the 1 GB project total** · 🟡 must build the `notifications` table nobody scheduled | Decision 12 |
+| 3 | **C2** | ✅ storage caps, reactions and an 8-Family ceiling ruled · 🔴 **per-Family quotas do not bound the 1 GB total, and nothing anywhere caps Family count** · 🟡 must build the `notifications` table nobody scheduled | Decision 14 |
 | 4 | **N1** | ✅ the PWA shell ships as its own PR before the wave · 🔑 Inngest + VAPID still outstanding | Accounts |
 | 5 | **F1** | ✅ scope ruled: `table_entries` + `bricks` in, `ledger_events` cut · 🟡 two tables need a `search_vector` | Clear to run |
 | 5 | **F2** | ✅ builds the first Edge Function itself, under four conditions (§10) · 🔑 **embedding key + dimension now due here** | Decision 4 |
@@ -62,7 +62,7 @@ project, not per Family**, which changes the numbers materially:
 | | Was (assumed Pro) | **Ruled (Free)** |
 |---|---|---|
 | Per-file cap | 10 MB | **5 MB** |
-| Per-Family quota | 1 GB | **100 MB** — placeholder, see below |
+| Per-Family quota | 1 GB | **100 MB** |
 | Deleting a message | deletes the blob | **deletes the blob**, unchanged |
 
 **5 MB** because on a 1 GB project a single 10 MB attachment is 1% of everything
@@ -83,8 +83,11 @@ expected concurrent Families:
 | ~16 | 50 MB |
 | ~26 | 30 MB |
 
-> **🟠 STILL OPEN — the Family count.** 100 MB is a placeholder for ≤8. The quota
-> cannot be set properly until that number exists. Tracked as decision 12.
+> **✅ DECIDED (2026-09-02) — 8 concurrent Families.** 100 MB is therefore the
+> ruled quota, not a placeholder. But look at what the arithmetic does:
+> **8 × 100 MB = 800 MB, exactly the usable budget.** The ceiling invariant holds
+> *with equality* — there is no slack in it at all. A ninth Family, or a quota
+> nudged to 125 MB, breaks it the day it happens rather than eventually.
 
 **🔴 NEW SCOPE, created by the Free plan — per-Family quotas do not bound the
 project total.** Eight Families each sitting comfortably inside their own 100 MB
@@ -96,6 +99,23 @@ cannot catch. C2 therefore needs **either a project-level check as well, or the
 invariant `max_families × per_family_quota ≤ usable budget` enforced somewhere
 real** — not merely true by arithmetic today. This problem did not exist on Pro,
 and it is the single biggest thing the Free ruling adds to C2's scope.
+
+**🔴 SECOND NEW SCOPE — nothing caps the number of Families.** `max_families = 8`
+is now a load-bearing platform constraint, and **it exists nowhere in the system**
+— verified: no `max_families`, `family_count` or equivalent in `supabase/migrations`,
+`app` or `lib`. The 12-member cap limits people *inside* a Family; nothing limits
+how many Families a project holds. So the storage ceiling can be broken by an
+`organizations` INSERT rather than by an upload: a ninth Family created through
+ordinary signup puts the project over budget before anyone attaches a single file,
+and the first symptom is **some other Family's upload failing** — a member who did
+nothing wrong, seeing a failure caused by a signup they never saw. That is worse
+than the failure mode the per-Family quota was built to prevent.
+
+Enforcing it is product behaviour C2 cannot infer, so it is decision 14.
+Recommendation: **a hard cap at Family creation with a plain refusal**, the same
+shape as the quota message, reversible by one constant. The alternative —
+monitor and alert — leaves the invariant as documentation and lands the failure
+on the wrong person.
 
 **✅ DECIDED (2026-09-02) — reactions.** `message_reactions` as its own table,
 keyed on `membership_id`. Plan-independent, so Free changes nothing here. Settled
@@ -357,15 +377,16 @@ the ruling, not the recommendation that produced it.
 
 | # | Decision | Blocked | The ruling |
 |---|---|---|---|
-| 1 | Storage per-file cap, per-Family quota, blob on delete | C2 | **On Supabase Free** — 1 GB project-wide, not per Family: **5 MB per file**, set on the bucket row as well as in the app · **100 MB per Family** · deleting a message **deletes the blob**. The 100 MB is a placeholder for ≤8 concurrent Families (decision 12). **Free adds scope:** per-Family quotas do not bound the project total, so C2 needs a project-level check too. Reasoning in §3 |
+| 1 | Storage per-file cap, per-Family quota, blob on delete | C2 | **On Supabase Free** — 1 GB project-wide, not per Family: **5 MB per file**, set on the bucket row as well as in the app · **100 MB per Family** · deleting a message **deletes the blob**. Sized for **8 concurrent Families** (decision 12), which consumes the usable budget exactly. **Free adds scope:** per-Family quotas do not bound the project total, so C2 needs a project-level check too. Reasoning in §3 |
 | 2 | `message_reactions` as its own table, not the legacy `reactions` | C2 | **Its own table, keyed on `membership_id`.** Plan-independent. Extending the legacy table would mean rewriting stage-gating across `posts_rls` and `content_gating` so a chat reaction is not silently gated by a Trib4l stage — a bug that looks like it works. A new table is one migration reusing `is_conversation_participant()`. Reasoning in §3 |
 | 3 | What search covers | F1, Wave 5 | `table_entries` and `bricks` gain a `search_vector`; legacy `posts`/`comments` stay in scope; **`ledger_events` is cut.** F1 is a two-table migration. The cut is a knowingly unmet acceptance criterion, recorded in §5 |
 | 6 | The slice formula | A5, Wave 7 | Standard Slicing Pie, unmodified: **non-cash × 2, cash × 4.** `rate_cents` and `multiplier` freeze onto the ledger row at insert; `value_cents` derives from the frozen pair; slice % computed at read time and never stored; a rate change applies forward only |
 | 9 | F2 / A1 ordering | Wave 5 | **No swap — the run doc's wave order is followed.** F2 keeps Wave 5 and builds the first Edge Function itself, under the four conditions below |
 | 10 | Service worker ownership | N1, Wave 4 | The PWA shell — manifest, icons, a registered but empty service worker — ships as **its own small PR before Wave 4.** W2 builds its UI on it; N1 adds only a `push` handler |
 | 11 | The equity engine | A5, Wave 7 | A **schema session is slotted upstream of Wave 7**: `contribution_ledger`, the `bricks` estimate columns, the deterministic slice function, pgTAP, RLS, in the schema sandbox. Unblocked by row 6. **Its prompt is unwritten** |
+| 12 | Expected concurrent Families | C2 | **8.** Fixes the per-Family quota at 100 MB — and `8 × 100 MB = 800 MB` is the usable budget exactly, so the ceiling invariant holds with equality and has no slack. Also makes `max_families = 8` a real constraint, which nothing in the system enforces; see decision 14 |
 
-### 🟠 Open — six
+### 🟠 Open — five
 
 | # | Decision | Blocks | Recommendation on the table |
 |---|---|---|---|
@@ -373,8 +394,8 @@ the ruling, not the recommendation that produced it.
 | 5 | AI cost ceiling | A1, Wave 6 | 10 suggestions/member/hour · 100/Family/day · `max_tokens: 1024` per call · an `AI_DISABLED` kill switch returning a plain refusal. Reuse `lib/email`'s rate-limit pattern rather than inventing one |
 | 7 | PostHog cloud or self-hosted | Q3, Wave 9 | Cloud, EU region. Self-hosting means running ClickHouse to receive event names and counts; invariant 4 already bounds the payload in code |
 | 8 | Vercel plan and project shape | R1, Wave 10 | Pro, **one** project, three environments (Production / Staging / Preview). Two projects doubles env-var drift, which is the opposite of what R1 asks for |
-| 12 | **Expected concurrent Families** | **C2, now** · M1 (Stream B, Wave 5) | Sets the per-Family quota: ~8 → 100 MB · ~16 → 50 MB · ~26 → 30 MB. 100 MB ships as the ≤8 placeholder until the number exists, and the same number is the `max_families` side of the project-ceiling invariant in §3 |
 | 13 | **Ledger durability on Free** | the equity-engine schema session, before Wave 7 | Supabase Free does not include point-in-time recovery, and its backup guarantees are weaker than Pro's — **believed, not verified against your dashboard.** CLAUDE.md calls the Ledger *"a system of record for eventual ownership"*, so this wants deciding before it holds real slices: accept Free for pre-production, or upgrade when the engine ships |
+| 14 | **How the 8-Family cap is enforced** | **C2, now** · every signup path | Decision 12 makes `max_families = 8` load-bearing, and nothing in migrations, `app` or `lib` implements any such limit — so an `organizations` INSERT can break the storage ceiling, and the symptom lands on an unrelated Family's upload. **Recommended: a hard cap at Family creation with a plain refusal**, reversible by one constant. The alternative, monitor-and-alert, leaves the invariant as prose |
 
 > **Row 4 moved a wave earlier.** Decision 9 keeps F2 in Wave 5, and F2 cannot
 > write its migration without the embedding provider *and* the dimension:
