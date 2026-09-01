@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
@@ -7,6 +8,7 @@ export const USERS = {
   bob: { email: "bob@f4milia.test", password: "password123" }, // organizer: caregiver-circle
   carol: { email: "carol@f4milia.test", password: "password123" }, // org_owner: founder-collective
   dave: { email: "dave@f4milia.test", password: "password123" }, // member: wellness-guild
+  erin: { email: "erin@f4milia.test", password: "password123" }, // platform_staff, no org membership
 } as const;
 
 export const ORG = {
@@ -33,14 +35,59 @@ export const ORG_IDS: Record<string, string> = {
  * no Origin header, so driving the actual form is the only honest way to do
  * this -- see docs/SESSION-LOG.md.
  */
-export async function signIn(page: Page, user: keyof typeof USERS) {
+/**
+ * Waits for Turnstile to put a token in the form (S2).
+ *
+ * Not a workaround for a slow test -- it is what a human's typing time supplies
+ * for free. Measured in this browser on 2026-09-01: the token appears 2.7
+ * seconds after /login loads, while these specs fill both fields and submit in
+ * milliseconds. Submitting first is a real failure (GoTrue answers 400
+ * captcha_failed), so waiting is the honest fix rather than a relaxed
+ * assertion.
+ *
+ * A no-op where no site key is configured: no widget renders, so there is no
+ * input to wait for and nothing to wait on.
+ */
+async function waitForCaptcha(page: Page) {
+  if ((await page.locator(".cf-turnstile").count()) === 0) return;
+  await expect
+    .poll(
+      async () =>
+        (await page.locator('input[name="cf-turnstile-response"]').inputValue().catch(() => ""))
+          .length,
+      { timeout: 30_000, intervals: [100] },
+    )
+    .toBeGreaterThan(0);
+}
+
+/**
+ * Signs in with arbitrary credentials, for specs that create their own
+ * disposable accounts rather than using a seeded one.
+ *
+ * Exported so those specs do not hand-roll a second copy of this: my first
+ * version in the account-deletion spec omitted the navigation wait, so it moved
+ * on while the POST was still in flight and every assertion after it saw
+ * /login. The captcha wait and the navigation wait are both load-bearing.
+ */
+export async function signInWithCredentials(page: Page, email: string, password: string) {
   await page.goto("/login");
-  await page.fill("#email", USERS[user].email);
-  await page.fill("#password", USERS[user].password);
+  await page.fill("#email", email);
+  await page.fill("#password", password);
+  await waitForCaptcha(page);
   await Promise.all([
     page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 20_000 }),
     page.click('button[type="submit"]'),
   ]);
+}
+
+export async function signIn(page: Page, user: keyof typeof USERS) {
+  await signInWithCredentials(page, USERS[user].email, USERS[user].password);
+  /**
+   * Deliberately "not /login" rather than "is /": S2's two-factor gate sends a
+   * staff account with no authenticator to /settings/security instead of home,
+   * and that is still a completed sign-in. A stricter assertion here would fail
+   * for exactly the account the gate exists for.
+   */
   await expect(page).not.toHaveURL(/\/login/);
 }
 
@@ -91,12 +138,62 @@ const SUPABASE_SERVICE_ROLE_KEY = keyFor(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
 );
 
+/**
+ * Seeded user ids, for the admin-API calls below. Mirrors supabase/seed.sql.
+ */
+export const USER_IDS: Record<string, string> = {
+  alice: "00000000-0000-0000-0000-0000000000a1",
+  bob: "00000000-0000-0000-0000-0000000000a2",
+  carol: "00000000-0000-0000-0000-0000000000a3",
+  dave: "00000000-0000-0000-0000-0000000000a4",
+  erin: "00000000-0000-0000-0000-0000000000a5",
+  frank: "00000000-0000-0000-0000-0000000000a6",
+};
+
+/**
+ * Removes every MFA factor from a seeded account, so a spec that depends on
+ * "this account has no authenticator" is not at the mercy of what ran before it.
+ *
+ * WHY IT IS NEEDED. tests/isolation/platform-admin.test.ts calls elevateToAal2()
+ * on erin and frank, which enrols and verifies a real TOTP factor and leaves it
+ * behind. In CI that is invisible -- the browser job runs its own `supabase db
+ * reset` and never runs the isolation suite -- but locally both suites share one
+ * database, so the staff-gate spec saw erin sent to /auth/verify instead of to
+ * enrolment. "Passes in CI, fails on your machine" is a worse failure than
+ * either, so the precondition is now established rather than assumed.
+ *
+ * Through the ADMIN API, not the database: service_role has no privilege on
+ * platform_staff or on the auth schema (grants here are least-privilege per
+ * migration -- CLAUDE.md, 2026-08-29), while admin.getUserById returns the
+ * factor list and admin.mfa.deleteFactor removes them.
+ */
+export async function clearMfaFactors(userId: string): Promise<void> {
+  const service = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const { data, error } = await service.auth.admin.getUserById(userId);
+  if (error) throw new Error(`clearMfaFactors: ${error.message}`);
+
+  for (const factor of data.user?.factors ?? []) {
+    const { error: deleteError } = await service.auth.admin.mfa.deleteFactor({
+      id: factor.id,
+      userId,
+    });
+    if (deleteError) throw new Error(`clearMfaFactors: ${deleteError.message}`);
+  }
+}
+
 export async function roleIn(user: keyof typeof USERS, slug: string): Promise<string | null> {
   const orgId = ORG_IDS[slug];
   if (!orgId) throw new Error(`roleIn: no seeded org id for ${slug}`);
 
   const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { data: auth, error } = await anon.auth.signInWithPassword(USERS[user]);
+  // Straight to GoTrue rather than through a form, so there is no widget to
+  // supply a token -- and [auth.captcha] is enabled. Cloudflare's always-passes
+  // TEST secret verifies any non-empty string; same constant and same reasoning
+  // as TEST_CAPTCHA in tests/isolation/helpers.ts.
+  const { data: auth, error } = await anon.auth.signInWithPassword({
+    ...USERS[user],
+    options: { captchaToken: "cloudflare-test-secret-accepts-any-token" },
+  });
   if (error || !auth.user) throw new Error(`roleIn: sign-in failed for ${user}`);
 
   const service = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -113,3 +210,35 @@ export async function roleIn(user: keyof typeof USERS, slug: string): Promise<st
 }
 
 export const MANAGING_ROLES = ["organizer", "org_owner"] as const;
+
+/**
+ * RFC 6238 TOTP: 6 digits, SHA-1, 30-second step -- the parameters in GoTrue's
+ * own otpauth URI (measured: `algorithm=SHA1&digits=6`).
+ *
+ * Written out rather than adding a dependency for one function, and it earns its
+ * place: a spec that mocks `verify` proves only that our mock accepts our own
+ * code. This lets the browser specs hand a REAL code to a real GoTrue.
+ */
+export function totp(base32Secret: string): string {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const char of base32Secret.replace(/=+$/, "").toUpperCase()) {
+    const index = alphabet.indexOf(char);
+    if (index === -1) continue;
+    bits += index.toString(2).padStart(5, "0");
+  }
+  const bytes = Buffer.from((bits.match(/.{8}/g) ?? []).map((byte) => parseInt(byte, 2)));
+
+  const counter = Math.floor(Date.now() / 1000 / 30);
+  const counterBytes = Buffer.alloc(8);
+  counterBytes.writeBigUInt64BE(BigInt(counter));
+
+  const digest = createHmac("sha1", bytes).update(counterBytes).digest();
+  const offset = digest[digest.length - 1] & 0x0f;
+  const binary =
+    ((digest[offset] & 0x7f) << 24) |
+    (digest[offset + 1] << 16) |
+    (digest[offset + 2] << 8) |
+    digest[offset + 3];
+  return String(binary % 1_000_000).padStart(6, "0");
+}

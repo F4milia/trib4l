@@ -237,6 +237,70 @@ than week one.
   record's history" full-scans a table now fed by 30 tables — and the table
   is append-only with no retention policy · add (target_type, target_id)
   while it is still small. PERF-2.
+- 2026-09-01 · S2 · a `"use server"` file may export ONLY async functions;
+  exporting the initial-state object beside a server action broke every page
+  importing it at module evaluation, in the browser, while `tsc --noEmit` and
+  eslint both passed · constants and types that travel with an action live in
+  their own module (lib/auth/totp-state.ts). Neither static check sees this.
+- 2026-09-01 · S2 · app/page.tsx cannot call requireUser() -- it renders a
+  signed-out view too -- so it silently missed BOTH gates added there, twice: the
+  two-factor check in one PR and the deleted-account check in the next · a gate
+  that pages opt into is a gate some page will not have. Combine related
+  refusals into one function that cannot be half-called (accountGate), and keep
+  tests/assurance-gate.test.ts's whole-tree census, which is what caught it.
+- 2026-09-01 · S2 · a Turnstile token is single-use, and Cloudflare's
+  always-passes TEST secret verifies the same string repeatedly -- so a spent
+  token being resubmitted after a failed sign-in is invisible locally and in CI,
+  and exists only where a real secret is configured · a test key that always
+  passes hides every ordering bug. Re-check the retry path by hand once staging
+  holds real keys.
+- 2026-09-01 · S2 · PostgREST validates a JWT's signature and expiry but NOT
+  whether the session still exists, so a revoked access token keeps reading the
+  Data API until jwt_expiry (3600s); supabase-js masks this by dropping its
+  session when GoTrue answers session_not_found · "signed out everywhere" is
+  true for the app and for the SDK, not for something holding the raw token.
+  Never promise instant total revocation in copy, and test that claim with a
+  bare fetch -- through the SDK it asserts the opposite of the truth.
+- 2026-09-01 · S2 · GoTrue refuses both MFA enrol and unenrol from an aal1
+  session once a verified factor exists, and listFactors().totp excludes
+  unverified factors entirely (`all` is the only place they appear) · check
+  assurance level before offering either action, or the page offers a button
+  whose only possible answer is "try again", forever.
+- 2026-09-01 · S2 · fifteen SECURITY DEFINER functions in public pin
+  `search_path = public`, which leaves pg_temp implicitly FIRST for relation
+  lookups -- measured as the `authenticated` role, a temp table named
+  platform_staff makes is_platform_admin() return true for a plain member ·
+  every definer function names pg_temp explicitly and last. Not reachable
+  through PostgREST today (no client path runs DDL), so it is latent, not live --
+  and it includes every RLS gate in the app. Owed as its own migration.
+- 2026-09-01 · S2 · service_role has no SELECT on profiles and no privilege at
+  all on platform_staff, so an isolation test cannot inspect an anonymisation or
+  seed a staff row · extends the 2026-08-29 grant lesson: check the grant before
+  writing the test, not after reading a null as a product bug.
+- 2026-09-01 · S2 · S2's auth rate limiter took the whole browser suite red --
+  17 specs signing in as the same seeded users cross five-per-fifteen-minutes
+  immediately · a correct limit meets test workloads no human produces. The
+  escape lives in exactly one committed place (playwright.config.ts) and is
+  ignored unless NODE_ENV is not "production", which `next build` pins.
+- 2026-09-01 · S2 · the isolation suite leaves VERIFIED MFA factors on erin,
+  frank and bob (elevateToAal2), which made three browser specs test a starting
+  state they did not describe and report product bugs that were not there · a
+  spec establishes its preconditions (clearMfaFactors, disposable accounts) and
+  asserts transitions, never the starting state. Same lesson as the residue
+  entries above, now on shared auth state rather than rows.
+- 2026-09-01 · S2 · the shared local stack collided four times in one session in
+  three shapes: the database reset mid-run (migrations gone, then PGRST202 from
+  a stale PostgREST schema cache), the auth container recreated with the other
+  worktree's config (GOTRUE_SECURITY_CAPTCHA_ENABLED=false), and seeded auth
+  state left behind · the 2026-08-30 entry covers only the first. Verify the
+  environment before believing a failure: `to_regprocedure(...)` for your own
+  migrations and the container's actual env VALUES -- `grep -c` counting three
+  matching lines says nothing about what they are set to.
+- 2026-09-01 · S2 · surface-migration.test.ts extracts "string literals" by
+  pairing quote characters across the whole file, so an apostrophe in a COMMENT
+  flips the parity and can make an unrelated word ("shadow") read as a class
+  string, failing a rule on a file the change barely touched · avoid apostrophes
+  in comments in app/ and components/, or fix the extractor.
 - 2026-09-01 · spec reconstruction · Ferenz 0.6 asked for `org_owner` to overlap
   with `organizer`/`mentor` via a `membership_roles` join table, and the run doc
   never carried that open question forward · DECLINED for now, one role per

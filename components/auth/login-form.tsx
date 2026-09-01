@@ -3,9 +3,11 @@
 import { useActionState } from "react";
 import { signIn } from "@/app/actions/auth";
 import { PasswordInput } from "@/components/password-input";
+import { Turnstile } from "@/components/turnstile";
 import { Button, ErrorText, FieldError, Input, Label } from "@/components/ui";
 import { NO_ERRORS, formError } from "@/lib/auth/form-errors";
 import { copy } from "@/lib/copy";
+import { useCaptchaReset } from "./use-captcha-reset";
 import { useFocusFirstInvalid } from "./use-focus-first-invalid";
 
 const t = copy.auth.login;
@@ -23,6 +25,9 @@ export function LoginForm({ initialError }: { initialError?: string }) {
     initialError ? formError(initialError) : NO_ERRORS,
   );
   const formRef = useFocusFirstInvalid(state);
+  // A Turnstile token is single-use, so a failed submit leaves a spent one in
+  // this still-mounted form. See use-captcha-reset.ts.
+  useCaptchaReset(state);
 
   const emailError = state.fieldErrors?.email;
   const passwordError = state.fieldErrors?.password;
@@ -71,6 +76,7 @@ export function LoginForm({ initialError }: { initialError?: string }) {
       {/* Disabled while in flight rather than relabelled: the design system
           has no loading choreography, and a second submission here is a second
           sign-in attempt against the rate limit. */}
+      <Turnstile action="signin" />
       <Button type="submit" className="w-full" disabled={pending}>
         {t.submit}
       </Button>

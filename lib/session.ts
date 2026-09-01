@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { accountGate } from "./auth/assurance";
 import { createClient } from "./supabase/server";
 import type { Database } from "./supabase/database.types";
 
@@ -26,7 +27,7 @@ type OrgMembership = {
  *  all is a different state with a different answer, and `email_optional =
  *  false` on every configured provider keeps it unreachable; sending someone
  *  with no address to "check your email" would be advice they cannot act on. */
-export async function requireUser() {
+export async function requireUser(options?: { skipAssuranceGate?: boolean }) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
@@ -35,6 +36,33 @@ export async function requireUser() {
   if (data.user.email && !data.user.email_confirmed_at) {
     redirect("/check-email");
   }
+
+  /**
+   * Both refusals a signed-in caller can meet (S2), in one call: a deleted
+   * account, and a session that has not satisfied the two-factor requirement.
+   *
+   * One function rather than two checks in sequence, because two checks is what
+   * app/page.tsx got wrong -- it invoked the assurance half by hand and missed
+   * the deletion half entirely when that arrived. accountGate cannot be
+   * half-called.
+   *
+   * `skipAssuranceGate` skips ONLY the two-factor half, and is passed by exactly
+   * the pages that half redirects to:
+   *   - /settings/security -- where a staff member enrols; gating it would loop.
+   *   - /auth/verify -- where a code is presented.
+   * A deleted account is still refused on both: there is nothing for it to enrol.
+   * /reset-password calls neither this nor requireUser, deliberately -- a
+   * recovery session is aal1 by nature, so gating it would lock out exactly the
+   * person who lost their authenticator, and it bypasses nothing because the
+   * next sign-in meets the gate again.
+   */
+  const gate = await accountGate(supabase, data.user.id, {
+    skipAssurance: options?.skipAssuranceGate,
+  });
+  if (!gate.ok) {
+    redirect(gate.redirectTo);
+  }
+
   return { supabase, user: data.user };
 }
 

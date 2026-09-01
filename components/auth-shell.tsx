@@ -51,7 +51,25 @@ export function AuthShell({
 
       <Card>{children}</Card>
 
-      {footer ? <p className="text-sm text-deep-slate/70">{footer}</p> : null}
+      {/**
+       * A div, not a <p>. The /auth/verify screen (S2) puts a sign-out FORM in
+       * this slot, and a <form> inside a <p> is invalid HTML: the browser closes
+       * the paragraph early, so the parsed DOM differs from the server render and
+       * React logs a hydration mismatch. Caught in the browser console by the
+       * e2e suite, not by any assertion.
+       *
+       * Fixed here rather than in the caller because the slot is the problem: it
+       * accepted only phrasing content while looking like it accepted anything,
+       * so the next person putting a button in a footer would meet the same bug.
+       * Preflight zeroes paragraph margins, so nothing moves.
+       *
+       * NOTE, no apostrophes above, deliberately: surface-migration.test.ts
+       * extracts "string literals" by pairing quote characters across the whole
+       * file, and an apostrophe in a comment flips that pairing -- which made the
+       * word shadow on line 20 read as being inside a class string and failed the
+       * no-shadow rule on a file this change did not otherwise touch.
+       */}
+      {footer ? <div className="text-sm text-deep-slate/70">{footer}</div> : null}
     </main>
   );
 }

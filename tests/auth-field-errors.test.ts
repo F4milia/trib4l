@@ -23,6 +23,19 @@ vi.mock("next/navigation", () => ({
 }));
 
 const auth = vi.hoisted(() => ({ signUp: vi.fn(), signInWithPassword: vi.fn() }));
+/**
+ * S2 put a rate limiter in front of every auth action, so these tests now need
+ * a store for it to consult. It says yes: this file is about what the action
+ * does with a request the limiter ALLOWED, and the limiter's own behaviour --
+ * including what every endpoint does once it says no -- is asserted in
+ * tests/auth-rate-limits.test.ts. Mocking the store rather than the limiter
+ * keeps the real lib/auth/rate-limit.ts in the path here, so a limiter that
+ * started refusing everything would still surface in this file.
+ */
+vi.mock("@/lib/supabase/service", () => ({
+  createServiceClient: () => ({ rpc: async () => ({ data: true, error: null }) }),
+}));
+
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth }) }));
 
 const { signIn, signUp } = await import("@/app/actions/auth");

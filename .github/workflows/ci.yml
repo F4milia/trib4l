@@ -31,6 +31,20 @@ jobs:
 
   migrations:
     runs-on: ubuntu-latest
+    # supabase/config.toml now has [auth.captcha] enabled, so a job that boots
+    # the stack without a secret enables captcha with an EMPTY one -- and every
+    # sign-in in the suite then fails with invalid-input-secret rather than
+    # testing anything. This is Cloudflare's PUBLISHED always-passes TEST
+    # secret, which verifies any non-empty token: not a credential, and the same
+    # reasoning as the local-dev demo keys committed in playwright.yml. Real
+    # keys exist only in the two hosted dashboards -- see
+    # docs/f4milia/s2-turnstile-setup.md.
+    #
+    # No site key here: that one only makes a browser render a widget, and
+    # neither of these jobs runs the app. The isolation suite passes its token
+    # explicitly (TEST_CAPTCHA in tests/isolation/helpers.ts).
+    env:
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -58,6 +72,20 @@ jobs:
 
   isolation:
     runs-on: ubuntu-latest
+    # supabase/config.toml now has [auth.captcha] enabled, so a job that boots
+    # the stack without a secret enables captcha with an EMPTY one -- and every
+    # sign-in in the suite then fails with invalid-input-secret rather than
+    # testing anything. This is Cloudflare's PUBLISHED always-passes TEST
+    # secret, which verifies any non-empty token: not a credential, and the same
+    # reasoning as the local-dev demo keys committed in playwright.yml. Real
+    # keys exist only in the two hosted dashboards -- see
+    # docs/f4milia/s2-turnstile-setup.md.
+    #
+    # No site key here: that one only makes a browser render a widget, and
+    # neither of these jobs runs the app. The isolation suite passes its token
+    # explicitly (TEST_CAPTCHA in tests/isolation/helpers.ts).
+    env:
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:

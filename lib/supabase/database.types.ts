@@ -1510,6 +1510,8 @@ export type Database = {
           deleted_at: string | null
           display_name: string
           id: string
+          memorialized_at: string | null
+          memorialized_by: string | null
           timezone: string
           updated_at: string
         }
@@ -1519,6 +1521,8 @@ export type Database = {
           deleted_at?: string | null
           display_name: string
           id: string
+          memorialized_at?: string | null
+          memorialized_by?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -1528,10 +1532,20 @@ export type Database = {
           deleted_at?: string | null
           display_name?: string
           id?: string
+          memorialized_at?: string | null
+          memorialized_by?: string | null
           timezone?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_memorialized_by_fkey"
+            columns: ["memorialized_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reactions: {
         Row: {
@@ -2003,7 +2017,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      consume_rate_limit: {
+        Args: { p_bucket: string; p_limit: number; p_window_seconds: number }
+        Returns: boolean
+      }
       current_user_email: { Args: never; Returns: string }
+      delete_my_account: { Args: never; Returns: boolean }
       designate_mentor: {
         Args: { target_org_id: string; target_profile_id: string }
         Returns: {
@@ -2067,6 +2086,7 @@ export type Database = {
         Args: { local_date: string; local_time: string; tz: string }
         Returns: string
       }
+      memorialize_profile: { Args: { p_profile_id: string }; Returns: boolean }
       moderate_comment: {
         Args: { reason?: string; target_comment_id: string }
         Returns: {
@@ -2137,6 +2157,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      my_sessions: {
+        Args: never
+        Returns: {
+          aal: string
+          created_at: string
+          id: string
+          ip: unknown
+          is_current: boolean
+          last_active_at: string
+          user_agent: string
+        }[]
+      }
       notification_preference_enabled: {
         Args: {
           p_channel?: Database["public"]["Enums"]["notification_channel"]
@@ -2146,6 +2178,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      revoke_all_my_sessions: { Args: never; Returns: number }
+      revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
       transition_member_stage: {
         Args: {
@@ -2167,6 +2201,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      unmemorialize_profile: {
+        Args: { p_profile_id: string }
+        Returns: boolean
       }
     }
     Enums: {

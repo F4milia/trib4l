@@ -9,6 +9,8 @@ import {
   type AuthFormState,
 } from "@/lib/auth/form-errors";
 import { callbackUrl, confirmUrl, oauthProvider } from "@/lib/auth/providers";
+import { captchaToken } from "@/lib/auth/captcha";
+import { withinAuthRateLimit } from "@/lib/auth/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { copy } from "@/lib/copy";
 
@@ -42,13 +44,24 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
   if (!password) return fieldError("password", copy.auth.signup.errors.passwordRequired, values);
   if (!consent) return fieldError("consent", copy.auth.signup.errors.consentRequired, values);
 
+  // After the field checks, before GoTrue: a person's own typo should not burn
+  // their allowance, and the abusable call is the one below. Form-level, like
+  // every other message that must not confirm whether the address exists.
+  if (!(await withinAuthRateLimit("sign-up", email))) {
+    return formError(copy.auth.rateLimit.tooManyAttempts, values);
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email,
     password,
     // Renders as {{ .RedirectTo }} in the template, so the link comes back to
     // the deployment that sent it rather than to the project's one site_url.
-    options: { emailRedirectTo: await emailReturnUrl() },
+    //
+    // The captcha token is forwarded, never verified here: GoTrue is what makes
+    // it mandatory, because the public anon key means /auth/v1/signup can be
+    // called without this action existing. See lib/auth/captcha.ts.
+    options: { emailRedirectTo: await emailReturnUrl(), captchaToken: captchaToken(formData) },
   });
 
   /**
@@ -67,6 +80,16 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
    * person who genuinely owns the address is unaffected: they have an account
    * already, and can sign in or reset. The person probing learns nothing.
    */
+  /**
+   * Checked BEFORE the enumeration guard below, and that order is the point. A
+   * captcha failure is a fact about the request, not about the address, so
+   * treating it as "signup succeeded, check your email" would tell somebody
+   * their account was created when nothing happened.
+   */
+  if (error?.code === "captcha_failed") {
+    return formError(copy.auth.captcha.notCompleted, values);
+  }
+
   if (error && error.code !== "user_already_exists") {
     const field = signupFieldForCode(error.code);
     if (field === "password") return fieldError("password", copy.auth.signup.errors.weakPassword, values);
@@ -92,8 +115,22 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
   if (!email) return fieldError("email", copy.auth.login.errors.emailRequired, values);
   if (!password) return fieldError("password", copy.auth.login.errors.passwordRequired, values);
 
+  // The endpoint the acceptance criterion is about: the sixth rapid attempt
+  // against one address is refused here, before GoTrue is asked to check a
+  // password. Note the refusal is a DIFFERENT message from invalid_credentials
+  // -- that is unavoidable and safe, because reaching it requires already
+  // having made five attempts on that address, which tells a prober nothing
+  // they did not just do themselves.
+  if (!(await withinAuthRateLimit("sign-in", email))) {
+    return formError(copy.auth.rateLimit.tooManyAttempts, values);
+  }
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: { captchaToken: captchaToken(formData) },
+  });
 
   /**
    * Form-level, always. GoTrue returns one identical `invalid_credentials` for
@@ -102,6 +139,16 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
    * attribute, and finding out would mean first asking whether the address has
    * an account.
    */
+  /**
+   * Before the credential message, because saying "that email and password do
+   * not match an account" for a CORRECT password -- which is what a submit
+   * inside the widget's 2.7-second window produces -- is the app lying about
+   * the person's credentials to cover its own timing.
+   */
+  if (error?.code === "captcha_failed") {
+    return formError(copy.auth.captcha.notCompleted, values);
+  }
+
   if (error) return formError(copy.auth.login.errors.invalidCredentials, values);
 
   redirect("/");
@@ -129,11 +176,38 @@ export async function sendMagicLink(formData: FormData) {
     redirect("/magic-link?error=" + encodeURIComponent(copy.auth.magicLink.errors.missingEmail));
   }
 
+  // Mail costs money and lands in somebody's inbox, so this endpoint is limited
+  // whether or not the address has an account. The refusal is the same for both
+  // -- it is reached by counting attempts, which is a fact about the request,
+  // not about the account, so it does not reopen the enumeration oracle this
+  // action's single redirect exists to close.
+  if (!(await withinAuthRateLimit("magic-link", email))) {
+    redirect("/magic-link?error=" + encodeURIComponent(copy.auth.rateLimit.tooManyAttempts));
+  }
+
   const supabase = await createClient();
-  await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: false, emailRedirectTo: await emailReturnUrl() },
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: await emailReturnUrl(),
+      captchaToken: captchaToken(formData),
+    },
   });
+
+  /**
+   * The ONE error this action surfaces, and it does not reopen the enumeration
+   * oracle: a captcha outcome is a fact about the request, identical for an
+   * address with an account and one without. Every other error stays swallowed.
+   *
+   * Without this branch the person is sent to /link-sent -- told to check their
+   * inbox for a message that was never sent, then to check their spam folder,
+   * with nothing they can do. A silent failure is worse here than on /login,
+   * because there is no second attempt that would reveal the problem.
+   */
+  if (error?.code === "captcha_failed") {
+    redirect("/magic-link?error=" + encodeURIComponent(copy.auth.captcha.notCompleted));
+  }
 
   redirect("/link-sent");
 }
@@ -167,6 +241,15 @@ export async function requestEmailChange(formData: FormData) {
     redirect("/account/email?error=" + encodeURIComponent(copy.auth.changeEmail.errors.unchanged));
   }
 
+  // Keyed on the signed-in user, not on the address being requested: the abuse
+  // here is one session walking through many addresses (each of which gets
+  // mail), so the allowance has to belong to the account doing it. Two messages
+  // go out per attempt, to the old address and the new one, which makes this the
+  // most expensive auth endpoint per call.
+  if (!(await withinAuthRateLimit("email-change", data.user.id))) {
+    redirect("/account/email?error=" + encodeURIComponent(copy.auth.rateLimit.tooManyAttempts));
+  }
+
   const { error } = await supabase.auth.updateUser(
     { email },
     { emailRedirectTo: await emailReturnUrl() },
@@ -197,10 +280,26 @@ export async function requestPasswordReset(formData: FormData) {
     redirect("/forgot-password?error=" + encodeURIComponent(copy.auth.forgotPassword.errors.missingEmail));
   }
 
+  // Same reasoning as the magic link: this one sends mail to an address the
+  // requester does not have to own, which is exactly the endpoint somebody uses
+  // to bury a person in reset mail.
+  if (!(await withinAuthRateLimit("password-reset", email))) {
+    redirect("/forgot-password?error=" + encodeURIComponent(copy.auth.rateLimit.tooManyAttempts));
+  }
+
   const supabase = await createClient();
   // resetPasswordForEmail names the option `redirectTo`, not `emailRedirectTo`
   // -- it reaches the template as {{ .RedirectTo }} either way.
-  await supabase.auth.resetPasswordForEmail(email, { redirectTo: await emailReturnUrl() });
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: await emailReturnUrl(),
+    captchaToken: captchaToken(formData),
+  });
+
+  // Same single exception, same reasoning as sendMagicLink: otherwise somebody
+  // locked out of their account waits for a reset mail that was never sent.
+  if (error?.code === "captcha_failed") {
+    redirect("/forgot-password?error=" + encodeURIComponent(copy.auth.captcha.notCompleted));
+  }
 
   redirect("/reset-sent");
 }
@@ -243,6 +342,16 @@ export async function updatePassword(
   // meant, the second is the one that disagrees with it.
   if (password !== confirmation) {
     return fieldError("passwordConfirmation", copy.auth.resetPassword.errors.mismatch);
+  }
+
+  // Keyed on the recovery session's own user, and placed after the field checks
+  // like every other call site -- a mistyped confirmation is not an attempt.
+  // Limited even though the caller already proved control of the address: a
+  // weak-password rejection loop is otherwise a free unbounded call, and a
+  // recovery session that outlives its use should not be an unbounded
+  // password-setting endpoint.
+  if (!(await withinAuthRateLimit("password-update", data.user.id))) {
+    return formError(copy.auth.rateLimit.tooManyAttempts);
   }
 
   const { error } = await supabase.auth.updateUser({ password });

@@ -15,6 +15,218 @@
  * old one. Descriptions here avoid the noun where they can.
  */
 export const copy = {
+  /** ConfirmSubmit's shared control. Every destructive action reuses it. */
+  confirm: {
+    cancel: "Cancel",
+  },
+  /**
+   * Memorial-lock.
+   *
+   * Says what is true and nothing more. It does not say "deceased", because the
+   * person reading it is likely someone close to them and does not need to be
+   * told; it does not apologise, because nothing went wrong; and it does not
+   * invite them to try again, because they cannot. "Memorialised" is the word
+   * the Family will have used when they asked for it.
+   *
+   * No legal wording: whether a family or an executor has any say after death
+   * varies by country, and that is for counsel rather than for this deck.
+   */
+  memorial: {
+    signInRefused:
+      "This account has been memorialised. It cannot be signed in to, and everything on it stays as it is.",
+  },
+  /**
+   * Account deletion (S2).
+   *
+   * The consequences list is the honest one, which means it is longer than a
+   * marketing version would be. It says what goes, what STAYS, and that there is
+   * no undo -- because docs/trib4l-docs/data-retention-policy.md deliberately
+   * keeps content and severs the person from it, and someone who expects "delete"
+   * to mean "erase everything I wrote" would be misled by a shorter list.
+   *
+   * It does not use the word "anonymize": that is our vocabulary for the policy,
+   * not a description anyone can act on. "Your name is removed from them" is the
+   * same fact in words that mean something to the person reading it.
+   */
+  deleteAccount: {
+    eyebrow: "Account",
+    title: "Delete your account.",
+    lead: "This cannot be undone. Read what happens before you decide.",
+    trigger: "Delete my account",
+    dialogTitle: "Delete this account?",
+    consequences: [
+      "You are signed out of every device and cannot sign in again.",
+      "Your name and picture are removed from everything you have written.",
+      "What you wrote stays where it is, without your name on it — a conversation with the middle torn out is worse for the people still in it.",
+      "Your Families keep their records of who did what, and when.",
+      "There is no undo, and no way for us to put your name back.",
+    ],
+    confirm: "Delete my account",
+    /** Shown on /login after the deletion completes. Deliberately does not
+     *  invite them to sign in again, because they cannot. */
+    signedOutNotice: "That account has been deleted. You cannot sign in with it again.",
+    errors: {
+      failed: "The account could not be deleted. Nothing has changed. Try again.",
+      alreadyDeleted: "That account is already deleted.",
+    },
+  },
+  /**
+   * The sign-in code screen (S2).
+   *
+   * Says "the app on your phone", not "your TOTP factor". A person arriving here
+   * has just typed a correct password and is being asked for more; the copy's job
+   * is to make that feel expected rather than like a failure. It does not say
+   * "verification required", which reads as an accusation.
+   */
+  assurance: {
+    eyebrow: "One more step",
+    title: "Enter your code.",
+    body: "Open the app on your phone and type the six digits it shows.",
+    codeLabel: "Six-digit code",
+    submit: "Continue",
+    signOut: "Sign out instead",
+    /** Shown to staff who have no authenticator at all. Not a scolding: it says
+     *  what is true and what to do, and does not pretend this is optional. */
+    staffMustEnrol:
+      "Two-factor is required for platform staff. Set up an authenticator to continue.",
+    errors: {
+      codeRequired: "Enter the six-digit code.",
+      wrongCode: "That code was not accepted. Codes expire every 30 seconds — try the current one.",
+      challengeFailed: "The code could not be checked. Try again.",
+    },
+  },
+  /**
+   * Two-factor authentication (S2).
+   *
+   * Says "authenticator app", not "TOTP" or "2FA" in body copy: the person is
+   * looking for the thing on their phone, not the acronym. The heading keeps
+   * "Two-factor" because that is what every other service calls the setting, and
+   * a novel name for a standard feature is its own obstacle.
+   *
+   * The staff line is stated as a fact about the account, not as a warning, and
+   * it is honest that this is not optional for them.
+   */
+  mfa: {
+    eyebrow: "Security",
+    title: "Two-factor sign-in.",
+    lead: "A six-digit code from an authenticator app, on top of your password.",
+    optionalNote: "Optional for members. Required for platform staff.",
+    staffRequiredNote:
+      "Your account is platform staff, so two-factor is required. Until it is set up, you can reach this page and nothing else.",
+    none: "No authenticator is set up on this account.",
+    /**
+     * Shown when this account already has an authenticator but has not used it
+     * in this session. Measured 2026-09-01: GoTrue REFUSES to enrol another
+     * factor from an aal1 session, and refuses to remove one, so offering either
+     * here would be offering an action that cannot succeed -- which is how this
+     * was found: the page said "Setup could not be started. Try again." and
+     * trying again would never have worked.
+     */
+    needsCodeFirst: "Enter a code from your authenticator to change these settings.",
+    enterCode: "Enter a code",
+    activeHeading: "Authenticators",
+    added: "Added",
+    remove: "Remove",
+    removed: "That authenticator was removed.",
+    start: "Set up an authenticator",
+    scan: {
+      heading: "Scan this",
+      body: "Open your authenticator app and scan the square. If you cannot scan, enter the key below by hand.",
+      secretLabel: "Setup key",
+      codeLabel: "Six-digit code from the app",
+      submit: "Turn on two-factor",
+      cancel: "Start again",
+    },
+    done: "Two-factor is on. You will be asked for a code when you sign in.",
+    errors: {
+      enrollFailed: "Setup could not be started. Try again.",
+      setupExpired: "That setup is no longer valid. Start again.",
+      wrongCode: "That code was not accepted. Codes expire every 30 seconds — try the current one.",
+      verifyFailed: "The code could not be checked. Try again.",
+      removeFailed: "That request did not name an authenticator.",
+      removeNeedsVerify:
+        "Removing an authenticator needs a verified sign-in. Sign out, sign in with a code, then remove it.",
+    },
+  },
+  /**
+   * The account settings index (S2).
+   *
+   * It exists because /account/email and /settings/blocked already shipped
+   * reachable ONLY by typing the URL -- grep finds no link to either from
+   * anywhere in app/ or components/. S2 adds two more surfaces of the same kind,
+   * and a session list or an account-deletion page nobody can find protects
+   * nobody. Descriptions say what each destination actually does; no invented
+   * placeholders for surfaces that do not exist yet.
+   */
+  settingsIndex: {
+    eyebrow: "Account",
+    title: "Your account.",
+    lead: "Settings that follow you across every Family you belong to.",
+    links: [
+      { href: "/account/email", label: "Email address", description: "Change it, with confirmation from both inboxes" },
+      { href: "/settings/security", label: "Two-factor sign-in", description: "A code from an authenticator app, on top of your password" },
+      { href: "/settings/sessions", label: "Sessions", description: "Every device signed in, and how to end one" },
+      { href: "/settings/blocked", label: "Blocked people", description: "Who you have blocked, everywhere" },
+      { href: "/settings/account", label: "Delete your account", description: "What happens, and what stays, before you decide" },
+    ],
+  },
+  /**
+   * Session management (S2).
+   *
+   * The wording on sign-out-everywhere is deliberately narrower than the
+   * feature's name, because the name over-promises. Measured 2026-09-01: after
+   * revocation GoTrue answers 403 for the old token, so every page load and
+   * every action is refused -- but PostgREST checks only a JWT's signature and
+   * expiry, so something holding the RAW access token outside the SDK can still
+   * read the Data API until it expires. "Other devices lose access the next time
+   * they load a page" is true. "You are instantly signed out everywhere" is not,
+   * and this deck does not say it.
+   */
+  sessions: {
+    eyebrow: "Security",
+    title: "Where you are signed in.",
+    lead: "Every device holding a live sign-in for this account. If you do not recognise one, end it.",
+    empty: "No other sessions. This device is the only one signed in.",
+    /**
+     * When the list could not be read at all.
+     *
+     * Separate from `empty` because conflating them makes the page lie. Found the
+     * hard way: a stale PostgREST schema cache made the RPC fail, the page
+     * rendered `empty`, and it told someone with live sessions elsewhere that
+     * this device was the only one signed in -- on a security page, where that is
+     * exactly the fact they came to check. CLAUDE.md's honest-empty-states rule
+     * covers this precisely: an empty state must mean empty.
+     */
+    unavailable:
+      "Your sessions could not be read just now. Reload the page. Signing out everywhere still works.",
+    thisDevice: "This device",
+    signOutOne: "Sign out",
+    revokedOne: "That session was ended.",
+    revokedAlready: "That session had already ended.",
+    /** Column labels for the mono metadata rail. */
+    labels: {
+      lastActive: "Last active",
+      started: "Started",
+      unknownDevice: "Device not recorded",
+      unknownIp: "IP not recorded",
+      twoFactor: "2FA verified",
+    },
+    signOutAll: {
+      trigger: "Sign out everywhere",
+      title: "End every session?",
+      consequences: [
+        "Every device signed in to this account is signed out, including this one.",
+        "Other devices lose access the next time they load a page.",
+        "Nothing else changes: your account, your Families and your content are untouched.",
+      ],
+      confirm: "End every session",
+    },
+    errors: {
+      missingId: "That request did not name a session.",
+      revokeFailed: "That session could not be ended. Try again.",
+      signOutAllFailed: "Sessions could not be ended. Try again.",
+    },
+  },
   brand: {
     /** §3.4 sets the wordmark at text-2xl. Text, not an image -- no logo exists. */
     wordmark: "F4milia",
@@ -51,6 +263,40 @@ export const copy = {
     passwordToggle: {
       show: "Show password",
       hide: "Hide password",
+    },
+    /**
+     * One string for every rate-limited auth endpoint (S2), and one for a
+     * reason: it must be true on all of them and reveal nothing on any.
+     *
+     * It does not say which limit was hit, whether the address has an account,
+     * or how long is left. "Five attempts per fifteen minutes for this address"
+     * would tell a prober exactly how to pace themselves, and a countdown on
+     * the address bucket would confirm the address exists. It says what
+     * happened and what to do, which is all a legitimate person needs -- the
+     * same reasoning as the deliberately indistinguishable magic-link and
+     * password-reset copy.
+     */
+    rateLimit: {
+      tooManyAttempts: "Too many attempts. Wait a few minutes and try again.",
+    },
+    /**
+     * When Turnstile's check has not completed (S2). One string, all four
+     * captcha-guarded forms.
+     *
+     * This exists because the failure is REACHABLE by an ordinary person, not
+     * only by a bot. Measured in a real browser 2026-09-01: the token arrives
+     * 2.7 SECONDS after /login loads, and a returning visitor whose password
+     * manager fills both fields can submit inside that window. Without this
+     * message they would get "that email and password do not match an account"
+     * for a correct password -- a lie the app would be telling about their
+     * credentials because of its own timing.
+     *
+     * Says nothing about captchas, Cloudflare, or tokens: none of those are
+     * the person's problem, and "the check" is what they can act on. Naming the
+     * vendor would also tell a prober which service to study.
+     */
+    captcha: {
+      notCompleted: "The security check did not finish. Try again in a moment.",
     },
     login: {
       eyebrow: "Sign in",

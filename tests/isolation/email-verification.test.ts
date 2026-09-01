@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { ORG_IDS, createAnonClient, createServiceRoleClient } from "./helpers";
+import { ORG_IDS, TEST_CAPTCHA, createAnonClient, createServiceRoleClient } from "./helpers";
 
 /**
  * S1's hardest acceptance criterion: "Unverified accounts cannot reach any
@@ -73,6 +73,7 @@ describe("signing up issues no credential", () => {
     const { data, error } = await anon.auth.signUp({
       email: `fresh-${stamp}@f4milia.test`,
       password: PASSWORD,
+      options: TEST_CAPTCHA,
     });
 
     expect(error).toBeNull();
@@ -84,7 +85,7 @@ describe("signing up issues no credential", () => {
 describe("an unconfirmed member of a real Family", () => {
   it("cannot sign in at all", async () => {
     const anon = createAnonClient();
-    const { data, error } = await anon.auth.signInWithPassword(unconfirmed);
+    const { data, error } = await anon.auth.signInWithPassword({ ...unconfirmed, options: TEST_CAPTCHA });
 
     expect(data.session).toBeNull();
     expect(error).not.toBeNull();
@@ -95,7 +96,7 @@ describe("an unconfirmed member of a real Family", () => {
     const anon = createAnonClient();
     // The refused sign-in leaves the client on the anon key -- which is
     // exactly the credential a real unverified person is left holding.
-    await anon.auth.signInWithPassword(unconfirmed);
+    await anon.auth.signInWithPassword({ ...unconfirmed, options: TEST_CAPTCHA });
     expect((await anon.auth.getSession()).data.session).toBeNull();
 
     const { data: orgs } = await anon
@@ -126,7 +127,7 @@ describe("an unconfirmed member of a real Family", () => {
 describe("the same member with a confirmed address", () => {
   it("signs in and reads exactly the Family they belong to", async () => {
     const anon = createAnonClient();
-    const { data: session, error } = await anon.auth.signInWithPassword(confirmed);
+    const { data: session, error } = await anon.auth.signInWithPassword({ ...confirmed, options: TEST_CAPTCHA });
 
     expect(error).toBeNull();
     expect(session.session).not.toBeNull();

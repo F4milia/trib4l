@@ -16,6 +16,12 @@ const t = copy.auth.resetPassword;
  * to /login, which is the wrong advice here -- what this person needs is a new
  * reset link, so they are sent to /forgot-password with a message saying so.
  *
+ * That also means S2's two-factor gate never applies here, which is the correct
+ * outcome and worth stating: a recovery session is aal1 by nature, so gating it
+ * would lock out exactly the person who has lost their authenticator. It
+ * bypasses nothing -- setting a new password does not clear the gate, because the
+ * next sign-in meets it again.
+ *
  * No searchParams: the only thing that ever redirected here with an error was
  * updatePassword, which now returns its failures to the form as state.
  */

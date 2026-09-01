@@ -193,7 +193,7 @@ describe("copy deck", () => {
     // CLAUDE.md invariant 11: placeholder legal text is visibly
     // "[PENDING LEGAL REVIEW]", never plausible-sounding invented terms. This
     // notice is not legal language -- it states an actual platform behaviour
-    // (docs/data-retention-policy.md) -- so it must not read as terms either.
+    // (docs/trib4l-docs/data-retention-policy.md) -- so it must not read as terms either.
     const body = copy.auth.signup.consent.body;
     expect(body).not.toMatch(/\b(?:hereby|warrant|indemnif|liabilit|governing law|arbitration)\b/i);
   });

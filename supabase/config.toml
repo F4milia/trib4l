@@ -224,10 +224,41 @@ token_verifications = 30
 web3 = 30
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# [auth.captcha]
-# enabled = true
-# provider = "hcaptcha"
-# secret = ""
+#
+# --- Turnstile (S2) --------------------------------------------------------
+#
+# ENFORCEMENT LIVES HERE, NOT IN THE APP, and that is the whole design. The
+# anon key is public and ships in the client bundle, so anybody can POST
+# /auth/v1/signup directly and never reach app/actions/auth.ts -- a check in the
+# server action would guard a door no bot needs to use. GoTrue is the only place
+# a captcha requirement cannot be walked around.
+#
+# ON IN LOCAL AND CI, deliberately (James's call, 2026-09-01), using
+# Cloudflare's published always-passes TEST secret rather than a real one. The
+# alternative -- enforce only on the hosted projects -- means no test ever
+# exercises the captcha path, which is exactly how S1's hosted SMTP ended up
+# unverifiable. Costs: every guarded call now makes a live request to
+# Cloudflare's siteverify (measured 2026-09-01 at ~95-108ms cold, ~58ms on a
+# warm connection), so the suites need network and an offline developer cannot
+# sign in.
+#
+# GUARDS FOUR ENDPOINTS: signup, password sign-in, OTP/magic link, recover.
+# Measured, not assumed -- tests/isolation/captcha.test.ts asserts all four
+# refuse with `captcha_failed` and no token. Anything calling them in a test
+# must send one; tests/isolation/helpers.ts exports TEST_CAPTCHA for that. The
+# ADMIN API is NOT guarded, which is why signUpNewUser() needs no token.
+#
+# `env(...)`, never a literal, so `supabase config push` cannot carry a test
+# secret to a hosted project and silently turn its captcha into a rubber stamp
+# that still reads as "enabled". The value for local and CI is in .env.example
+# and in the workflow env blocks. TURNSTILE_SECRET_KEY unset leaves this enabled
+# with an EMPTY secret, and GoTrue then refuses every attempt with
+# `invalid-input-secret` -- loud and searchable rather than silent, but do read
+# .env.example first.
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+secret = "env(TURNSTILE_SECRET_KEY)"
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
