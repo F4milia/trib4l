@@ -604,3 +604,20 @@ than week one.
   aal1 · Q4's edge case ("run the suite twice, run 2 passes on run 1's
   residue") is already red for those two. A spec that elevates should unenroll
   while it still holds aal2, which is the only window in which it can.
+- 2026-09-02 · blockers revision · vitest.config.mts excludes `tests/isolation/**`
+  and `tests/e2e/**`, which are ROOT-ANCHORED globs, while `.claude/worktrees/`
+  lives INSIDE the repo -- so `npm test` collected 146 test files from the two
+  worktrees, isolation suites included, and the Stop hook reported 476 failures
+  against a tree whose own 1015 tests all pass. The config's own comment promises
+  `npm test` "never requires Docker" and "cannot touch the shared Supabase stack
+  the other stream may be using"; both went false the moment a worktree existed,
+  and one of the failures was Stream B's video_assets suite running against main's
+  database · prefix every exclude with `**/` and exclude `.claude/**`. NOT YET
+  APPLIED -- outside that session's scope, reported instead. A worktree inside the
+  repo is inside every glob that is not anchored.
+- 2026-09-02 · blockers revision · `resend` was in package.json AND package-lock.json
+  but absent from node_modules, so lib/email/transport.test.ts failed with `Failed to
+  resolve import "resend" from "lib/email/transport.ts". Does the file exist?` -- which
+  reads as a deleted file or a wrong path, not a stale install · run `npm install`
+  before believing a resolve error in a file the session never touched. Fixed here;
+  it changed no line of the lockfile.
