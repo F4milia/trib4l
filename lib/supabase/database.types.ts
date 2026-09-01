@@ -2097,6 +2097,57 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          expired_at: string | null
+          id: string
+          last_seen_at: string
+          membership_id: string
+          org_id: string
+          p256dh: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          expired_at?: string | null
+          id?: string
+          last_seen_at?: string
+          membership_id: string
+          org_id: string
+          p256dh: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          expired_at?: string | null
+          id?: string
+          last_seen_at?: string
+          membership_id?: string
+          org_id?: string
+          p256dh?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reactions: {
         Row: {
           cohort_id: string | null
@@ -2968,6 +3019,10 @@ export type Database = {
       revoke_all_my_sessions: { Args: never; Returns: number }
       revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
       shares_org_with: { Args: { target_profile_id: string }; Returns: boolean }
+      touch_push_subscription: {
+        Args: { check_endpoint: string }
+        Returns: undefined
+      }
       transition_member_stage: {
         Args: {
           target_org_id: string
