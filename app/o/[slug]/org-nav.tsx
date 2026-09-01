@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   type LucideIcon,
   Mail,
+  MessagesSquare,
   Milestone,
   Package,
   Radio,
@@ -31,6 +32,7 @@ import { cn } from "@/lib/utils";
  */
 export const NAV_ICONS: Record<OrgNavIcon, LucideIcon> = {
   House,
+  MessagesSquare,
   HeartHandshake,
   CalendarDays,
   Video,

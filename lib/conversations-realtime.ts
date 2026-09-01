@@ -5,11 +5,15 @@ import type { Message } from "./conversations";
 /**
  * C1 PR 6. Live delivery for one open conversation.
  *
- * THE ISOLATION IS NOT HERE. Supabase Realtime evaluates RLS per subscriber
- * before forwarding a row, so this module never filters for security -- it
- * filters by conversation_id only so that an open room does not re-render for
- * traffic in a different one. If a message arrives here, the database already
- * decided this subscriber may see it, blocks included.
+ * THE ISOLATION IS NOT HERE, FOR ROWS. Supabase Realtime evaluates RLS per
+ * subscriber before forwarding a row, so this module never filters
+ * postgres_changes for security -- it filters by conversation_id only so that
+ * an open room does not re-render for traffic in a different one. If a MESSAGE
+ * arrives here, the database already decided this subscriber may see it, blocks
+ * included.
+ *
+ * That guarantee covers postgres_changes and NOTHING ELSE. The typing handler
+ * below is a broadcast, which no policy gates -- see sendTyping().
  *
  * That is worth being explicit about, because the tempting shape is to check
  * membership in the callback "to be safe". A check here would be a second
@@ -118,6 +122,10 @@ export function subscribeToConversation(
    * highest-write table's neighbour, an audit row for each (invariant 5 has no
    * "except trivia" clause), and a row in the Ledger's own database recording
    * that someone began typing and thought better of it.
+   *
+   * That reasoning is about COST and is unchanged. It is not a claim about
+   * access: a broadcast reaches anyone who joined the channel, participant or
+   * not. See sendTyping().
    */
   channel.on("broadcast", { event: "typing" }, ({ payload }) => {
     const membershipId = (payload as { membershipId?: string })?.membershipId;
@@ -131,12 +139,28 @@ export function subscribeToConversation(
 /**
  * Announces that this member is typing.
  *
- * Broadcast carries whatever the sender puts in it -- it is not policed by
- * RLS, because there is no row to evaluate a policy against. That is
- * acceptable for exactly this payload and would not be for anything else: the
- * worst a forged typing event can do is show a name in an indicator, and only
- * to people already subscribed to a channel the database let them join. Do not
- * extend this to carry message text.
+ * Broadcast is NOT ACCESS-CONTROLLED, in either direction. It carries whatever
+ * the sender puts in it, and -- measured 2026-09-02 -- ANY authenticated client
+ * may join ANY channel by name and receive it. A channel is a string; there is
+ * no row for a policy to be evaluated against, so the database does not gate
+ * the join.
+ *
+ * An earlier version of this comment claimed delivery reached "only people
+ * already subscribed to a channel the database let them join". That was wrong,
+ * and it was wrong in the direction that matters. The probe: a member of
+ * Family B joined `conversation:<a Family A uuid>` and received Family A's
+ * typing events, while a postgres_changes subscription on the same channel for
+ * the same user delivered nothing.
+ *
+ * So the payload stays a membership id and nothing else. What leaks today is
+ * that someone is active in a room -- to anyone holding its id, including a
+ * member who has since been removed from the Family and still has it in their
+ * browser history.
+ *
+ * DO NOT extend this to carry message text, display names, or anything a
+ * non-participant must not read. Gating the join needs Realtime Authorization
+ * (RLS on realtime.messages); that is owed to C2 --
+ * docs/f4milia/c2-realtime-broadcast-authorization.md.
  */
 export function sendTyping(channel: RealtimeChannel, membershipId: string): void {
   void channel.send({
