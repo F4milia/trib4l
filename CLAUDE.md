@@ -462,3 +462,49 @@ than week one.
   cannot go stale. Then confirm with `git diff --cached --name-only`: an edit
   that matches nothing is indistinguishable from one that worked, and the shell
   exit code will not tell you.
+- 2026-09-01 · C1 PR7 · `vi.fn(impl)` INFERS the mock's signature from that
+  impl, so a later `mockImplementation` reading a different argument stops
+  typechecking — and the obvious workaround, an unused rest parameter, trips
+  no-unused-vars · declare the mock bare as `vi.fn()` and install the default
+  implementation in beforeEach. Cost three rounds of typecheck/lint ping-pong
+  here.
+- 2026-09-01 · C1 PR7 · module-level `vi.fn()` mocks keep their call history
+  across tests in the same file, so "refuses to send an empty message" counted
+  the send a previous test made and reported a bug that was not there · every
+  component file with hoisted mocks needs `vi.clearAllMocks()` in beforeEach.
+  Same residue lesson as the isolation-suite entries, now inside one file.
+- 2026-09-01 · C1 PR7 · jsdom implements no layout, so `scrollIntoView` is
+  undefined and an unguarded call takes the whole component down at mount —
+  every test in the file fails with one stack trace pointing at a useEffect ·
+  optional-call browser layout APIs (`el?.scrollIntoView?.()`); a missing
+  scroll must never be able to unmount a room.
+- 2026-09-02 · C1 · mnemonic uuids in fixtures must be HEX. `...0aa1` is a
+  uuid; `...ma01` (membership), `...dm001` (dm) and `...fc0m1` (mentor) are not,
+  and Postgres rejects them at the point of use, mid-file, after earlier
+  statements have already run · caught three times in one session. Spell
+  mnemonics in a-f only: aa/bb/cc for people, dd for a DM, fa/fb for Families.
+- 2026-09-02 · C1 browser check · a dev server left running from ANOTHER
+  worktree is invisible and explains everything downstream. `next dev` was
+  serving /Users/james/Downloads/brandLamb/stream-a (branch `stream-a`,
+  pre-S2), which has no components/turnstile.tsx and no /messages route, while
+  the shared Supabase stack carried THIS tree's migrations and
+  `[auth.captcha] enabled = true` · old app code plus current GoTrue config
+  means every sign-in fails with GoTrue's raw "no captcha_token found", and the
+  raw text appears because that commit predates S2's captcha_failed mapping.
+  Before debugging a browser symptom, check `ps ax | grep "next dev"` for the
+  server's actual path; five worktrees share port 3000.
+- 2026-09-02 · C1 browser check · playwright.config.ts sets
+  `AUTH_RATE_LIMIT_DISABLED=1` in its OWN webServer block only, so a dev server
+  started by hand keeps the five-per-fifteen-minutes limiter · running a spec
+  twice then fails at signIn with a 20s waitForURL timeout, which looks like the
+  feature being tested and is not. A negative control that fails at sign-in
+  proves nothing -- I reported one as verified before checking WHY it failed.
+  Read the failure message, not the pass/fail count.
+- 2026-09-02 · C1 PR7 · `supabase test db` globs EVERY `.sql` under
+  supabase/tests/ recursively and runs it as pgTAP, so a fixture or helper
+  placed there fails the whole suite with "No plan found in TAP output" · only
+  pgTAP files belong under supabase/tests/. Manual-check fixtures live in
+  docs/manual-checks/. Caught in CI, not locally, because I added the files and
+  did not re-run the suite afterwards -- adding a FILE can break a runner that
+  discovers by glob, so re-run the suite after any addition to a test tree, not
+  only after editing a test.
