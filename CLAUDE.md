@@ -430,3 +430,19 @@ than week one.
   which is the whole trap. Verify by running the file TWICE with no reset --
   Q4's edge case, worth applying to every isolation file as it is written rather
   than in Wave 9.
+- 2026-09-01 · C1 PR6 · Realtime readiness has THREE levels and only the third
+  is real: `channel.state === "joined"` (socket up), the SUBSCRIBED ack
+  (postgres_changes bindings created), and messages actually streaming. After
+  `supabase db reset` the service re-establishes its replication slot and for a
+  few seconds acks subscriptions while streaming nothing · a realtime test must
+  warm up by waiting for a PROBE MESSAGE to arrive, not for any status the
+  client reports. Measured: the first test failed on the run straight after a
+  reset and passed on every warm run, both before and after switching from
+  state to the ack — and CI resets immediately before the suite, so this is a
+  coin toss there and green locally.
+- 2026-09-01 · C1 PR6 · REPLICA IDENTITY DEFAULT makes Realtime DROP update and
+  delete events rather than error: RLS for those is evaluated against the OLD
+  row, which holds only the primary key, so the server cannot decide if the
+  subscriber was allowed to see it · any published table whose updates matter
+  needs REPLICA IDENTITY FULL. C1 soft-deletes messages via UPDATE, so without
+  it a deleted message stays on every open screen until a refresh.
