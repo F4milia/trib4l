@@ -170,7 +170,8 @@ where `030` moves. Nothing else in C2 touches either.
 
 Bucket created by `insert into storage.buckets` inside the migration, **never**
 via `config.toml` (§5). `storage.objects` RLS matching the conversation's
-participant scoping. Quota and per-file cap per §6.4.
+participant scoping. Per-file cap, per-Family quota **and the project-level
+guard** per §6.4 — the guard is in scope, not deferred.
 
 Carries the acceptance criterion the prompt words most strongly — *"an
 attachment uploaded to Family A's channel is unreachable by URL from a Family B
@@ -300,17 +301,27 @@ prefix.
 
 | | Value | Reasoning |
 |---|---|---|
-| Per-file cap | **10 MB** | A phone photo is 2–5 MB, a document under 10. Deliberately excludes video, which is correct — Mux is already the video path (`@mux/mux-node`, `video_assets`, `live_streams`). `config.toml`'s 50 MiB is the bucket ceiling, not a product decision |
-| Per-Family quota | **1 GB** | ~15 months of moderate use for a 12-person Family. Chosen tight on C1's own precedent: *"raising a CHECK is a one-line migration that rewrites nothing; lowering one after real messages exist means deciding what to do with the rows that no longer fit. Start tight."* Hitting the quota is a **visible, recoverable** failure this session already builds the plain-message UX for; an over-generous quota is an invisible cost problem |
+| Per-file cap | **5 MB** | A phone photo is 2–5 MB, a document under 5. On a **1 GB project** a 10 MB attachment is 1% of everything, so the earlier 10 MB does not survive the Free plan. Set it on the bucket row too, so the platform enforces it as well as the app. Deliberately excludes video — Mux is already that path (`@mux/mux-node`, `video_assets`, `live_streams`) |
+| Per-Family quota | **100 MB**, across **all** attachment buckets | 8 Families × 100 MB = 800 MB of a 1024 MB plan, leaving ~224 MB for Keepsake PDFs and slack. **Not per feature** — see the box below |
 | Deleting a message | **Deletes the blob** | Rather than deciding whether soft-deleted attachments count, make them not exist. Soft-delete the message *row* — C1 needs that so replies do not dangle — and hard-delete the object. Nothing dangles: the row keeps a reference that no longer resolves, which is exactly what M1's edge case asks for (*"the storage object is unreachable afterward"*). The quota then never lies, and there is no reclaim job to schedule |
+| **Project-level guard** | **In scope for C2** | Per-Family quotas do **not** bound the project total. Eight Families each inside their 100 MB is the entire plan, and the failure is a Family under its own quota whose upload fails with a raw Supabase error — breaking this session's own acceptance criterion in a way the per-Family check structurally cannot catch. Decided 2026-09-02 (James) |
 
 > **Wire the blob delete to MESSAGE deletion only, never to account deletion.**
 > Invariant 8's anonymize-vs-purge policy governs that path and memorial-locked
 > content persists. Different path, different rule.
 
-**The 1 GB is the number to revisit** — the only value here with real
-uncertainty, because no hosted Supabase project is linked yet and it could not
-be calibrated against a real storage plan. One-line change once staging exists.
+> **Build the quota as "this Family's total across the attachment buckets", not
+> "this Family's message attachments."** M1 (Wave 5) adds photos on Table entries
+> and attachments on Bricks *"reusing Wave 3's storage policy pattern, same
+> quotas, same caps."* If M1 gets its own 100 MB per Family the budget doubles to
+> 1600 MB and the 1 GB plan is blown before Wave 6. Scoping the quota per Family
+> now means M1 inherits the ceiling instead of adding a second one.
+
+**These numbers are a function of the plan, not of the product.** Supabase Free
+is 1 GB of file storage total, and James fixed the ceiling at 8 Families on
+2026-09-02. On Pro they would be 10 MB / 1 GB and the project guard would stop
+mattering. Full reasoning and the other Free-tier ceilings:
+`docs/f4milia/production-constraints.md`.
 
 ## 7. Invariants this session touches, and where each is proven
 
