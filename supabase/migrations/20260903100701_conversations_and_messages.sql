@@ -89,7 +89,11 @@ create table messages (
   -- The author as a member of THIS Family. Same reasoning as participation:
   -- a profile_id here would not say which Family the message was sent in.
   author_membership_id uuid not null references memberships (id) on delete cascade,
-  body text not null check (length(body) between 1 and 8000),
+  -- 1000 characters, set deliberately low for now. Raising a CHECK is a
+  -- one-line migration that rewrites nothing; lowering one after real messages
+  -- exist means deciding what to do with the rows that no longer fit. Start
+  -- tight.
+  body text not null check (length(body) between 1 and 1000),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   -- Soft delete: a removed message stops rendering, and the audit row and the

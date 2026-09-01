@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(19);
 
 -- ------------------------------------------------------------- shape
 select has_table('public', 'conversations', 'conversations exists');
@@ -139,6 +139,27 @@ select lives_ok(
   'and can post into it'
 );
 
+-- ------------------------------------------------------- the body cap
+-- 1000 characters, per James 2026-09-01. Asserted rather than left as a
+-- constant in the migration: a CHECK nobody tests is a number that drifts.
+select lives_ok(
+  $$ insert into public.messages (org_id, conversation_id, author_membership_id, body)
+     values ('00000000-0000-0000-0000-00000000fa01',
+             '00000000-0000-0000-0000-0000000000e1',
+             '00000000-0000-0000-0000-000000000aa1', repeat('x', 1000)) $$,
+  'a message of exactly 1000 characters is accepted'
+);
+
+select throws_ok(
+  $$ insert into public.messages (org_id, conversation_id, author_membership_id, body)
+     values ('00000000-0000-0000-0000-00000000fa01',
+             '00000000-0000-0000-0000-0000000000e1',
+             '00000000-0000-0000-0000-000000000aa1', repeat('x', 1001)) $$,
+  '23514',
+  null,
+  'and 1001 is refused by the CHECK'
+);
+
 -- ------------------------------------------------------------ audit
 -- Scoped to the row this file created: a global count by action is an
 -- order-dependent assertion wearing a precise-looking number (2026-08-29).
@@ -146,12 +167,12 @@ select is(
   (select count(*)::int from public.audit_log
     where action = 'messages.insert'
       and org_id = '00000000-0000-0000-0000-00000000fa01'),
-  1,
-  'the message write is audited'
+  2,
+  'each accepted message write is audited -- the refused one wrote nothing'
 );
 
 select is(
-  (select metadata::text from public.audit_log
+  (select distinct metadata::text from public.audit_log
     where action = 'messages.insert'
       and org_id = '00000000-0000-0000-0000-00000000fa01'),
   '{}',
