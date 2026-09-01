@@ -164,3 +164,43 @@ create table if not exists auth.sessions (
 
 create index if not exists sessions_user_id_idx on auth.sessions (user_id);
 create index if not exists user_id_created_at_idx on auth.sessions (user_id, created_at);
+
+-- --------------------------------------------------------- auth.mfa_factors
+-- The seed writes verified TOTP factors for the QA staff fixtures, because
+-- invariant 7 enforces two-factor for platform_staff at sign-in and a staff
+-- account without a factor cannot reach a single staff route.
+--
+-- Added after the sandbox refused the seed with `relation "auth.mfa_factors"
+-- does not exist` -- which is the sandbox doing its job: the bare image ships
+-- the pre-GoTrue auth schema, and every table the repo touches has to be
+-- named here explicitly rather than assumed.
+do $$
+begin
+  if not exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
+                  where n.nspname = 'auth' and t.typname = 'factor_type') then
+    create type auth.factor_type as enum ('totp', 'webauthn', 'phone');
+  end if;
+  if not exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
+                  where n.nspname = 'auth' and t.typname = 'factor_status') then
+    create type auth.factor_status as enum ('unverified', 'verified');
+  end if;
+end
+$$;
+
+create table if not exists auth.mfa_factors (
+  id uuid primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  friendly_name text,
+  factor_type auth.factor_type not null,
+  status auth.factor_status not null,
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  secret text,
+  phone text,
+  last_challenged_at timestamptz,
+  web_authn_credential jsonb,
+  web_authn_aaguid uuid,
+  last_webauthn_challenge_data jsonb
+);
+
+create index if not exists mfa_factors_user_id_idx on auth.mfa_factors (user_id);

@@ -25,10 +25,47 @@ export const SEEDED_USERS = {
   frank: { email: "frank@f4milia.test", password: "password123" }, // platform_staff
 } as const;
 
+/**
+ * The named QA fixtures from docs/qa-previous-session-sop.md, prerequisite 2.
+ *
+ * Each account is named for the STATE IT IS IN rather than for a person, so a
+ * QA step can say "log in as departed@f4milia.test" and mean something exact
+ * instead of "create a user who...". They live in qa-family-a and qa-family-b,
+ * deliberately apart from the six accounts above: caregiver-circle,
+ * founder-collective and wellness-guild have their member counts, streaks and
+ * Tower titles asserted across 26 isolation files, and a fixture that perturbs
+ * those breaks tests that exist to catch real regressions.
+ */
+export const QA_FIXTURES = {
+  dual: { email: "dual@f4milia.test", password: "password123" }, // org_owner of qa-family-a, member of qa-family-b
+  blocker: { email: "blocker@f4milia.test", password: "password123" }, // has blocked `blocked`
+  blocked: { email: "blocked@f4milia.test", password: "password123" }, // two Table entries, hidden from `blocker` only
+  departed: { email: "departed@f4milia.test", password: "password123" }, // membership soft-deleted; Bricks reverted to open
+  memorial: { email: "memorial@f4milia.test", password: "password123" }, // profile memorial-locked; entries persist
+  second: { email: "second@f4milia.test", password: "password123" }, // joined qa-family-a, did not create it
+  orphan: { email: "orphan@f4milia.test", password: "password123" }, // signed up, no membership anywhere
+  staff1: { email: "staff1@f4milia.test", password: "password123" }, // platform_staff WITH a seeded verified TOTP factor
+  staff2: { email: "staff2@f4milia.test", password: "password123" },
+} as const;
+
+/**
+ * The TOTP secret seeded for staff1@ and staff2@, so a test or a QA script can
+ * produce a valid code without enrolling a factor first. Invariant 7 enforces
+ * two-factor for platform_staff at sign-in, so staff routes are unreachable
+ * without one.
+ *
+ *   new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(QA_TOTP_SECRET) }).generate()
+ */
+export const QA_TOTP_SECRET = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
+
 export const ORG_IDS = {
   caregiverCircle: "00000000-0000-0000-0000-00000000000a",
   founderCollective: "00000000-0000-0000-0000-00000000000b",
   wellnessGuild: "00000000-0000-0000-0000-00000000000c",
+  // The QA fixture Families. Kept separate from the three above on purpose --
+  // see QA_FIXTURES.
+  qaFamilyA: "00000000-0000-0000-0000-00000000000d",
+  qaFamilyB: "00000000-0000-0000-0000-00000000000e",
 } as const;
 
 /**
