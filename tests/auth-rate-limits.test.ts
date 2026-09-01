@@ -250,6 +250,7 @@ describe("standing the limiter down", () => {
 
   afterEach(() => {
     delete process.env.AUTH_RATE_LIMIT_DISABLED;
+    delete process.env.VERCEL_ENV;
     vi.stubEnv("NODE_ENV", originalNodeEnv ?? "test");
   });
 
@@ -270,6 +271,29 @@ describe("standing the limiter down", () => {
 
   it("is IGNORED in production, whatever the environment says", async () => {
     vi.stubEnv("NODE_ENV", "production");
+    process.env.AUTH_RATE_LIMIT_DISABLED = "1";
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await expect(withinAuthRateLimit("sign-in", ADDRESS)).resolves.toBe(false);
+    expect(rpc).toHaveBeenCalled();
+  });
+
+  it("stands down on a Vercel preview, where NODE_ENV is production but the deployment is not", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    process.env.VERCEL_ENV = "preview";
+    process.env.AUTH_RATE_LIMIT_DISABLED = "1";
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await expect(withinAuthRateLimit("sign-in", ADDRESS)).resolves.toBe(true);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  // The one that matters. VERCEL_ENV=production must close the escape even
+  // though the preview branch above opens it, or the flag reaching production
+  // env vars would silently remove rate limiting from every auth endpoint.
+  it("is STILL ignored when VERCEL_ENV says production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    process.env.VERCEL_ENV = "production";
     process.env.AUTH_RATE_LIMIT_DISABLED = "1";
     rpc.mockResolvedValue({ data: false, error: null });
 

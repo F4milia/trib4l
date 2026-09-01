@@ -129,7 +129,14 @@ async function consume(bucket: string, limit: number, windowSeconds: number): Pr
  * named territory for a manual check anyway.
  */
 function limiterStoodDown(): boolean {
-  return process.env.NODE_ENV !== "production" && process.env.AUTH_RATE_LIMIT_DISABLED === "1";
+  if (process.env.AUTH_RATE_LIMIT_DISABLED !== "1") return false;
+
+  // TEMPORARY: also honoured on Vercel previews, where NODE_ENV is "production"
+  // but the deployment is not. Put back when the QA pass is done.
+  if (process.env.VERCEL_ENV === "production") return false;
+  if (process.env.VERCEL_ENV === "preview") return true;
+
+  return process.env.NODE_ENV !== "production";
 }
 
 /**
