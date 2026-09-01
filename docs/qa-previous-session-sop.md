@@ -86,7 +86,7 @@ Same password for all test accounts, stored in the team password manager, not th
 ```
 
 ### 4. A CI check that enforces the QA block
-`.github/workflows/qa-gate.yml` — fails until the PR body contains a Loom URL and a checked QA box. Make it a required status check on `main` alongside Greptile.
+`.github/workflows/qa-gate.yml` — fails until the PR body contains a Loom URL and a checked QA box. Make it a required status check on `main` alongside Greptile **only once prerequisites 1 and 2 are done** — before then, no PR can produce a preview URL or a Loom link, so requiring it blocks everything in flight. See the install-status table at the top.
 
 **Installed in trib4l** as `.github/workflows/qa-gate.yml` — see that file for the
 version actually running. Two corrections were needed against the sketch below:

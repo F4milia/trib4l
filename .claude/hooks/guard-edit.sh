@@ -5,6 +5,15 @@
 # IVAN_GATE=1. Backs CLAUDE.md invariant 1 (the slice formula is deterministic)
 # and invariant 10 (commerce is dormant, profit-share is not-for-production).
 set -u
+
+# Fail CLOSED: a guard that cannot parse its input must not wave the edit
+# through. Without jq this script would read an empty path and exit 0, silently
+# unlocking every gated path below.
+command -v jq >/dev/null 2>&1 || {
+  echo "BLOCKED: jq is not installed, so this guard cannot inspect the edit. Install it: brew install jq" >&2
+  exit 2
+}
+
 input=$(cat)
 file=$(echo "$input" | jq -r '.tool_input.file_path // empty')
 [ -z "$file" ] && exit 0

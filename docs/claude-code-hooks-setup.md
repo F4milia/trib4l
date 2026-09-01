@@ -128,6 +128,8 @@ Launch a gated session with `IVAN_GATE=1 claude -w stream-a`. Everything else ru
 
 ### 4. `guard-bash.sh` — no destructive shell
 
+Write diagnostics into a `mktemp -d` directory removed by a `trap`, not fixed `/tmp` paths: a predictable path plus shell redirection lets another local user pre-create a symlink and have the hook clobber a file the developer can write.
+
 ```bash
 #!/usr/bin/env bash
 set -u
@@ -172,7 +174,7 @@ exit 0
 ## Install steps
 
 1. Create the four scripts, `chmod +x .claude/hooks/*.sh`.
-2. Confirm `jq` is installed (`brew install jq` / `apt install jq`). Hooks silently no-op without it.
+2. Confirm `jq` is installed (`brew install jq` / `apt install jq`). **The scripts here fail closed instead of no-opping** — a guard that cannot parse its input must not wave the call through, so a missing `jq` blocks with an actionable message rather than silently disabling itself.
 3. Add `.claude/settings.json`. Validate JSON before committing (`jq . .claude/settings.json`).
 4. Test each script by hand with sample stdin before trusting it:
    ```bash
