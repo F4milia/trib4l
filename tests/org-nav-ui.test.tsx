@@ -97,12 +97,23 @@ describe("navigation icons (§10.1)", () => {
 
   it("reuses the subject's icon for its Manage counterpart", () => {
     const all = sections.flatMap((s) => s.items);
-    const pairs: [string, string][] = [
-      ["/mentorship", "/settings/mentorship"],
-      ["/meetups", "/settings/meetups"],
-      ["/videos", "/settings/videos"],
-      ["/live", "/settings/live"],
-    ];
+    /**
+     * §10.1's rule still stands -- a Manage item reuses the icon of the subject
+     * it configures -- but the nav trim removed every pair it applied to.
+     *
+     * Listed explicitly rather than derived from paths, because the one
+     * surviving path-shaped match is NOT a counterpart: /settings/members
+     * configures INVITATIONS, carries the label "Invitations" and the Mail
+     * icon on purpose, and pairing it with /members by string surgery would
+     * assert the opposite of the rule.
+     *
+     * The length is asserted so this cannot go quietly vacuous. The moment a
+     * Manage item gains a real public counterpart, this line fails and whoever
+     * adds it has to put the pair here -- at which point the loop below starts
+     * doing work again.
+     */
+    const pairs: [string, string][] = [];
+    expect(pairs).toHaveLength(0);
     for (const [publicPath, settingsPath] of pairs) {
       const subject = all.find((i) => i.href.endsWith(publicPath))!;
       const setting = all.find((i) => i.href.endsWith(settingsPath))!;
@@ -119,9 +130,9 @@ describe("navigation icons (§10.1)", () => {
 });
 
 /**
- * Nested routes exist under four nav hrefs -- videos/upload,
- * videos/[videoAssetId], live/[liveStreamId], members/report -- and a strict
- * pathname equality check left every one of them with nothing highlighted.
+ * Nested routes exist under nav hrefs -- messages/[conversationId] and
+ * members/report among them -- and a strict pathname equality check left every
+ * one of them with nothing highlighted.
  */
 describe("active state on nested routes", () => {
   const renderAt = async (path: string) => {
@@ -131,9 +142,14 @@ describe("active state on nested routes", () => {
     return render(<mod.OrgNav sections={orgNav("caregiver-circle", "org_owner")} />);
   };
 
+  // Repointed from /videos/* to /messages/*: the nav no longer offers Videos,
+  // so those cases could no longer light anything. The BEHAVIOUR under test is
+  // unchanged -- a nested route keeps its parent nav item lit, which strict
+  // pathname equality used to break -- and /messages/[conversationId] is a real
+  // nested route from C1, so this still exercises it against a live surface
+  // rather than a hypothetical one.
   it.each([
-    ["/o/caregiver-circle/videos/upload", "Videos"],
-    ["/o/caregiver-circle/videos/abc123", "Videos"],
+    ["/o/caregiver-circle/messages/abc123", "Messages"],
     ["/o/caregiver-circle/members/report", "Members"],
   ])("%s keeps %s lit", async (path, label) => {
     const { container } = await renderAt(path);
