@@ -19,12 +19,18 @@ import {
   subscribeToConversation,
 } from "@/lib/conversations-realtime";
 import {
+  AttachmentRefused,
   addMentions,
   addReaction,
+  checkAttachmentAllowed,
+  listAttachments,
   listReactions,
   removeReaction,
+  uploadAttachment,
+  type Attachment,
   type Reaction,
 } from "@/lib/message-interactions";
+import { MessageAttachments } from "@/components/message-attachments";
 import { MessageReactions } from "@/components/message-reactions";
 import {
   MentionAutocomplete,
@@ -111,6 +117,22 @@ export function ConversationRoom({
    */
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  /**
+   * Attachments.
+   *
+   * A file is STAGED, not uploaded, until the message is sent -- the row needs
+   * a message_id, so the message has to exist first. Staging also means the
+   * cheap refusals (size, type) happen before anything leaves the browser, and
+   * the expensive one (the Family's quota) is asked of the database at the same
+   * moment, so a member learns they are out of room while choosing rather than
+   * after waiting for an upload.
+   */
+  const [stagedFile, setStagedFile] = useState<File | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [attachments, setAttachments] = useState<Record<string, Attachment[]>>({});
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const lastTypingSentAt = useRef(0);
@@ -335,6 +357,84 @@ export function ConversationRoom({
     }
   }
 
+  const ALLOWED_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/heic",
+    "application/pdf",
+    "text/plain",
+  ];
+  const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+
+  // Attachments follow the message list, same shape and same reason as
+  // reactions above.
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all(
+      messages.map(async (m) => [m.id, await listAttachments(supabase, m.id)] as const),
+    )
+      .then((entries) => {
+        if (!cancelled) setAttachments(Object.fromEntries(entries));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, supabase]);
+
+  async function stageFile(file: File | null) {
+    setAttachmentError(null);
+    if (!file) {
+      setStagedFile(null);
+      return;
+    }
+
+    // The two cheap refusals first, before anything leaves the browser. The
+    // bucket enforces both as well -- this is the version that answers
+    // instantly, not the version that matters for security.
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      setAttachmentError(copy.conversations.attachment.tooLarge);
+      return;
+    }
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setAttachmentError(copy.conversations.attachment.wrongType);
+      return;
+    }
+
+    // Then the one only the database can answer. Asked NOW rather than at send
+    // time so a member learns their Family is out of room while choosing, not
+    // after writing a message and waiting for an upload.
+    try {
+      const refusal = await checkAttachmentAllowed(supabase, {
+        orgId,
+        byteSize: file.size,
+      });
+      if (refusal) {
+        // The database's own sentence, verbatim: it already distinguishes "your
+        // Family is out of space" (actionable) from "the platform is out of
+        // space" (not), and rewording here would throw that away.
+        setAttachmentError(refusal);
+        return;
+      }
+    } catch {
+      setAttachmentError(copy.conversations.attachment.failed);
+      return;
+    }
+
+    setStagedFile(file);
+  }
+
+  async function downloadAttachment(attachment: Attachment): Promise<string | null> {
+    // Signed on click, not on render: the bucket is private, and signing every
+    // attachment up front would be one request each just to paint the room.
+    const { data } = await supabase.storage
+      .from("family-attachments")
+      .createSignedUrl(attachment.storagePath, 60);
+    return data?.signedUrl ?? null;
+  }
+
   function renderMessage(message: Message) {
     const mine = message.authorMembershipId === ownMembershipId;
     return (
@@ -354,6 +454,10 @@ export function ConversationRoom({
           <p className="whitespace-pre-wrap break-words text-sm text-deep-slate">
             {message.body}
           </p>
+          <MessageAttachments
+            attachments={attachments[message.id] ?? []}
+            onDownload={downloadAttachment}
+          />
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <MessageReactions
               reactions={reactions[message.id] ?? []}
@@ -412,6 +516,34 @@ export function ConversationRoom({
           });
         } catch {
           // Deliberately silent. See above.
+        }
+      }
+
+      // The attachment needs a message_id, so it goes up after the message
+      // exists. A failure here does NOT fail the send, for the same reason
+      // mentions do not: the message is what the member wrote, and it is
+      // already in the room for everyone else. The refusal says so.
+      if (stagedFile) {
+        setUploading(true);
+        try {
+          await uploadAttachment(supabase, {
+            orgId,
+            conversationId,
+            messageId: sent.id,
+            file: stagedFile,
+            fileName: stagedFile.name,
+            mimeType: stagedFile.type,
+          });
+          setStagedFile(null);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        } catch (uploadError) {
+          setAttachmentError(
+            uploadError instanceof AttachmentRefused
+              ? uploadError.message
+              : copy.conversations.attachment.failed,
+          );
+        } finally {
+          setUploading(false);
         }
       }
 
@@ -606,14 +738,60 @@ export function ConversationRoom({
             />
           ) : null}
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="font-mono text-xs text-deep-slate/60">
-            {remaining <= 100 ? copy.conversations.remaining(remaining) : ""}
+        <div className="flex flex-wrap items-center gap-3">
+          <label
+            htmlFor="conversation-attachment"
+            className="cursor-pointer border-2 border-deep-slate/20 px-2 py-1 font-mono text-xs text-deep-slate focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-terracotta"
+          >
+            {copy.conversations.attachment.add}
+            <input
+              id="conversation-attachment"
+              ref={fileInputRef}
+              type="file"
+              accept={ALLOWED_TYPES.join(",")}
+              className="sr-only"
+              onChange={(event) => void stageFile(event.target.files?.[0] ?? null)}
+            />
+          </label>
+
+          {stagedFile ? (
+            <span className="flex items-center gap-2 font-mono text-xs text-deep-slate">
+              <span className="max-w-40 truncate">{stagedFile.name}</span>
+              <button
+                type="button"
+                aria-label={copy.conversations.attachment.remove}
+                onClick={() => {
+                  setStagedFile(null);
+                  setAttachmentError(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                className="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta"
+              >
+                {copy.conversations.attachment.remove}
+              </button>
+            </span>
+          ) : (
+            <span className="font-mono text-xs text-deep-slate/70">
+              {copy.conversations.attachment.hint}
+            </span>
+          )}
+
+          <span className="ml-auto font-mono text-xs text-deep-slate/60">
+            {uploading
+              ? copy.conversations.attachment.uploading
+              : remaining <= 100
+                ? copy.conversations.remaining(remaining)
+                : ""}
           </span>
           <Button type="submit" disabled={sending || draft.trim().length === 0}>
             {sending ? copy.conversations.sending : copy.conversations.send}
           </Button>
         </div>
+        {attachmentError ? (
+          <p role="status" className="text-sm text-terracotta">
+            {attachmentError}
+          </p>
+        ) : null}
         {error ? <p className="text-sm text-baked-clay">{error}</p> : null}
       </form>
     </div>
