@@ -23,7 +23,18 @@
 --
 -- Additive: a unique index on a pair that is already unique by construction,
 -- since id is the primary key. Nothing about bricks' behaviour changes.
-alter table bricks add constraint bricks_id_org_id_key unique (id, org_id);
+-- GUARDED, so merge order does not matter. item_reminders
+-- (20260903102111) needs the same constraint and was written in parallel off
+-- the same main. A bare add in both would mean whichever merged second failed
+-- on a duplicate name -- a stacking dependency reintroduced through the schema
+-- rather than through git.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'bricks_id_org_id_key') then
+    alter table public.bricks add constraint bricks_id_org_id_key unique (id, org_id);
+  end if;
+end
+$$;
 
 -- F5.1's three, exactly. Not a lifecycle -- see the note on status below.
 create type care_action_type as enum (
