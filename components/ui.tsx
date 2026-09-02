@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { ChevronDown } from "lucide-react";
 import type {
+  Ref,
   ButtonHTMLAttributes,
   InputHTMLAttributes,
   LabelHTMLAttributes,
@@ -222,8 +223,25 @@ export function StatusText({ children }: { children: ReactNode }) {
   );
 }
 
-export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(field, "min-h-28 h-auto py-2", className)} {...props} />;
+/**
+ * React 19 passes `ref` as an ordinary prop to function components, so this
+ * needs no forwardRef -- it only needs the prop declared. Added for C2's
+ * composer, which returns focus to the textarea after a mention is chosen from
+ * the list.
+ *
+ * className stays merged through cn() and props are spread AFTER it, which is
+ * safe here only because className is destructured out first. Spreading a
+ * caller's className over the base is how four call sites once silently lost
+ * all their styling.
+ */
+export function Textarea({
+  className,
+  ref,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  ref?: Ref<HTMLTextAreaElement>;
+}) {
+  return <textarea ref={ref} className={cn(field, "min-h-28 h-auto py-2", className)} {...props} />;
 }
 
 /* -------------------------------------------------------------------------- */

@@ -19,6 +19,11 @@ const markConversationRead = vi.hoisted(() => vi.fn());
 // different argument stops typechecking -- and the obvious workaround, an
 // unused rest parameter, trips no-unused-vars. beforeEach installs the default.
 const subscribeToConversation = vi.hoisted(() => vi.fn());
+// C2. Declared bare for the same reason as subscribeToConversation above.
+const listReactions = vi.hoisted(() => vi.fn());
+const addReaction = vi.hoisted(() => vi.fn());
+const removeReaction = vi.hoisted(() => vi.fn());
+const addMentions = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({}) }));
 vi.mock("@/lib/conversations", async (importOriginal) => {
@@ -28,6 +33,10 @@ vi.mock("@/lib/conversations", async (importOriginal) => {
 vi.mock("@/lib/conversations-realtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/conversations-realtime")>();
   return { ...actual, subscribeToConversation, sendTyping: vi.fn() };
+});
+vi.mock("@/lib/message-interactions", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/message-interactions")>();
+  return { ...actual, listReactions, addReaction, removeReaction, addMentions };
 });
 
 const { ConversationRoom } = await import("@/components/conversation-room");
@@ -59,6 +68,10 @@ describe("ConversationRoom", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     subscribeToConversation.mockImplementation(() => ({ unsubscribe: vi.fn() }));
+    listReactions.mockImplementation(async () => []);
+    addReaction.mockImplementation(async () => {});
+    removeReaction.mockImplementation(async () => {});
+    addMentions.mockImplementation(async () => {});
   });
 
   it("shows an honest empty state, and a different one for the Family channel", () => {
@@ -186,5 +199,115 @@ describe("ConversationRoom", () => {
     // room that may hold other people. It names the event, never the content.
     expect(status).toHaveTextContent(copy.conversations.announceNew("Bob"));
     expect(status).not.toHaveTextContent(/private thing/);
+  });
+
+  /* ------------------------------------------------------------- C2 wiring */
+
+  it("opens the mention list only at a word boundary", async () => {
+    renderRoom();
+    const composer = screen.getByLabelText(copy.conversations.composerLabel);
+
+    // Mid-word: an email address must not open it.
+    fireEvent.change(composer, { target: { value: "write to bob@f4milia.test" } });
+    await waitFor(() =>
+      expect(screen.queryByRole("listbox", { name: copy.conversations.mentions.listLabel })).toBeNull(),
+    );
+
+    fireEvent.change(composer, { target: { value: "hey @" } });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("listbox", { name: copy.conversations.mentions.listLabel }),
+      ).toBeTruthy(),
+    );
+  });
+
+  it("excludes the viewer from their own mention list", async () => {
+    // Mentioning yourself is not news, and the trigger drops it anyway --
+    // offering it would be an action with no effect.
+    renderRoom();
+    fireEvent.change(screen.getByLabelText(copy.conversations.composerLabel), {
+      target: { value: "hey @" },
+    });
+    await waitFor(() => expect(screen.getAllByRole("option")).toHaveLength(1));
+    expect(screen.getByRole("option").textContent).toBe("Bob");
+  });
+
+  it("Escape dismisses the mention list WITHOUT clearing the draft", async () => {
+    // An Escape that ate what someone had typed would be worse than no Escape.
+    renderRoom();
+    const composer = screen.getByLabelText(copy.conversations.composerLabel);
+    fireEvent.change(composer, { target: { value: "hey @" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    fireEvent.keyDown(composer, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull());
+    expect((composer as HTMLTextAreaElement).value).toBe("hey @");
+  });
+
+  it("Enter picks a mention instead of sending, while the list is open", async () => {
+    // The single most annoying thing an autocomplete can do is send the
+    // message mid-mention.
+    renderRoom();
+    const composer = screen.getByLabelText(copy.conversations.composerLabel);
+    fireEvent.change(composer, { target: { value: "hey @B" } });
+    await waitFor(() => expect(screen.getByRole("listbox")).toBeTruthy());
+
+    fireEvent.keyDown(composer, { key: "Enter" });
+    await waitFor(() =>
+      expect((composer as HTMLTextAreaElement).value).toBe("hey @Bob "),
+    );
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("attaches mentions resolved from the sent text", async () => {
+    sendMessage.mockImplementation(async () => ({
+      id: "sent-1",
+      conversationId: "c1",
+      authorMembershipId: "m-own",
+      body: "hey @Bob",
+      createdAt: new Date().toISOString(),
+      editedAt: null,
+    }));
+    renderRoom();
+    const composer = screen.getByLabelText(copy.conversations.composerLabel);
+    fireEvent.change(composer, { target: { value: "hey @Bob" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.conversations.send }));
+
+    await waitFor(() =>
+      expect(addMentions).toHaveBeenCalledWith(expect.anything(), {
+        orgId: expect.any(String),
+        messageId: "sent-1",
+        mentionedMembershipIds: ["m-other"],
+      }),
+    );
+  });
+
+  it("still sends when attaching the mention fails", async () => {
+    // The message is what the member wrote. A mention that did not attach
+    // costs a notification; discarding the message costs the message.
+    addMentions.mockImplementation(async () => {
+      throw new Error("network");
+    });
+    sendMessage.mockImplementation(async () => ({
+      id: "sent-2",
+      conversationId: "c1",
+      authorMembershipId: "m-own",
+      body: "hey @Bob",
+      createdAt: new Date().toISOString(),
+      editedAt: null,
+    }));
+    renderRoom();
+    fireEvent.change(screen.getByLabelText(copy.conversations.composerLabel), {
+      target: { value: "hey @Bob" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.conversations.send }));
+
+    await waitFor(() => expect(sendMessage).toHaveBeenCalled());
+    // Draft cleared means the send was treated as successful.
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText(copy.conversations.composerLabel) as HTMLTextAreaElement).value,
+      ).toBe(""),
+    );
   });
 });
