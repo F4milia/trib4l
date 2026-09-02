@@ -782,6 +782,38 @@ export const copy = {
       composerPlaceholder: "Write a reply",
     },
 
+    /**
+     * C2. Attachments.
+     *
+     * The refusals matter more than the labels here. An upload that fails is
+     * the most common thing that happens to an upload, and "Something went
+     * wrong" is the sentence that makes a member try the same file four times.
+     * Each refusal below says which limit was hit and whether it is theirs to
+     * fix -- the database already distinguishes the two ceilings, and throwing
+     * that distinction away in the UI would waste it.
+     */
+    attachment: {
+      add: "Attach a file",
+      /** Named with the cap, so the limit is known before a file is chosen. */
+      hint: "Images, PDFs and text files, up to 5 MB.",
+      /** While it is going. Plain text, no shimmer -- the design system's rule. */
+      uploading: "Attaching\u2026",
+      remove: "Remove attachment",
+      /** The per-file cap, hit before anything leaves the browser. */
+      tooLarge: "That file is larger than the 5 MB limit.",
+      /** A type the bucket refuses. Says what IS allowed rather than only what is not. */
+      wrongType: "That file type cannot be attached. Images, PDFs and text files only.",
+      /** Generic last resort. Everything above is more specific on purpose. */
+      failed: "That file did not attach. The message was still sent.",
+      /** On the download control. The name is the label; this is for screen readers. */
+      download: (name: string) => `Download ${name}`,
+      /** Monospace metadata, per the Ledger rule. */
+      size: (bytes: number) =>
+        bytes < 1024 * 1024
+          ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+          : `${(bytes / (1024 * 1024)).toFixed(1)} MB`,
+    },
+
     mentions: {
       /** Announced when the list opens, so it is not a silent change. */
       listLabel: "Members you can mention",

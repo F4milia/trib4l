@@ -24,6 +24,9 @@ const listReactions = vi.hoisted(() => vi.fn());
 const addReaction = vi.hoisted(() => vi.fn());
 const removeReaction = vi.hoisted(() => vi.fn());
 const addMentions = vi.hoisted(() => vi.fn());
+const listAttachments = vi.hoisted(() => vi.fn());
+const uploadAttachment = vi.hoisted(() => vi.fn());
+const checkAttachmentAllowed = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({}) }));
 vi.mock("@/lib/conversations", async (importOriginal) => {
@@ -36,7 +39,16 @@ vi.mock("@/lib/conversations-realtime", async (importOriginal) => {
 });
 vi.mock("@/lib/message-interactions", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/message-interactions")>();
-  return { ...actual, listReactions, addReaction, removeReaction, addMentions };
+  return {
+    ...actual,
+    listReactions,
+    addReaction,
+    removeReaction,
+    addMentions,
+    listAttachments,
+    uploadAttachment,
+    checkAttachmentAllowed,
+  };
 });
 
 const { ConversationRoom } = await import("@/components/conversation-room");
@@ -72,6 +84,9 @@ describe("ConversationRoom", () => {
     addReaction.mockImplementation(async () => {});
     removeReaction.mockImplementation(async () => {});
     addMentions.mockImplementation(async () => {});
+    listAttachments.mockImplementation(async () => []);
+    uploadAttachment.mockImplementation(async () => ({}));
+    checkAttachmentAllowed.mockImplementation(async () => null);
   });
 
   it("shows an honest empty state, and a different one for the Family channel", () => {
@@ -437,5 +452,132 @@ describe("ConversationRoom", () => {
       ],
     });
     expect(screen.getByText("parent is off-screen")).toBeTruthy();
+  });
+
+  /* -------------------------------------------------------- C2 attachments */
+
+  const file = (name: string, type: string, size: number) => {
+    const f = new File(["x"], name, { type });
+    // File size is read-only, and the whole point of the cheap refusals is
+    // that they read it before anything leaves the browser.
+    Object.defineProperty(f, "size", { value: size });
+    return f;
+  };
+
+  function pick(f: File) {
+    const input = document.getElementById("conversation-attachment") as HTMLInputElement;
+    Object.defineProperty(input, "files", { value: [f], configurable: true });
+    fireEvent.change(input);
+  }
+
+  it("refuses a file over 5 MB before anything leaves the browser", async () => {
+    renderRoom();
+    pick(file("huge.png", "image/png", 6 * 1024 * 1024));
+
+    await waitFor(() =>
+      expect(screen.getByText(copy.conversations.attachment.tooLarge)).toBeTruthy(),
+    );
+    // The database was never asked -- the browser already knew.
+    expect(checkAttachmentAllowed).not.toHaveBeenCalled();
+  });
+
+  it("refuses a type the bucket does not allow, naming what IS allowed", async () => {
+    renderRoom();
+    pick(file("clip.mp4", "video/mp4", 1024));
+
+    await waitFor(() =>
+      expect(screen.getByText(copy.conversations.attachment.wrongType)).toBeTruthy(),
+    );
+    expect(checkAttachmentAllowed).not.toHaveBeenCalled();
+  });
+
+  it("asks the database about the quota WHILE CHOOSING, not after sending", async () => {
+    // So a member learns their Family is out of room while picking a file,
+    // rather than after writing a message and waiting for an upload.
+    checkAttachmentAllowed.mockImplementation(
+      async () => "Your Family has used all 100 MB of its attachment space.",
+    );
+    renderRoom();
+    pick(file("photo.jpg", "image/jpeg", 2 * 1024 * 1024));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Your Family has used all 100 MB of its attachment space."),
+      ).toBeTruthy(),
+    );
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("shows the database's own sentence rather than a generic one", async () => {
+    // The two ceilings are worded differently on purpose -- "your Family is
+    // out of space" is actionable, "the platform is out of space" is not.
+    checkAttachmentAllowed.mockImplementation(
+      async () => "Attachments are temporarily unavailable while we add capacity.",
+    );
+    renderRoom();
+    pick(file("photo.jpg", "image/jpeg", 1024));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Attachments are temporarily unavailable while we add capacity."),
+      ).toBeTruthy(),
+    );
+  });
+
+  it("uploads after the message exists, with its id", async () => {
+    sendMessage.mockImplementation(async () => ({
+      id: "sent-att",
+      conversationId: "c1",
+      authorMembershipId: "m-own",
+      body: "here it is",
+      createdAt: new Date().toISOString(),
+      editedAt: null,
+      parentMessageId: null,
+    }));
+    renderRoom();
+    pick(file("photo.jpg", "image/jpeg", 1024));
+    await waitFor(() => expect(checkAttachmentAllowed).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText(copy.conversations.composerLabel), {
+      target: { value: "here it is" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.conversations.send }));
+
+    await waitFor(() =>
+      expect(uploadAttachment).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ messageId: "sent-att", fileName: "photo.jpg" }),
+      ),
+    );
+  });
+
+  it("still sends the message when the upload fails", async () => {
+    // The message is what the member wrote. Discarding it because a file did
+    // not attach costs more than the file.
+    uploadAttachment.mockImplementation(async () => {
+      throw new Error("network");
+    });
+    sendMessage.mockImplementation(async () => ({
+      id: "sent-att-2",
+      conversationId: "c1",
+      authorMembershipId: "m-own",
+      body: "here it is",
+      createdAt: new Date().toISOString(),
+      editedAt: null,
+      parentMessageId: null,
+    }));
+    renderRoom();
+    pick(file("photo.jpg", "image/jpeg", 1024));
+    await waitFor(() => expect(checkAttachmentAllowed).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText(copy.conversations.composerLabel), {
+      target: { value: "here it is" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.conversations.send }));
+
+    await waitFor(() => expect(sendMessage).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByText(copy.conversations.attachment.failed)).toBeTruthy(),
+    );
   });
 });
