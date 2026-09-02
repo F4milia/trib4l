@@ -100,9 +100,49 @@ export function ConversationRoom({
   const [mentionIndex, setMentionIndex] = useState(0);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
 
+  /**
+   * Threading.
+   *
+   * `replyingTo` is the parent id the composer is currently aimed at, or null
+   * for a top-level message. `expanded` is the set of parents whose replies are
+   * shown -- replies are COLLAPSED BY DEFAULT, because a thread that expands
+   * itself turns the room into a wall on the first busy day, and the whole
+   * point of a reply is that it is subordinate to something.
+   */
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
   const channelRef = useRef<RealtimeChannel | null>(null);
   const lastTypingSentAt = useRef(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * Replies grouped by parent, and the top-level list.
+   *
+   * Derived rather than stored: a reply can arrive over the socket at any
+   * moment, and a second copy of the tree would be one more thing to keep in
+   * step with `messages`. A reply whose parent is not in the window renders at
+   * top level rather than vanishing -- losing a message to keep a shape tidy is
+   * the wrong trade.
+   */
+  const repliesByParent = useMemo(() => {
+    const map = new Map<string, Message[]>();
+    for (const message of messages) {
+      if (!message.parentMessageId) continue;
+      const list = map.get(message.parentMessageId) ?? [];
+      list.push(message);
+      map.set(message.parentMessageId, list);
+    }
+    return map;
+  }, [messages]);
+
+  const topLevel = useMemo(
+    () =>
+      messages.filter(
+        (m) => !m.parentMessageId || !messages.some((p) => p.id === m.parentMessageId),
+      ),
+    [messages],
+  );
 
   const nameFor = useCallback(
     (membershipId: string) =>
@@ -295,6 +335,51 @@ export function ConversationRoom({
     }
   }
 
+  function renderMessage(message: Message) {
+    const mine = message.authorMembershipId === ownMembershipId;
+    return (
+      <div className="grid grid-cols-[4.5rem_1fr] gap-3">
+        <time className="font-mono text-xs text-deep-slate/60" dateTime={message.createdAt}>
+          {timeOf(message.createdAt)}
+        </time>
+        <div>
+          <p
+            className={cn(
+              "text-xs uppercase tracking-wide",
+              mine ? "text-baked-clay" : "text-deep-slate/70",
+            )}
+          >
+            {nameFor(message.authorMembershipId)}
+          </p>
+          <p className="whitespace-pre-wrap break-words text-sm text-deep-slate">
+            {message.body}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <MessageReactions
+              reactions={reactions[message.id] ?? []}
+              onToggle={(emoji) => toggleReaction(message.id, emoji)}
+            />
+            {/* Replies to replies are not offered. One level is a thread; two
+                is a forum, and nothing in the product asked for one. */}
+            {!message.parentMessageId ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setReplyingTo(message.id);
+                  setExpanded((prev) => new Set(prev).add(message.id));
+                  composerRef.current?.focus();
+                }}
+                className="font-mono text-xs text-deep-slate underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta"
+              >
+                {copy.conversations.thread.reply}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   async function submit() {
     const body = draft.trim();
     if (body.length === 0 || sending) return;
@@ -306,7 +391,12 @@ export function ConversationRoom({
     setSending(true);
     setError(null);
     try {
-      const sent = await sendMessage(supabase, { orgId, conversationId, body });
+      const sent = await sendMessage(supabase, {
+        orgId,
+        conversationId,
+        body,
+        parentMessageId: replyingTo ?? undefined,
+      });
 
       // Mentions are attached AFTER the message exists, and a failure here does
       // not fail the send. The message is the thing the member wrote; a mention
@@ -330,6 +420,7 @@ export function ConversationRoom({
       setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
       setDraft("");
       setMentionAnchor(null);
+      setReplyingTo(null);
     } catch {
       // The message text is deliberately not echoed into the error, and
       // nothing is sent to Sentry from here: invariant 12.
@@ -358,37 +449,43 @@ export function ConversationRoom({
           </p>
         ) : (
           <ul className="space-y-4">
-            {messages.map((message) => {
-              const mine = message.authorMembershipId === ownMembershipId;
+            {topLevel.map((message) => {
+              const replies = repliesByParent.get(message.id) ?? [];
+              const isExpanded = expanded.has(message.id);
               return (
                 <li
                   key={message.id}
-                  className="grid grid-cols-[4.5rem_1fr] gap-3 border-b border-deep-slate/15 pb-3 last:border-b-0"
+                  className="border-b border-deep-slate/15 pb-3 last:border-b-0"
                 >
-                  <time
-                    className="font-mono text-xs text-deep-slate/60"
-                    dateTime={message.createdAt}
-                  >
-                    {timeOf(message.createdAt)}
-                  </time>
-                  <div>
-                    <p
-                      className={cn(
-                        "text-xs uppercase tracking-wide",
-                        mine ? "text-baked-clay" : "text-deep-slate/70",
-                      )}
+                  {renderMessage(message)}
+
+                  {replies.length > 0 ? (
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      onClick={() =>
+                        setExpanded((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(message.id)) next.delete(message.id);
+                          else next.add(message.id);
+                          return next;
+                        })
+                      }
+                      className="ml-[5.25rem] mt-2 font-mono text-xs text-deep-slate underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta"
                     >
-                      {nameFor(message.authorMembershipId)}
-                    </p>
-                    <p className="whitespace-pre-wrap break-words text-sm text-deep-slate">
-                      {message.body}
-                    </p>
-                    <MessageReactions
-                      className="mt-2"
-                      reactions={reactions[message.id] ?? []}
-                      onToggle={(emoji) => toggleReaction(message.id, emoji)}
-                    />
-                  </div>
+                      {isExpanded
+                        ? copy.conversations.thread.hideReplies
+                        : copy.conversations.thread.showReplies(replies.length)}
+                    </button>
+                  ) : null}
+
+                  {isExpanded ? (
+                    <ul className="ml-[5.25rem] mt-2 space-y-3 border-l-2 border-deep-slate/20 pl-3">
+                      {replies.map((reply) => (
+                        <li key={reply.id}>{renderMessage(reply)}</li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </li>
               );
             })}
@@ -413,7 +510,30 @@ export function ConversationRoom({
           void submit();
         }}
       >
-        <Label htmlFor="conversation-composer">{copy.conversations.composerLabel}</Label>
+        {replyingTo ? (
+          <div className="flex items-center justify-between gap-3 border-2 border-deep-slate/20 px-3 py-2">
+            <p className="font-mono text-xs text-deep-slate">
+              {copy.conversations.thread.replyingTo(
+                nameFor(
+                  messages.find((m) => m.id === replyingTo)?.authorMembershipId ?? "",
+                ),
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => setReplyingTo(null)}
+              className="font-mono text-xs text-deep-slate underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta"
+            >
+              {copy.conversations.thread.cancelReply}
+            </button>
+          </div>
+        ) : null}
+
+        <Label htmlFor="conversation-composer">
+          {replyingTo
+            ? copy.conversations.thread.composerLabel
+            : copy.conversations.composerLabel}
+        </Label>
         <div className="relative">
           <Textarea
             id="conversation-composer"
@@ -422,7 +542,11 @@ export function ConversationRoom({
             rows={3}
             value={draft}
             maxLength={MESSAGE_MAX_LENGTH}
-            placeholder={copy.conversations.composerPlaceholder}
+            placeholder={
+              replyingTo
+                ? copy.conversations.thread.composerPlaceholder
+                : copy.conversations.composerPlaceholder
+            }
             role="combobox"
             aria-expanded={mentionMatches.length > 0}
             aria-controls="conversation-mentions"

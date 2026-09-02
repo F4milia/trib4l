@@ -118,7 +118,9 @@ export async function listMessages(
 ): Promise<Message[]> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, author_membership_id, body, created_at, updated_at, deleted_at")
+    .select(
+      "id, conversation_id, author_membership_id, body, created_at, updated_at, deleted_at, parent_message_id",
+    )
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -135,6 +137,7 @@ export async function listMessages(
       createdAt: row.created_at,
       // updated_at only differs from created_at once someone has edited.
       editedAt: row.updated_at !== row.created_at ? row.updated_at : null,
+      parentMessageId: row.parent_message_id,
     }))
     .reverse();
 }

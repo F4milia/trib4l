@@ -310,4 +310,132 @@ describe("ConversationRoom", () => {
       ).toBe(""),
     );
   });
+
+  /* ---------------------------------------------------------- C2 threading */
+
+  const THREADED = [
+    {
+      id: "parent-1",
+      conversationId: "c1",
+      authorMembershipId: "m-other",
+      body: "the parent message",
+      createdAt: new Date("2026-09-02T10:00:00Z").toISOString(),
+      editedAt: null,
+      parentMessageId: null,
+    },
+    {
+      id: "reply-1",
+      conversationId: "c1",
+      authorMembershipId: "m-own",
+      body: "the reply",
+      createdAt: new Date("2026-09-02T10:01:00Z").toISOString(),
+      editedAt: null,
+      parentMessageId: "parent-1",
+    },
+  ];
+
+  it("collapses replies by default and counts them", async () => {
+    // A thread that expands itself turns the room into a wall on the first
+    // busy day. The whole point of a reply is that it is subordinate.
+    renderRoom({ initialMessages: THREADED });
+
+    expect(screen.getByText("the parent message")).toBeTruthy();
+    expect(screen.queryByText("the reply")).toBeNull();
+    expect(screen.getByText(copy.conversations.thread.showReplies(1))).toBeTruthy();
+  });
+
+  it("expands and collapses the thread", async () => {
+    renderRoom({ initialMessages: THREADED });
+    const toggle = screen.getByText(copy.conversations.thread.showReplies(1));
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(toggle);
+    await waitFor(() => expect(screen.getByText("the reply")).toBeTruthy());
+
+    fireEvent.click(screen.getByText(copy.conversations.thread.hideReplies));
+    await waitFor(() => expect(screen.queryByText("the reply")).toBeNull());
+  });
+
+  it("does not offer a reply on a reply", async () => {
+    // One level is a thread; two is a forum, and nothing asked for one.
+    renderRoom({ initialMessages: THREADED });
+    fireEvent.click(screen.getByText(copy.conversations.thread.showReplies(1)));
+    await waitFor(() => expect(screen.getByText("the reply")).toBeTruthy());
+    // Exactly one Reply button: the parent's.
+    expect(screen.getAllByText(copy.conversations.thread.reply)).toHaveLength(1);
+  });
+
+  it("sends a reply with its parent, and clears the target afterwards", async () => {
+    sendMessage.mockImplementation(async () => ({
+      id: "reply-2",
+      conversationId: "c1",
+      authorMembershipId: "m-own",
+      body: "my reply",
+      createdAt: new Date().toISOString(),
+      editedAt: null,
+      parentMessageId: "parent-1",
+    }));
+    renderRoom({ initialMessages: THREADED });
+
+    fireEvent.click(screen.getByText(copy.conversations.thread.reply));
+    await waitFor(() =>
+      expect(
+        screen.getByText(copy.conversations.thread.replyingTo("Bob")),
+      ).toBeTruthy(),
+    );
+
+    fireEvent.change(screen.getByLabelText(copy.conversations.thread.composerLabel), {
+      target: { value: "my reply" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.conversations.send }));
+
+    await waitFor(() =>
+      expect(sendMessage).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ parentMessageId: "parent-1" }),
+      ),
+    );
+    // The banner is gone, so the next message is not silently a reply too --
+    // a sticky reply target is how someone answers the wrong thread.
+    await waitFor(() =>
+      expect(
+        screen.queryByText(copy.conversations.thread.replyingTo("Bob")),
+      ).toBeNull(),
+    );
+  });
+
+  it("cancels a reply without clearing the draft", async () => {
+    renderRoom({ initialMessages: THREADED });
+    fireEvent.click(screen.getByText(copy.conversations.thread.reply));
+    await waitFor(() =>
+      expect(screen.getByLabelText(copy.conversations.thread.composerLabel)).toBeTruthy(),
+    );
+
+    fireEvent.change(screen.getByLabelText(copy.conversations.thread.composerLabel), {
+      target: { value: "half written" },
+    });
+    fireEvent.click(screen.getByText(copy.conversations.thread.cancelReply));
+
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText(copy.conversations.composerLabel) as HTMLTextAreaElement).value,
+      ).toBe("half written"),
+    );
+  });
+
+  it("renders an orphan reply at top level rather than hiding it", async () => {
+    // A reply whose parent is outside the loaded window. Losing a message to
+    // keep a shape tidy is the wrong trade.
+    renderRoom({
+      initialMessages: [
+        {
+          ...THREADED[1],
+          id: "orphan-1",
+          body: "parent is off-screen",
+          parentMessageId: "not-loaded",
+        },
+      ],
+    });
+    expect(screen.getByText("parent is off-screen")).toBeTruthy();
+  });
 });
