@@ -233,6 +233,58 @@ export type Database = {
           },
         ]
       }
+      care_actions: {
+        Row: {
+          created_at: string
+          from_membership_id: string
+          id: string
+          org_id: string
+          target_brick_id: string | null
+          target_membership_id: string | null
+          type: Database["public"]["Enums"]["care_action_type"]
+        }
+        Insert: {
+          created_at?: string
+          from_membership_id: string
+          id?: string
+          org_id: string
+          target_brick_id?: string | null
+          target_membership_id?: string | null
+          type: Database["public"]["Enums"]["care_action_type"]
+        }
+        Update: {
+          created_at?: string
+          from_membership_id?: string
+          id?: string
+          org_id?: string
+          target_brick_id?: string | null
+          target_membership_id?: string | null
+          type?: Database["public"]["Enums"]["care_action_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_actions_from_membership_id_org_id_fkey"
+            columns: ["from_membership_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "care_actions_target_brick_id_org_id_fkey"
+            columns: ["target_brick_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "bricks"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "care_actions_target_membership_id_org_id_fkey"
+            columns: ["target_membership_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+        ]
+      }
       cohort_members: {
         Row: {
           cohort_id: string
@@ -3069,6 +3121,7 @@ export type Database = {
         | "done"
       build_status: "open" | "complete"
       build_type: "commerce" | "permanence" | "propagation" | "custom"
+      care_action_type: "cover_task" | "offer_bandwidth" | "reminder"
       conversation_kind: "family_channel" | "direct"
       invitation_status: "pending" | "accepted" | "revoked"
       ledger_event_type:
@@ -3229,6 +3282,7 @@ export const Constants = {
       ],
       build_status: ["open", "complete"],
       build_type: ["commerce", "permanence", "propagation", "custom"],
+      care_action_type: ["cover_task", "offer_bandwidth", "reminder"],
       conversation_kind: ["family_channel", "direct"],
       invitation_status: ["pending", "accepted", "revoked"],
       ledger_event_type: [
