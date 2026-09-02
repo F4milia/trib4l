@@ -19,6 +19,8 @@ import {
   subscribeToConversation,
 } from "@/lib/conversations-realtime";
 import {
+  ATTACHMENT_ALLOWED_TYPES,
+  ATTACHMENT_MAX_BYTES,
   AttachmentRefused,
   addMentions,
   addReaction,
@@ -357,17 +359,6 @@ export function ConversationRoom({
     }
   }
 
-  const ALLOWED_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-    "image/heic",
-    "application/pdf",
-    "text/plain",
-  ];
-  const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
-
   // Attachments follow the message list, same shape and same reason as
   // reactions above.
   useEffect(() => {
@@ -394,11 +385,11 @@ export function ConversationRoom({
     // The two cheap refusals first, before anything leaves the browser. The
     // bucket enforces both as well -- this is the version that answers
     // instantly, not the version that matters for security.
-    if (file.size > MAX_ATTACHMENT_BYTES) {
+    if (file.size > ATTACHMENT_MAX_BYTES) {
       setAttachmentError(copy.conversations.attachment.tooLarge);
       return;
     }
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!(ATTACHMENT_ALLOWED_TYPES as readonly string[]).includes(file.type)) {
       setAttachmentError(copy.conversations.attachment.wrongType);
       return;
     }
@@ -748,7 +739,7 @@ export function ConversationRoom({
               id="conversation-attachment"
               ref={fileInputRef}
               type="file"
-              accept={ALLOWED_TYPES.join(",")}
+              accept={ATTACHMENT_ALLOWED_TYPES.join(",")}
               className="sr-only"
               onChange={(event) => void stageFile(event.target.files?.[0] ?? null)}
             />

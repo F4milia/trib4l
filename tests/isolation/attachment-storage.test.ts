@@ -1,6 +1,15 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { listConversations } from "../../lib/conversations";
-import { ORG_IDS, SEEDED_USERS, signInAs } from "./helpers";
+import {
+  ORG_IDS,
+  SEEDED_USERS,
+  createServiceRoleClient,
+  signInAs,
+} from "./helpers";
+import {
+  ATTACHMENT_ALLOWED_TYPES,
+  ATTACHMENT_MAX_BYTES,
+} from "../../lib/message-interactions";
 
 /**
  * C2 PR 3. The acceptance criterion the prompt words most strongly:
@@ -118,5 +127,27 @@ describe("attachment storage isolation", () => {
       check_org_id: ORG_IDS.caregiverCircle,
     });
     expect(data ?? 0).toBe(0);
+  }, 30_000);
+
+  it("has a LIVE bucket row matching the client's copy of the caps", async () => {
+    // tests/attachment-types.test.ts asserts the client agrees with the
+    // MIGRATIONS. This asserts the migrations actually landed -- a bucket
+    // edited in the Studio dashboard, or a migration that never applied to
+    // this environment, would pass there and fail here.
+    //
+    // Service role because storage.buckets has RLS and no policy for a member.
+    // Inspecting a fixture, not testing one.
+    // Through the storage admin API rather than `.schema("storage")`: the
+    // generated types cover public and graphql_public only, and reaching past
+    // them with a cast would be asserting against a shape nothing checks.
+    const service = createServiceRoleClient();
+    const { data, error } = await service.storage.getBucket(BUCKET);
+
+    expect(error).toBeNull();
+    expect(data!.public).toBe(false);
+    expect(data!.file_size_limit).toBe(ATTACHMENT_MAX_BYTES);
+    expect([...(data!.allowed_mime_types ?? [])].sort()).toEqual(
+      [...ATTACHMENT_ALLOWED_TYPES].sort(),
+    );
   }, 30_000);
 });
