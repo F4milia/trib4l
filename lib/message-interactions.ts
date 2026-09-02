@@ -50,6 +50,33 @@ export type Notification = {
 /** Raised when an upload would exceed a cap. Carries the plain sentence. */
 export class AttachmentRefused extends Error {}
 
+/**
+ * The attachment caps, mirrored from the bucket row.
+ *
+ * THE BUCKET IS AUTHORITATIVE. These exist so the UI can set a file picker's
+ * `accept` and refuse a bad file instantly, before anything leaves the browser
+ * -- not because the client is trusted. `storage.buckets.allowed_mime_types`
+ * and `file_size_limit` are what actually stop an upload, and they hold for a
+ * caller who never runs this code.
+ *
+ * Which means these two can DRIFT from the bucket, silently, in the direction
+ * that matters: a type added here but not there is a file the picker offers and
+ * the platform rejects, and a type added there but not here is a file the
+ * product supports and the UI refuses. tests/attachment-types.test.ts asserts
+ * they agree, against the migrations rather than against a memory of them.
+ */
+export const ATTACHMENT_ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/heic",
+  "application/pdf",
+  "text/plain",
+] as const;
+
+export const ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024;
+
 /* ------------------------------------------------------------------ threads */
 
 /**

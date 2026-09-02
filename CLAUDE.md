@@ -621,3 +621,24 @@ than week one.
   reads as a deleted file or a wrong path, not a stale install · run `npm install`
   before believing a resolve error in a file the session never touched. Fixed here;
   it changed no line of the lockfile.
+- 2026-09-02 · C2 attachments · the shared stack was reset from a checkout that
+  PREDATED this branch, so `supabase db reset` succeeded and silently reverted
+  supabase_db_Trib4l to 20260903101311 -- ten migrations behind main, with the
+  storage bucket, the C2 tables and the realtime policies all gone. The symptom
+  was `fixture upload failed: Bucket not found`, which names a missing FEATURE
+  rather than a missing migration, and the isolation suite reported 8 skipped
+  rather than anything about schema · a successful reset is not a safe reset.
+  Before believing an isolation failure, compare
+  `select max(version) from supabase_migrations.schema_migrations` against
+  `ls supabase/migrations | tail -1`; `npx supabase migration up --local`
+  repairs it without a second reset. Fifth shape of the 2026-08-30 collision,
+  and the first where the reset came from ANOTHER WORKTREE's older migrations.
+- 2026-09-02 · C2 attachments · a client-side copy of a server-side limit needs
+  BOTH directions asserted and they need different tests. The client's
+  ATTACHMENT_ALLOWED_TYPES vs the MIGRATIONS is a unit test (fast, no Docker);
+  the migrations vs the LIVE bucket row is an isolation test, because a bucket
+  edited in the dashboard or a migration that never applied passes the first and
+  fails the second · proven independent by controlling each separately: widening
+  the live row fails only the isolation test, and the unit test correctly stays
+  green. A single test at either layer would have missed one of the two ways
+  this drifts.
