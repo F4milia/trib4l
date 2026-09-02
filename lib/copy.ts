@@ -761,6 +761,27 @@ export const copy = {
       failed: "That reaction did not save. Try again.",
     },
 
+    /**
+     * C2. Threading.
+     *
+     * A thread is a reply, not a "conversation within a conversation" -- the
+     * strings stay at that scale deliberately. Anything grander invites the
+     * feature to grow a sidebar, a title and an unread count of its own, none
+     * of which anyone asked for.
+     */
+    thread: {
+      reply: "Reply",
+      /** On the button that expands replies. Counted, because "Replies" alone hides how many. */
+      showReplies: (n: number) => (n === 1 ? "1 reply" : `${n} replies`),
+      hideReplies: "Hide replies",
+      /** Above the composer while a reply is in progress. */
+      replyingTo: (name: string) => `Replying to ${name}`,
+      cancelReply: "Cancel reply",
+      /** The reply composer's own label, so it is not the same control as the room's. */
+      composerLabel: "Reply",
+      composerPlaceholder: "Write a reply",
+    },
+
     mentions: {
       /** Announced when the list opens, so it is not a silent change. */
       listLabel: "Members you can mention",

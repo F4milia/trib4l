@@ -42,6 +42,9 @@ function toMessage(row: MessageRow): Message {
     body: row.body,
     createdAt: row.created_at,
     editedAt: row.updated_at !== row.created_at ? row.updated_at : null,
+    // C2. Carried through the live path too, or a reply arriving over the
+    // socket renders as a top-level message until the next refresh.
+    parentMessageId: row.parent_message_id,
   };
 }
 
