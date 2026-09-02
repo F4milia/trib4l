@@ -628,6 +628,58 @@ export type Database = {
           },
         ]
       }
+      item_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          org_id: string
+          target: Database["public"]["Enums"]["reminder_target"]
+          target_brick_id: string | null
+          target_vow_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          org_id: string
+          target: Database["public"]["Enums"]["reminder_target"]
+          target_brick_id?: string | null
+          target_vow_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          org_id?: string
+          target?: Database["public"]["Enums"]["reminder_target"]
+          target_brick_id?: string | null
+          target_vow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_reminders_membership_id_org_id_fkey"
+            columns: ["membership_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "item_reminders_target_brick_id_org_id_fkey"
+            columns: ["target_brick_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "bricks"
+            referencedColumns: ["id", "org_id"]
+          },
+          {
+            foreignKeyName: "item_reminders_target_vow_id_org_id_fkey"
+            columns: ["target_vow_id", "org_id"]
+            isOneToOne: false
+            referencedRelation: "vows"
+            referencedColumns: ["id", "org_id"]
+          },
+        ]
+      }
       ledger_events: {
         Row: {
           created_at: string
@@ -3085,6 +3137,7 @@ export type Database = {
       notification_type: "family_night_digest" | "vow_notification" | "mention"
       order_status: "pending" | "paid" | "canceled" | "refunded"
       product_type: "digital" | "physical" | "ticket" | "cohort_seat"
+      reminder_target: "brick" | "vow" | "family_night"
       report_status: "open" | "escalated" | "resolved"
       report_target_type: "post" | "comment" | "member"
       support_request_status: "open" | "handled"
@@ -3246,6 +3299,7 @@ export const Constants = {
       notification_type: ["family_night_digest", "vow_notification", "mention"],
       order_status: ["pending", "paid", "canceled", "refunded"],
       product_type: ["digital", "physical", "ticket", "cohort_seat"],
+      reminder_target: ["brick", "vow", "family_night"],
       report_status: ["open", "escalated", "resolved"],
       report_target_type: ["post", "comment", "member"],
       support_request_status: ["open", "handled"],
